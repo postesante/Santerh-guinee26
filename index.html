@@ -49,3 +49,70 @@ function getGen(){try{return JSON.parse(localStorage.getItem('filani_gen_'+curre
 function saveGen(){var v1=document.getElementById('genInput1').value.trim();if(!v1){toast('Requis');return;}var a=getGen();a.unshift({id:Date.now(),t1:v1,t2:document.getElementById('genInput2').value,date:new Date().toLocaleString()});localStorage.setItem('filani_gen_'+currentGen,JSON.stringify(a));toast('Enregistre');renderGen();}
 function renderGen(){var a=getGen();var h='';a.forEach(function(g){h+='<div class="list-item"><b>'+g.t1+'</b> '+g.date+'<br>'+(g.t2||'')+'</div>';});document.getElementById('genList').innerHTML=h;}
 </script></body></html>
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>SanteRH V6.2 Complete</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui;background:#f5f7fb;color:#1f2937;padding-bottom:85px}.header{background:white;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 3px rgba(0,0,0,.1);position:sticky;top:0;z-index:10}.logo{font-weight:800;color:#16a34a;font-size:16px}.btn-sortir{background:#fee2e2;color:#dc2626;border:none;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700}.alert{background:#dcfce7;border-left:4px solid #16a34a;padding:8px 12px;margin:8px 12px;border-radius:8px;font-size:12px}.section{font-weight:800;padding:14px 12px 6px;font-size:13px;color:#374151}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px}.grid-4{grid-template-columns:1fr 1fr 1fr 1fr}.card{background:white;border-radius:14px;padding:10px 4px;text-align:center;box-shadow:0 1px 2px rgba(0,0,0,.06);cursor:pointer;border:1px solid #f3f4f6}.card:active{transform:scale(0.95);background:#f0fdf4}.icon{width:48px;height:48px;border-radius:12px;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:24px;color:white}.bg-green{background:#22c55e}.bg-purple{background:#a855f7}.bg-orange{background:#f97316}.bg-yellow{background:#eab308}.bg-blue{background:#3b82f6}.bg-pink{background:#ec4899}.bg-teal{background:#14b8a6}.bg-gray{background:#6b7280}.bg-red{background:#ef4444}.bg-heart{background:#f43f5e}.bg-cyan{background:#06b6d4}.bg-amber{background:#f59e0b}.bg-lime{background:#84cc16}.label{font-size:11px;font-weight:700;line-height:1.2}.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:white;display:flex;justify-content:space-around;padding:6px 0 10px;border-top:1px solid #e5e7eb;z-index:10}.nav-item{text-align:center;font-size:10px;padding:4px 8px;border-radius:8px;font-weight:600;color:#6b7280;cursor:pointer}.nav-item.active{color:#16a34a;background:#f0fdf4}.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#111827;color:white;padding:10px 18px;border-radius:20px;font-size:12px;display:none;z-index:100;max-width:90%;text-align:center}.modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:50;align-items:flex-start;justify-content:center;padding:10px;overflow-y:auto}.modal-box{background:white;border-radius:18px;padding:14px;width:100%;max-width:440px;margin:10px auto;max-height:94vh;overflow-y:auto}.modal-title{font-weight:800;font-size:16px;margin-bottom:10px;color:#16a34a}input,textarea,select{width:100%;padding:9px;border:1px solid #e5e7eb;border-radius:9px;margin:5px 0 9px;font-size:13px}.row{display:flex;gap:8px}.row>div{flex:1}.btn{width:100%;padding:11px;border:none;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;margin-top:6px}.btn-green{background:#16a34a;color:white}.btn-yellow{background:#f59e0b;color:white}.btn-gray{background:#f3f4f6;color:#374151}.list{margin-top:12px;border-top:2px solid #f3f4f6;padding-top:8px}.list-item{background:#f9fafb;border-radius:10px;padding:8px 10px;margin:6px 0;font-size:12px;border-left:4px solid #16a34a}.list-item.merit{border-left-color:#eab308;background:#fffbeb}.badge{display:inline-block;padding:1px 6px;border-radius:12px;font-size:10px;font-weight:700;background:#f0fdf4;color:#16a34a;margin-left:4px}.badge-red{background:#fee2e2;color:#dc2626}.del{float:right;color:#ef4444;font-weight:800;cursor:pointer;padding:2px 6px;background:white;border-radius:50%}.prime-box{background:linear-gradient(135deg,#16a34a,#22c55e);color:white;border-radius:14px;padding:12px;margin:10px 0;text-align:center}.prime-amount{font-size:22px;font-weight:800}.config{background:#f9fafb;border-radius:10px;padding:10px;margin:8px 0;border:1px dashed #d1d5db}
+</style></head><body>
+<div class="header"><div class="logo">🏥 SanteRH - Filanidialakoro V6.2</div><button class="btn-sortir" onclick="location.reload()">Sortir</button></div>
+<div class="alert">✅ <b>V6.2 Complete</b> - Toutes icones fonctionnent + Primes</div>
+
+<div class="section">🩺 Soins Patients</div>
+<div class="grid">
+<div class="card" onclick="openObs()"><div class="icon bg-cyan">🩺</div><div class="label">Observation<br>du patient</div></div>
+<div class="card" onclick="openMed()"><div class="icon bg-amber">💊</div><div class="label">Gestion<br>Medicaments</div></div>
+</div>
+
+<div class="section">⏱️ Temps de travail - PRIMES</div>
+<div class="grid">
+<div class="card" onclick="openGen('Presences')"><div class="icon bg-green">⏱️</div><div class="label">Presences</div></div>
+<div class="card" onclick="openGen('Gardes')"><div class="icon bg-purple">🌙</div><div class="label">Gardes</div></div>
+<div class="card" onclick="openGen('Conges')"><div class="icon bg-orange">📅</div><div class="label">Conges</div></div>
+<div class="card" onclick="openMerit()"><div class="icon bg-yellow">🏅</div><div class="label"><b>Merite<br>PRIMES ⭐</b></div></div>
+</div>
+
+<div class="section">👥 Personnel et documents</div>
+<div class="grid grid-4">
+<div class="card" onclick="openGen('Personnel')"><div class="icon bg-blue">👥</div><div class="label">Personnel</div></div>
+<div class="card" onclick="openGen('Rapports')"><div class="icon bg-purple">📊</div><div class="label">Rapports</div></div>
+<div class="card" onclick="openGen('Certificats')"><div class="icon bg-teal">📄</div><div class="label">Certificats</div></div>
+<div class="card" onclick="openGen('Archives')"><div class="icon bg-gray">🗄️</div><div class="label">Archives</div></div>
+</div>
+
+<div class="section">🌍 Sante publique</div>
+<div class="grid">
+<div class="card" onclick="openGen('Enfants PEV')"><div class="icon bg-pink">💉</div><div class="label">Enfants PEV</div></div>
+<div class="card" onclick="openGen('Femmes')"><div class="icon bg-heart">❤️</div><div class="label">Femmes</div></div>
+<div class="card" onclick="openGen('Terrain')"><div class="icon bg-red">📍</div><div class="label">Terrain</div></div>
+<div class="card" onclick="openGen('Micro-plan 24')"><div class="icon bg-lime">🗺️</div><div class="label">Micro-plan 24</div></div>
+</div>
+
+<div class="bottom-nav">
+<div class="nav-item active" onclick="window.scrollTo(0,0)">🏠<br>Accueil</div>
+<div class="nav-item" onclick="openMerit()">🏅<br>Primes</div>
+<div class="nav-item" onclick="openGen('Personnel')">👥<br>Personnel</div>
+<div class="nav-item" onclick="openGen('Presences')">⏱️<br>Presences</div>
+<div class="nav-item" onclick="openGen('Outils')">⚙️<br>Outils</div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<div id="modalObs" class="modal"><div class="modal-box">
+<div class="modal-title">🩺 Observation du patient</div>
+<label>Nom patient *</label><input id="obsNom" placeholder="Mamadou Diallo">
+<label>Symptomes</label><textarea id="obsTxt" rows="2"></textarea>
+<label>Diagnostic</label><input id="obsDiag">
+<label>Agent</label><input id="obsAgent" placeholder="Bakary Keita">
+<button class="btn btn-green" onclick="saveObs()">💾 Enregistrer</button>
+<button class="btn btn-gray" onclick="closeM('modalObs')">Fermer</button>
+<div class="list"><b>📋 (<span id="obsCount">0</span>)</b><div id="obsList"></div></div>
+</div></div>
+
+<div id="modalMed" class="modal"><div class="modal-box">
+<div class="modal-title">💊 Medicaments</div>
+<label>Medicament</label><select id="medName"><option>Paracetamol</option><option>Amoxicilline</option><option>Chloroquine</option><option>ORS</option><option>ACT</option><option>Autre</option></select>
+<label>Quantite</label><input id="medQte" type="number">
+<label>Type</label><select id="medType"><option>Entree stock</option><option>Sortie - Patient</option></select>
+<label>Raison</label><input id="medRaison">
+<button class="btn btn-green" onclick="saveMed()">💾 Enregistrer</button>
+<button class="btn btn-gray" onclick="closeM('modalMed')">Fermer</button>
+<div style="margin-top:10px;padding:8px;background:#f0fdf4;border-radius:8px;font-size:11px"><b>Stock:</b><div id="stockDisplay"></div></div>
+<div class="list"><b>📜 (<span id="medCount">0</span>)</b><div id="medList"></div></div>
+</div></div>
