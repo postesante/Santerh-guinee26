@@ -26,3 +26,91 @@
 <div class="card" onclick="toastMsg('Certificats')"><div class="icon bg-teal">📄</div><div class="label">Certificats</div></div>
 <div class="card" onclick="toastMsg('Archives')"><div class="icon bg-gray">🗄️</div><div class="label">Archives</div></div>
 </div>
+<div class="section-title">🌍 Santé publique</div>
+<div class="grid">
+<div class="card" onclick="toastMsg('Enfants PEV')"><div class="icon bg-pink">💉</div><div class="label">Enfants PEV</div></div>
+<div class="card" onclick="toastMsg('Femmes')"><div class="icon bg-heart">❤️</div><div class="label">Femmes</div></div>
+<div class="card" onclick="toastMsg('Terrain')"><div class="icon bg-red">📍</div><div class="label">Terrain</div></div>
+<div class="card" onclick="toastMsg('Micro-plan 24')"><div class="icon bg-lime">🗺️</div><div class="label">Micro-plan 24</div></div>
+</div>
+
+<div class="bottom-nav"><div class="nav-item active">🏠<br>Accueil</div><div class="nav-item">⏱️<br>Présences</div><div class="nav-item">👥<br>Personnel</div><div class="nav-item">📅<br>Congés</div><div class="nav-item">⚙️<br>Outils</div></div>
+
+<div id="toast" class="toast"></div>
+
+<div id="modalObs" class="modal"><div class="modal-box">
+<div class="modal-title">🩺 Observation du patient</div>
+<label>Nom du patient *</label><input id="obsNom" placeholder="Ex: Mamadou Diallo">
+<label>Symptômes / Plaintes</label><textarea id="obsTxt" rows="2" placeholder="Fièvre, toux, maux de tête..."></textarea>
+<label>Diagnostic / CAT</label><input id="obsDiag" placeholder="Ex: Paludisme simple - CAT: ACT">
+<label>Agent de santé</label><input id="obsAgent" placeholder="Ex: Bakary Keita">
+<button class="btn btn-green" onclick="saveObs()">💾 Enregistrer observation</button>
+<button class="btn btn-gray" onclick="closeModal('modalObs')">Fermer</button>
+<div class="list"><b>📋 Observations enregistrées à Filanidialakoro (<span id="obsCount">0</span>)</b><div id="obsList"></div></div>
+</div></div>
+
+<div id="modalMed" class="modal"><div class="modal-box">
+<div class="modal-title">💊 Gestion des médicaments</div>
+<label>Médicament *</label><select id="medName"><option>Paracétamol 500mg</option><option>Amoxicilline 500mg</option><option>Chloroquine</option><option>ORS - SRO</option><option>Vitamine A</option><option>Fer + Acide Folique</option><option>ACT (Artemether)</option><option>Cotrimoxazole</option><option>Autre</option></select>
+<label>Quantité *</label><input id="medQte" type="number" placeholder="Ex: 50">
+<label>Type mouvement *</label><select id="medType"><option>Entrée stock - Livraison</option><option>Sortie - Patient</option><option>Sortie - Péremption</option><option>Sortie - Transfert</option></select>
+<label>Patient / Raison</label><input id="medRaison" placeholder="Ex: Pour Mamadou Diallo">
+<button class="btn btn-green" onclick="saveMed()">💾 Enregistrer mouvement</button>
+<button class="btn btn-gray" onclick="closeModal('modalMed')">Fermer</button>
+<div style="margin-top:12px;padding:10px;background:#f0fdf4;border-radius:10px;font-size:12px"><b>📦 Stock Filanidialakoro (calcul auto):</b><div id="stockDisplay">Chargement...</div></div>
+<div class="list"><b>📜 Historique mouvements (<span id="medCount">0</span>)</b><div id="medList"></div></div>
+</div></div>
+
+<script>
+function toastMsg(m){var t=document.getElementById('toast');t.textContent='✅ '+m+' ouvert';t.style.display='block';setTimeout(function(){t.style.display='none'},2500);}
+function toast(t){var x=document.getElementById('toast');x.textContent=t;x.style.display='block';setTimeout(function(){x.style.display='none'},3000);}
+function closeModal(id){document.getElementById(id).style.display='none';}
+function openObs(){renderObs();document.getElementById('modalObs').style.display='flex';}
+function openMed(){renderMed();renderStock();document.getElementById('modalMed').style.display='flex';}
+function getObs(){try{return JSON.parse(localStorage.getItem('filani_obs')||'[]')}catch(e){return []}}
+function saveObs(){
+ var nom=document.getElementById('obsNom').value.trim();
+ var txt=document.getElementById('obsTxt').value.trim();
+ var diag=document.getElementById('obsDiag').value.trim();
+ var agent=document.getElementById('obsAgent').value.trim()||'Agent Filanidialakoro';
+ if(!nom){toast('❌ Nom du patient obligatoire');return;}
+ var arr=getObs();
+ arr.unshift({id:Date.now(),nom:nom,sym:txt,diag:diag,agent:agent,date:new Date().toLocaleString('fr-GN')});
+ localStorage.setItem('filani_obs',JSON.stringify(arr));
+ document.getElementById('obsNom').value='';document.getElementById('obsTxt').value='';document.getElementById('obsDiag').value='';
+ toast('✅ Observation de '+nom+' enregistrée !');renderObs();
+}
+function renderObs(){
+ var arr=getObs();document.getElementById('obsCount').textContent=arr.length;
+ var html='';if(arr.length==0)html='<div style="padding:10px;color:#6b7280;font-size:12px;text-align:center">Aucune observation encore.<br>Enregistrez la première !</div>';
+ else arr.forEach(function(o){html+='<div class="list-item"><span class="del" onclick="delObs('+o.id+')">✕</span><b>'+o.nom+'</b> <span class="badge">'+o.date+'</span><br><small>👤 '+o.agent+' | 🩺 '+ (o.sym||'--') +' | 💉 '+ (o.diag||'--') +'</small></div>';});
+ document.getElementById('obsList').innerHTML=html;
+}
+function delObs(id){if(!confirm('Supprimer cette observation ?'))return;var arr=getObs().filter(function(o){return o.id!=id});localStorage.setItem('filani_obs',JSON.stringify(arr));renderObs();toast('🗑️ Supprimée');}
+function getMed(){try{return JSON.parse(localStorage.getItem('filani_med')||'[]')}catch(e){return []}}
+function saveMed(){
+ var name=document.getElementById('medName').value;var qte=parseInt(document.getElementById('medQte').value);var type=document.getElementById('medType').value;var raison=document.getElementById('medRaison').value.trim();
+ if(!qte||qte<=0){toast('❌ Quantité invalide');return;}
+ var arr=getMed();arr.unshift({id:Date.now(),med:name,qte:qte,type:type,raison:raison,date:new Date().toLocaleString('fr-GN')});
+ localStorage.setItem('filani_med',JSON.stringify(arr));
+ document.getElementById('medQte').value='';document.getElementById('medRaison').value='';
+ toast('✅ '+qte+' x '+name+' enregistré !');renderMed();renderStock();
+}
+function renderMed(){
+ var arr=getMed();document.getElementById('medCount').textContent=arr.length;
+ var html='';if(arr.length==0)html='<div style="padding:10px;color:#6b7280;font-size:12px;text-align:center">Aucun mouvement encore.</div>';
+ else arr.forEach(function(m){var color=m.type.includes('Entrée')?'#16a34a':'#dc2626';var sign=m.type.includes('Entrée')?'+':'-';html+='<div class="list-item med"><span class="del" onclick="delMed('+m.id+')">✕</span><b style="color:'+color+'">'+sign+m.qte+' '+m.med+'</b> <span class="badge">'+m.date+'</span><br><small>'+m.type+' | '+ (m.raison||'--') +'</small></div>';});
+ document.getElementById('medList').innerHTML=html;
+}
+function delMed(id){if(!confirm('Supprimer ce mouvement ?'))return;var arr=getMed().filter(function(m){return m.id!=id});localStorage.setItem('filani_med',JSON.stringify(arr));renderMed();renderStock();toast('🗑️ Supprimé');}
+function renderStock(){
+ var arr=getMed();var stock={};
+ arr.forEach(function(m){if(!stock[m.med])stock[m.med]=0;if(m.type.includes('Entrée'))stock[m.med]+=m.qte;else stock[m.med]-=m.qte;});
+ var base={'Paracétamol 500mg':120,'Amoxicilline 500mg':45,'Chloroquine':80,'ORS - SRO':200,'Vitamine A':60,'Fer + Acide Folique':90,'ACT (Artemether)':70,'Cotrimoxazole':50};
+ for(var k in base){if(!stock[k])stock[k]=base[k];else stock[k]+=base[k];}
+ var html='';for(var k in stock){var v=stock[k];var col=v<20?'#dc2626':v<50?'#f59e0b':'#16a34a';html+='<span style="display:inline-block;margin:3px;padding:3px 8px;background:white;border-radius:20px;border:1px solid #e5e7eb;color:'+col+';font-weight:700">'+k+': '+v+'</span> ';}
+ document.getElementById('stockDisplay').innerHTML=html||'Vide';
+}
+function sortir(){if(confirm('Sortir ?'))location.reload();}
+document.addEventListener('DOMContentLoaded',function(){toast('👋 V4 - Filanidialakoro - Stockage visible OK');});
+</script></body></html>
