@@ -65,3 +65,64 @@
 <div style="margin-top:10px;padding:8px;background:#f0fdf4;border-radius:8px;font-size:11px"><b>Stock:</b><div id="stockDisplay"></div></div>
 <div class="list"><b>📜 (<span id="medCount">0</span>)</b><div id="medList"></div></div>
 </div></div>
+<div id="modalMerit" class="modal"><div class="modal-box">
+<div class="modal-title">🏅 Mérite - Prime Stagiaires ⭐</div>
+
+<div class="config">
+<b>⚙️ Configuration Prime Filanidialakoro</b>
+<div class="row"><div><label>Prime de base (GNF)</label><input id="primeBase" type="number" value="300000"></div><div><label>Heure normale</label><input id="heureNormale" type="time" value="08:00"></div></div>
+<div class="row"><div><label>Pénalité retard (GNF)</label><input id="penRetard" type="number" value="5000"></div><div><label>Pénalité absence (GNF)</label><input id="penAbs" type="number" value="20000"></div></div>
+<small>Retard = après heure normale + 15min tolérance</small>
+</div>
+
+<label>Ajouter stagiaire</label>
+<div class="row"><div><input id="stagiaireNom" placeholder="Nom stagiaire Ex: Fatoumata"></div><div style="flex:0.5"><button class="btn btn-yellow" style="margin:0" onclick="addStagiaire()">➕ Ajouter</button></div></div>
+<div id="stagiaireList" style="margin:6px 0"></div>
+
+<hr style="margin:10px 0">
+<b>📝 Pointage quotidien (Arrivée / Départ)</b>
+<label>Stagiaire *</label><select id="pointStag"></select>
+<label>Date *</label><input id="pointDate" type="date">
+<div class="row"><div><label>Arrivée *</label><input id="pointArr" type="time"></div><div><label>Départ *</label><input id="pointDep" type="time" value="17:00"></div></div>
+<button class="btn btn-green" onclick="savePointage()">💾 Enregistrer pointage du jour</button>
+
+<div class="list"><b>📋 Pointages du mois (<span id="pointCount">0</span>)</b>
+<label>Mois à calculer</label><input id="moisCalc" type="month">
+<button class="btn btn-yellow" onclick="calculPrimes()">🧮 CALCULER LES PRIMES DU MOIS</button>
+<div id="primeResult"></div>
+<div id="pointList"></div>
+</div>
+
+<button class="btn btn-gray" onclick="closeModal('modalMerit')">Fermer</button>
+</div></div>
+
+<div id="modalGen" class="modal"><div class="modal-box">
+<div class="modal-title" id="genTitle">📁 Module</div>
+<label id="genLabel1">Nom *</label><input id="genInput1">
+<label id="genLabel2">Détails</label><textarea id="genInput2" rows="2"></textarea>
+<button class="btn btn-green" id="genBtn" onclick="saveGen()">💾 Enregistrer</button>
+<button class="btn btn-gray" onclick="closeModal('modalGen')">Fermer</button>
+<div class="list"><b>📋 (<span id="genCount">0</span>)</b><div id="genList"></div></div>
+</div></div>
+
+<script>
+var currentGen='';
+function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none'},3500);}
+function closeModal(id){document.getElementById(id).style.display='none';}
+function openObs(){renderObs();document.getElementById('modalObs').style.display='flex';}
+function openMed(){renderMed();renderStock();document.getElementById('modalMed').style.display='flex';}
+function openMerit(){loadStagiaires();renderPointages();document.getElementById('modalMerit').style.display='flex';document.getElementById('pointDate').valueAsDate=new Date();document.getElementById('moisCalc').value=new Date().toISOString().slice(0,7);}
+function getObs(){try{return JSON.parse(localStorage.getItem('filani_obs')||'[]')}catch(e){return[]}}
+function saveObs(){var n=document.getElementById('obsNom').value.trim();if(!n){toast('❌ Nom requis');return;}var a=getObs();a.unshift({id:Date.now(),nom:n,sym:document.getElementById('obsTxt').value,diag:document.getElementById('obsDiag').value,agent:document.getElementById('obsAgent').value||'Agent',date:new Date().toLocaleString()});localStorage.setItem('filani_obs',JSON.stringify(a));toast('✅ Observation');renderObs();document.getElementById('obsNom').value='';}
+function renderObs(){var a=getObs();document.getElementById('obsCount').textContent=a.length;var h='';if(!a.length)h='<div style="padding:8px;color:#888;font-size:11px;text-align:center">Aucun</div>';else a.forEach(function(o){h+='<div class="list-item"><span class="del" onclick="delObs('+o.id+')">✕</span><b>'+o.nom+'</b> <span class="badge">'+o.date+'</span><br><small>'+(o.sym||'')+'</small></div>';});document.getElementById('obsList').innerHTML=h;}
+function delObs(id){if(!confirm('Supprimer?'))return;var a=getObs().filter(function(o){return o.id!=id});localStorage.setItem('filani_obs',JSON.stringify(a));renderObs();}
+function getMed(){try{return JSON.parse(localStorage.getItem('filani_med')||'[]')}catch(e){return[]}}
+function saveMed(){var q=parseInt(document.getElementById('medQte').value);if(!q){toast('❌ Quantité');return;}var a=getMed();a.unshift({id:Date.now(),med:document.getElementById('medName').value,qte:q,type:document.getElementById('medType').value,raison:document.getElementById('medRaison').value,date:new Date().toLocaleString()});localStorage.setItem('filani_med',JSON.stringify(a));toast('✅ Médicament');renderMed();renderStock();}
+function renderMed(){var a=getMed();document.getElementById('medCount').textContent=a.length;var h='';if(!a.length)h='<div style="padding:8px;color:#888;text-align:center;font-size:11px">Aucun</div>';else a.forEach(function(m){var c=m.type.includes('Entrée')?'#16a34a':'#dc2626';var s=m.type.includes('Entrée')?'+':'-';h+='<div class="list-item med"><span class="del" onclick="delMed('+m.id+')">✕</span><b style="color:'+c+'">'+s+m.qte+' '+m.med+'</b> <span class="badge">'+m.date+'</span></div>';});document.getElementById('medList').innerHTML=h;}
+function delMed(id){var a=getMed().filter(function(m){return m.id!=id});localStorage.setItem('filani_med',JSON.stringify(a));renderMed();renderStock();}
+function renderStock(){var a=getMed();var s={};a.forEach(function(m){if(!s[m.med])s[m.med]=0;if(m.type.includes('Entrée'))s[m.med]+=m.qte;else s[m.med]-=m.qte;});var base={'Paracétamol':120,'Amoxicilline':45,'ORS':200,'ACT':70};for(var k in base){if(!s[k])s[k]=base[k];else s[k]+=base[k];}var html='';for(var k in s){var v=s[k];var col=v<20?'#dc2626':v<50?'#f59e0b':'#16a34a';html+='<span style="display:inline-block;margin:2px;padding:2px 6px;background:white;border-radius:12px;border:1px solid #e5e7eb;color:'+col+';font-weight:700;font-size:11px">'+k+':'+v+'</span> ';}document.getElementById('stockDisplay').innerHTML=html;}
+function getStag(){try{return JSON.parse(localStorage.getItem('filani_stagiaires')||'[]')}catch(e){return[]}}
+function addStagiaire(){var n=document.getElementById('stagiaireNom').value.trim();if(!n){toast('❌ Nom stagiaire');return;}var a=getStag();if(a.includes(n)){toast('⚠️ Déjà existant');return;}a.push(n);localStorage.setItem('filani_stagiaires',JSON.stringify(a));document.getElementById('stagiaireNom').value='';loadStagiaires();toast('✅ Stagiaire ajouté: '+n);}
+function loadStagiaires(){var a=getStag();var sel=document.getElementById('pointStag');sel.innerHTML='';a.forEach(function(s){var o=document.createElement('option');o.value=s;o.textContent=s;sel.appendChild(o);});var html='';if(!a.length)html='<small style="color:#888">Aucun stagiaire. Ajoutez-en.</small>';else a.forEach(function(s){html+='<span style="display:inline-block;margin:2px;padding:4px 8px;background:#fef3c7;border-radius:12px;font-size:11px;font-weight:700">'+s+' <span style="color:#ef4444;cursor:pointer" onclick="delStagiaire(\''+s+'\')">✕</span></span> ';});document.getElementById('stagiaireList').innerHTML=html;}
+function delStagiaire(n){if(!confirm('Supprimer '+n+' ?'))return;var a=getStag().filter(function(s){return s!=n});localStorage.setItem('filani_stagiaires',JSON.stringify(a));loadStagiaires();}
+function getPoints(){try{return JSON.parse(localStorage.getItem('filani_pointages')||'[]')}catch(e
