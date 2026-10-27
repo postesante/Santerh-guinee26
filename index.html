@@ -1,2 +1,90 @@
  <!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>SantéRH V3</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui;background:#f5f7fb;color:#1f2937;padding-bottom:80px}.header{background:white;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 3px rgba(0,0,0,.1);position:sticky;top:0;z-index:10}.logo{font-weight:800;color:#16a34a;font-size:18px}.btn-sortir{background:#fee2e2;color:#dc2626;border:none;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600}.alert{background:#fef3c7;border-left:4px solid #f59e0b;padding:10px 14px;margin:10px 16px;border-radius:8px;font-size:13px}.section-title{font-weight:800;padding:16px 16px 8px;font-size:15px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px}.grid-4{grid-template-columns:1fr 1fr 1fr 1fr}.card{background:white;border-radius:16px;padding:14px 8px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.06);cursor:pointer;border:1px solid #f3f4f6}.card:active{transform:scale(0.95);background:#f0fdf4}.icon{width:56px;height:56px;border-radius:16px;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:28px;color:white}.bg-green{background:#22c55e}.bg-purple{background:#a855f7}.bg-orange{background:#f97316}.bg-yellow{background:#eab308}.bg-blue{background:#3b82f6}.bg-pink{background:#ec4899}.bg-teal{background:#14b8a6}.bg-gray{background:#6b7280}.bg-red{background:#ef4444}.bg-heart{background:#f43f5e}.bg-cyan{background:#06b6d4}.bg-amber{background:#f59e0b}.bg-lime{background:#84cc16}.label{font-size:12px;font-weight:700}.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:white;display:flex;justify-content:space-around;padding:8px 0 12px;border-top:1px solid #e5e7eb}.nav-item{text-align:center;font-size:11px;cursor:pointer;padding:4px 10px;border-radius:10px;font-weight:600;color:#6b7280}.nav-item.active{color:#16a34a;background:#f0fdf4}.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#111827;color:white;padding:12px 20px;border-radius:24px;font-size:13px;display:none;z-index:100;max-width:90%}.modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:50;align-items:center;justify-content:center;padding:20px}.modal-box{background:white;border-radius:20px;padding:20px;width:100%;max-width:400px}.modal-title{font-weight:800;font-size:18px;margin-bottom:12px;color:#16a34a}input,textarea,select{width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;margin:6px 0 12px;font-size:14px}.btn{width:100%;padding:12px;border:none;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer;margin-top:8px}.btn-green{background:#16a34a;color:white}.btn-gray{background:#f3f4f6;color:#374151}</style></head><body><div class="header"><div class="logo">🏥 SantéRH - Filanidialakoro</div><button class="btn-sortir" onclick="sortir()">Sortir</button></div><div class="alert">⚠️ <b>Filanidialakoro - Siguiri</b> | Centre opérationnel</div><div class="section-title">🩺 Soins Patients - NOUVEAU</div><div class="grid"><div class="card" onclick="openModule('Observation du patient')"><div class="icon bg-cyan">🩺</div><div class="label">Observation<br>du patient</div></div><div class="card" onclick="openModule('Gestion des médicaments')"><div class="icon bg-amber">💊</div><div class="label">Gestion<br>Médicaments</div></div></div><div class="section-title">⏱️ Temps de travail</div><div class="grid"><div class="card" onclick="openModule('Présences')"><div class="icon bg-green">⏱️</div><div class="label">Présences</div></div><div class="card" onclick="openModule('Gardes')"><div class="icon bg-purple">🌙</div><div class="label">Gardes</div></div>
  <div class="card" onclick="openModule('Congés')"><div class="icon bg-orange">📅</div><div class="label">Congés</div></div><div class="card" onclick="openModule('Mérite')"><div class="icon bg-yellow">🏅</div><div class="label">Mérite</div></div></div><div class="section-title">👥 Personnel et documents</div><div class="grid grid-4"><div class="card" onclick="openModule('Personnel')"><div class="icon bg-blue">👥</div><div class="label">Personnel</div></div><div class="card" onclick="openModule('Rapports')"><div class="icon bg-purple">📊</div><div class="label">Rapports</div></div><div class="card" onclick="openModule('Certificats')"><div class="icon bg-teal">📄</div><div class="label">Certificats</div></div><div class="card" onclick="openModule('Archives')"><div class="icon bg-gray">🗄️</div><div class="label">Archives</div></div></div><div class="section-title">🌍 Santé publique</div><div class="grid"><div class="card" onclick="openModule('Enfants PEV')"><div class="icon bg-pink">💉</div><div class="label">Enfants PEV</div></div><div class="card" onclick="openModule('Femmes')"><div class="icon bg-heart">❤️</div><div class="label">Femmes</div></div><div class="card" onclick="openModule('Terrain')"><div class="icon bg-red">📍</div><div class="label">Terrain</div></div><div class="card" onclick="openModule('Micro-plan 24')"><div class="icon bg-lime">🗺️</div><div class="label">Micro-plan 24</div></div></div><div class="bottom-nav"><div class="nav-item active">🏠<br>Accueil</div><div class="nav-item" onclick="openModule('Présences')">⏱️<br>Présences</div><div class="nav-item" onclick="openModule('Personnel')">👥<br>Personnel</div><div class="nav-item" onclick="openModule('Congés')">📅<br>Congés</div><div class="nav-item" onclick="openModule('Outils')">⚙️<br>Outils</div></div><div id="toast" class="toast"></div><div id="modalObs" class="modal" onclick="if(event.target==this)closeModal('modalObs')"><div class="modal-box"><div class="modal-title">🩺 Observation du patient</div><label>Nom du patient</label><input id="obsNom" placeholder="Mamadou Diallo"><label>Symptômes</label><textarea id="obsTxt" rows="3" placeholder="Fièvre, toux..."></textarea><label>Diagnostic</label><input id="obsDiag" placeholder="Paludisme..."><button class="btn btn-green" onclick="saveObs()">💾 Enregistrer</button><button class="btn btn-gray" onclick="closeModal('modalObs')">Fermer</button></div></div><div id="modalMed" class="modal" onclick="if(event.target==this)closeModal('modalMed')"><div class="modal-box"><div class="modal-title">💊 Gestion des médicaments</div><label>Médicament</label><select id="medName"><option>Paracétamol</option><option>Amoxicilline</option><option>Chloroquine</option><option>ORS</option><option>Vitamine A</option><option>Fer</option><option>Autre</option></select><label>Quantité</label><input id="medQte" type="number" placeholder="50"><label>Type</label><select id="medType"><option>Entrée stock</option><option>Sortie - Patient</option><option>Péremption</option></select><button class="btn btn-green" onclick="saveMed()">💾 Enregistrer</button><button class="btn btn-gray" onclick="closeModal('modalMed')">Fermer</button><div style="margin-top:12px;padding:10px;background:#f0fdf4;border-radius:10px;font-size:12px"><b>Stock Filanidialakoro:</b><br>Paracétamol: 120 | Amox: 45<br>Chloro: 80 | ORS: 200</div></div></div><script>function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none'},3000);}function openModule(n){if(n==='Observation du patient'){document.getElementById('modalObs').style.display='flex';return;}if(n.indexOf('Médicament')>-1){document.getElementById('modalMed').style.display='flex';return;}toast('✅ '+n+' ouvert');}function closeModal(id){document.getElementById(id).style.display='none';}function saveObs(){var n=document.getElementById('obsNom').value;if(!n){toast('❌ Nom requis');return;}toast('✅ Observation de '+n+' enregistrée !');closeModal('modalObs');}function saveMed(){var m=document.getElementById('medName').value;var q=document.getElementById('medQte').value;if(!q){toast('❌ Quantité requise');return;}toast('✅ '+q+' x '+m+' enregistré !');closeModal('modalMed');}function sortir(){if(confirm('Sortir ?'))location.reload();}document.addEventListener('DOMContentLoaded',function(){toast('👋 Bienvenue Chef Bakary - V3 Complète');});</script></body></html>
+<div class="section-title">🌍 Santé publique</div>
+<div class="grid">
+<div class="card" onclick="toastMsg('Enfants PEV')"><div class="icon bg-pink">💉</div><div class="label">Enfants PEV</div></div>
+<div class="card" onclick="toastMsg('Femmes')"><div class="icon bg-heart">❤️</div><div class="label">Femmes</div></div>
+<div class="card" onclick="toastMsg('Terrain')"><div class="icon bg-red">📍</div><div class="label">Terrain</div></div>
+<div class="card" onclick="toastMsg('Micro-plan 24')"><div class="icon bg-lime">🗺️</div><div class="label">Micro-plan 24</div></div>
+</div>
+
+<div class="bottom-nav"><div class="nav-item active">🏠<br>Accueil</div><div class="nav-item">⏱️<br>Présences</div><div class="nav-item">👥<br>Personnel</div><div class="nav-item">📅<br>Congés</div><div class="nav-item">⚙️<br>Outils</div></div>
+
+<div id="toast" class="toast"></div>
+
+<div id="modalObs" class="modal"><div class="modal-box">
+<div class="modal-title">🩺 Observation du patient</div>
+<label>Nom du patient *</label><input id="obsNom" placeholder="Ex: Mamadou Diallo">
+<label>Symptômes / Plaintes</label><textarea id="obsTxt" rows="2" placeholder="Fièvre, toux, maux de tête..."></textarea>
+<label>Diagnostic / CAT</label><input id="obsDiag" placeholder="Ex: Paludisme simple - CAT: ACT">
+<label>Agent de santé</label><input id="obsAgent" placeholder="Ex: Bakary Keita">
+<button class="btn btn-green" onclick="saveObs()">💾 Enregistrer observation</button>
+<button class="btn btn-gray" onclick="closeModal('modalObs')">Fermer</button>
+<div class="list"><b>📋 Observations enregistrées à Filanidialakoro (<span id="obsCount">0</span>)</b><div id="obsList"></div></div>
+</div></div>
+
+<div id="modalMed" class="modal"><div class="modal-box">
+<div class="modal-title">💊 Gestion des médicaments</div>
+<label>Médicament *</label><select id="medName"><option>Paracétamol 500mg</option><option>Amoxicilline 500mg</option><option>Chloroquine</option><option>ORS - SRO</option><option>Vitamine A</option><option>Fer + Acide Folique</option><option>ACT (Artemether)</option><option>Cotrimoxazole</option><option>Autre</option></select>
+<label>Quantité *</label><input id="medQte" type="number" placeholder="Ex: 50">
+<label>Type mouvement *</label><select id="medType"><option>Entrée stock - Livraison</option><option>Sortie - Patient</option><option>Sortie - Péremption</option><option>Sortie - Transfert</option></select>
+<label>Patient / Raison</label><input id="medRaison" placeholder="Ex: Pour Mamadou Diallo">
+<button class="btn btn-green" onclick="saveMed()">💾 Enregistrer mouvement</button>
+<button class="btn btn-gray" onclick="closeModal('modalMed')">Fermer</button>
+<div style="margin-top:12px;padding:10px;background:#f0fdf4;border-radius:10px;font-size:12px"><b>📦 Stock Filanidialakoro (calcul auto):</b><div id="stockDisplay">Chargement...</div></div>
+<div class="list"><b>📜 Historique mouvements (<span id="medCount">0</span>)</b><div id="medList"></div></div>
+</div></div>
+
+<script>
+function toastMsg(m){var t=document.getElementById('toast');t.textContent='✅ '+m+' ouvert';t.style.display='block';setTimeout(function(){t.style.display='none'},2500);}
+function toast(t){var x=document.getElementById('toast');x.textContent=t;x.style.display='block';setTimeout(function(){x.style.display='none'},3000);}
+function closeModal(id){document.getElementById(id).style.display='none';}
+function openObs(){renderObs();document.getElementById('modalObs').style.display='flex';}
+function openMed(){renderMed();renderStock();document.getElementById('modalMed').style.display='flex';}
+function getObs(){try{return JSON.parse(localStorage.getItem('filani_obs')||'[]')}catch(e){return []}}
+function saveObs(){
+ var nom=document.getElementById('obsNom').value.trim();
+ var txt=document.getElementById('obsTxt').value.trim();
+ var diag=document.getElementById('obsDiag').value.trim();
+ var agent=document.getElementById('obsAgent').value.trim()||'Agent Filanidialakoro';
+ if(!nom){toast('❌ Nom du patient obligatoire');return;}
+ var arr=getObs();
+ arr.unshift({id:Date.now(),nom:nom,sym:txt,diag:diag,agent:agent,date:new Date().toLocaleString('fr-GN')});
+ localStorage.setItem('filani_obs',JSON.stringify(arr));
+ document.getElementById('obsNom').value='';document.getElementById('obsTxt').value='';document.getElementById('obsDiag').value='';
+ toast('✅ Observation de '+nom+' enregistrée !');renderObs();
+}
+function renderObs(){
+ var arr=getObs();document.getElementById('obsCount').textContent=arr.length;
+ var html='';if(arr.length==0)html='<div style="padding:10px;color:#6b7280;font-size:12px;text-align:center">Aucune observation encore.<br>Enregistrez la première !</div>';
+ else arr.forEach(function(o){html+='<div class="list-item"><span class="del" onclick="delObs('+o.id+')">✕</span><b>'+o.nom+'</b> <span class="badge">'+o.date+'</span><br><small>👤 '+o.agent+' | 🩺 '+ (o.sym||'--') +' | 💉 '+ (o.diag||'--') +'</small></div>';});
+ document.getElementById('obsList').innerHTML=html;
+}
+function delObs(id){if(!confirm('Supprimer cette observation ?'))return;var arr=getObs().filter(function(o){return o.id!=id});localStorage.setItem('filani_obs',JSON.stringify(arr));renderObs();toast('🗑️ Supprimée');}
+function getMed(){try{return JSON.parse(localStorage.getItem('filani_med')||'[]')}catch(e){return []}}
+function saveMed(){
+ var name=document.getElementById('medName').value;var qte=parseInt(document.getElementById('medQte').value);var type=document.getElementById('medType').value;var raison=document.getElementById('medRaison').value.trim();
+ if(!qte||qte<=0){toast('❌ Quantité invalide');return;}
+ var arr=getMed();arr.unshift({id:Date.now(),med:name,qte:qte,type:type,raison:raison,date:new Date().toLocaleString('fr-GN')});
+ localStorage.setItem('filani_med',JSON.stringify(arr));
+ document.getElementById('medQte').value='';document.getElementById('medRaison').value='';
+ toast('✅ '+qte+' x '+name+' enregistré !');renderMed();renderStock();
+}
+function renderMed(){
+ var arr=getMed();document.getElementById('medCount').textContent=arr.length;
+ var html='';if(arr.length==0)html='<div style="padding:10px;color:#6b7280;font-size:12px;text-align:center">Aucun mouvement encore.</div>';
+ else arr.forEach(function(m){var color=m.type.includes('Entrée')?'#16a34a':'#dc2626';var sign=m.type.includes('Entrée')?'+':'-';html+='<div class="list-item med"><span class="del" onclick="delMed('+m.id+')">✕</span><b style="color:'+color+'">'+sign+m.qte+' '+m.med+'</b> <span class="badge">'+m.date+'</span><br><small>'+m.type+' | '+ (m.raison||'--') +'</small></div>';});
+ document.getElementById('medList').innerHTML=html;
+}
+function delMed(id){if(!confirm('Supprimer ce mouvement ?'))return;var arr=getMed().filter(function(m){return m.id!=id});localStorage.setItem('filani_med',JSON.stringify(arr));renderMed();renderStock();toast('🗑️ Supprimé');}
+function renderStock(){
+ var arr=getMed();var stock={};
+ arr.forEach(function(m){if(!stock[m.med])stock[m.med]=0;if(m.type.includes('Entrée'))stock[m.med]+=m.qte;else stock[m.med]-=m.qte;});
+ var base={'Paracétamol 500mg':120,'Amoxicilline 500mg':45,'Chloroquine':80,'ORS - SRO':200,'Vitamine A':60,'Fer + Acide Folique':90,'ACT (Artemether)':70,'Cotrimoxazole':50};
+ for(var k in base){if(!stock[k])stock[k]=base[k];else stock[k]+=base[k];}
+ var html='';for(var k in stock){var v=stock[k];var col=v<20?'#dc2626':v<50?'#f59e0b':'#16a34a';html+='<span style="display:inline-block;margin:3px;padding:3px 8px;background:white;border-radius:20px;border:1px solid #e5e7eb;color:'+col+';font-weight:700">'+k+': '+v+'</span> ';}
+ document.getElementById('stockDisplay').innerHTML=html||'Vide';
+}
+function sortir(){if(confirm('Sortir ?'))location.reload();}
+document.addEventListener('DOMContentLoaded',function(){toast('👋 V4 - Filanidialakoro - Stockage visible OK');});
+</script></body></html>
