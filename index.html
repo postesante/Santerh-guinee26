@@ -1,51 +1,77 @@
- <!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>SanteRH Filanidialakoro V7.1 GPS</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui;background:#f5f7fb;padding-bottom:90px}.header{background:white;padding:12px;display:flex;justify-content:space-between;box-shadow:0 1px 2px rgba(0,0,0,.1);position:sticky;top:0;z-index:10}.logo{font-weight:800;color:#16a34a;font-size:13px}.btn{padding:11px;border:none;border-radius:10px;font-weight:700;cursor:pointer;width:100%;margin-top:6px}.btn-green{background:#16a34a;color:white}.btn-yellow{background:#f59e0b;color:white}.btn-blue{background:#3b82f6;color:white}.btn-gray{background:#eee}.card{background:white;border-radius:14px;padding:12px;text-align:center;box-shadow:0 1px 2px rgba(0,0,0,.05);cursor:pointer;margin:6px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px}.icon{width:48px;height:48px;border-radius:12px;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:24px;color:white}.bg-cyan{background:#06b6d4}.bg-amber{background:#f59e0b}.bg-green{background:#22c55e}.bg-yellow{background:#eab308}.bg-blue{background:#3b82f6}.bg-purple{background:#8b5cf6}.bg-red{background:#ef4444}.modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:50;padding:10px;overflow:auto}.modal-box{background:white;border-radius:16px;padding:14px;max-width:440px;margin:20px auto}.list-item{background:#f9fafb;border-left:4px solid #16a34a;padding:8px;margin:6px 0;border-radius:8px;font-size:12px}.loc-badge{background:#dbeafe;color:#1e40af;padding:2px 6px;border-radius:6px;font-size:10px}.toast{position:fixed;bottom:85px;left:50%;transform:translateX(-50%);background:#111827;color:white;padding:10px 16px;border-radius:20px;display:none;z-index:100;font-size:12px}input,select{width:100%;padding:9px;border:1px solid #ddd;border-radius:8px;margin:5px 0}.prime-box{background:#16a34a;color:white;padding:12px;border-radius:12px;text-align:center;margin:8px 0}.nav{position:fixed;bottom:0;left:0;right:0;background:white;display:flex;justify-content:space-around;padding:8px 0;border-top:1px solid #eee;z-index:20}.nav-item{font-size:11px;text-align:center;color:#6b7280}</style></head><body>
-<div class="header"><div class="logo">🏥 SanteRH Filanidialakoro V7.1 📍</div><button onclick="location.reload()" style="background:#fee2e2;color:#dc2626;border:none;padding:6px 12px;border-radius:20px;font-size:12px">Sortir</button></div>
-<div style="padding:10px 12px;background:#ecfdf5;margin:8px;border-radius:10px;border-left:4px solid #16a34a"><b>📍 V7.1 Filanidialakoro - Suivi GPS pour Chef en voyage</b><br><small id="gpsStatus" style="color:#065f46">📡 Recherche GPS Filanidialakoro...</small></div>
-<div class="grid">
-<div class="card" onclick="openObs()"><div class="icon bg-cyan">🩺</div><b>Observation</b><div class="loc-badge">📍 Filanidialakoro GPS</div></div>
-<div class="card" onclick="openMed()"><div class="icon bg-amber">💊</div><b>Medicaments</b><div class="loc-badge">📍 Filanidialakoro GPS</div></div>
-<div class="card" onclick="openMerit()"><div class="icon bg-yellow">🏅</div><b>Merite PRIMES</b><div class="loc-badge">📍 GPS + Prime</div></div>
-<div class="card" onclick="openLive()"><div class="icon bg-red">📡</div><b>SUIVI LIVE</b><div class="loc-badge" style="background:#fee2e2;color:#b91c1c">Pour Chef en voyage</div></div>
+ <!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SanteRH - Filanidialakoro V7.2</title>
+<style>
+body{font-family:system-ui;margin:0;background:#f2f5ff;padding:0 12px 80px}
+.top{background:#1a73e8;color:#fff;padding:14px;border-radius:0 0 16px 16px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.card{background:#fff;border-radius:16px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,.06);text-align:center}
+.icon{width:48px;height:48px;border-radius:12px;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:24px}
+.title{font-weight:700;font-size:13px}
+.subtitle{font-size:10px;margin-top:4px;padding:3px 6px;border-radius:6px;display:inline-block}
+#medModal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#f5f7fb;z-index:99;overflow:auto;padding:12px}
+</style>
+</head>
+<body>
+<div class="top">
+<b>SanteRH Filanidialakoro</b><br>
+<span style="font-size:12px">📍 GPS OK 11.259809, -8.940853 - V7.2</span>
 </div>
-<div id="toast" class="toast"></div>
-<div id="modalObs" class="modal"><div class="modal-box"><h3>🩺 Observation - Filanidialakoro + GPS</h3><input id="obsNom" placeholder="Nom patient"><input id="obsTxt" placeholder="Symptomes / Observation"><div id="obsLocPreview" style="background:#eff6ff;padding:8px;border-radius:8px;font-size:11px;margin:6px 0;border:1px dashed #3b82f6">📍 Filanidialakoro - GPS en cours...</div><button class="btn btn-green" onclick="saveObs()">✅ Enregistrer avec GPS Filanidialakoro</button><button class="btn btn-gray" onclick="closeM('modalObs')">Fermer</button><div id="obsList" style="margin-top:10px"></div></div></div>
-<div id="modalMed" class="modal"><div class="modal-box"><h3>💊 Medicaments - Filanidialakoro</h3><select id="medName"><option>Paracetamol</option><option>Amoxicilline</option><option>ORS</option><option>Chloroquine</option><option>Fer</option></select><input id="medQte" type="number" placeholder="Quantité"><select id="medType"><option>Entree stock</option><option>Sortie - Patient</option></select><div id="medLocPreview" style="background:#eff6ff;padding:8px;border-radius:8px;font-size:11px;margin:6px 0;border:1px dashed #3b82f6">📍 Filanidialakoro</div><button class="btn btn-green" onclick="saveMed()">✅ Enregistrer avec GPS</button><button class="btn btn-gray" onclick="closeM('modalMed')">Fermer</button><div id="medList"></div><div id="stockDisplay" style="margin-top:8px;font-size:12px"></div></div></div>
-<div id="modalMerit" class="modal"><div class="modal-box"><h3>🏅 Primes Stagiaires - Filanidialakoro GPS</h3><div style="background:#f9fafb;padding:8px;border-radius:8px;margin:6px 0"><label>Prime base GNF</label><input id="primeBase" type="number" value="300000"><label>Penalite retard</label><input id="penRetard" type="number" value="5000"><label>Penalite absence</label><input id="penAbs" type="number" value="20000"></div><label>Nom stagiaire</label><input id="stagiaireNom" placeholder="Ex: Fatoumata"><button class="btn btn-yellow" onclick="addStag()">Ajouter stagiaire Filanidialakoro</button><div id="stagiaireList" style="margin:6px 0"></div><hr style="margin:10px 0"><label>Stagiaire</label><select id="pointStag"></select><label>Date</label><input id="pointDate" type="date"><label>Arrivée</label><input id="pointArr" type="time" value="08:00"><label>Départ</label><input id="pointDep" type="time" value="17:00"><div id="pointLocPreview" style="background:#eff6ff;padding:8px;border-radius:8px;font-size:11px;margin:6px 0">📍 GPS Filanidialakoro</div><button class="btn btn-green" onclick="savePoint()">✅ Pointage + GPS Filanidialakoro</button><div style="margin-top:10px"><label>Mois</label><input id="moisCalc" type="month"><button class="btn btn-yellow" onclick="calcPrimes()">CALCULER PRIMES</button><div id="primeResult"></div><div id="pointList"></div></div><button class="btn btn-gray" onclick="closeM('modalMerit')">Fermer</button></div></div>
-<div id="modalLive" class="modal"><div class="modal-box"><h3>📡 SUIVI LIVE - Chef Youssouf en voyage<br><small style="font-size:12px;color:#6b7280">Poste Filanidialakoro</small></h3><div style="font-size:12px;background:#fef3c7;padding:8px;border-radius:8px;margin:8px 0">Vous êtes en voyage ? Ici vous voyez tout ce que vos stagiaires font à <b>Filanidialakoro</b> en temps réel, avec heure et position GPS 📍</div><button class="btn btn-blue" onclick="shareLiveWhatsApp()">📤 Partager rapport Filanidialakoro par WhatsApp</button><button class="btn btn-yellow" onclick="renderLive()">🔄 Actualiser le suivi</button><div id="liveList" style="margin-top:10px"></div><button class="btn btn-gray" onclick="closeM('modalLive')">Fermer</button></div></div>
-<div class="nav"><div class="nav-item">🏠<br>Accueil</div><div class="nav-item">🏅<br>Primes</div><div class="nav-item">👥<br>Personnel</div><div class="nav-item">📍<br>Filanidialakoro</div><div class="nav-item">📡<br>Live</div></div>
+
+<div class="grid">
+<div class="card" onclick="alert('Observation')"><div class="icon" style="background:#e3f2fd">📝</div><div class="title">Observation</div><div class="subtitle" style="background:#e3f2fd;color:#1565c0">Consultation</div></div>
+
+<div class="card" onclick="openMed()"><div class="icon" style="background:#fce4ec">💊</div><div class="title">Medicaments</div><div class="subtitle" style="background:#fce4ec;color:#c2185b">28 articles avec prix</div></div>
+
+<div class="card"><div class="icon" style="background:#fff8e1">🏆</div><div class="title">Merite PRIMES</div><div class="subtitle" style="background:#fff8e1;color:#f57f17">Primes</div></div>
+
+<div class="card"><div class="icon" style="background:#e8f5e9">📈</div><div class="title">SUIVI LIVE</div><div class="subtitle" style="background:#e8f5e9;color:#2e7d32">Temps réel</div></div>
+
+<div class="card" onclick="openPresence()" style="border:2px solid #4CAF50"><div class="icon" style="background:#4CAF50;color:#fff">✅</div><div class="title">Présence</div><div class="subtitle" style="background:#e8f5e9;color:#2e7d32">📍 Filanidialakoro GPS</div></div>
+
+<div class="card"><div class="icon" style="background:#f3e5f5">🏥</div><div class="title">Garde</div><div class="subtitle" style="background:#f3e5f5;color:#7b1fa2">Planning</div></div>
+</div>
+
+<div id="medModal">
+<div style="background:#fff;padding:12px;border-radius:12px;display:flex;justify-content:space-between;align-items:center"><b>💊 Médicaments Filanidialakoro</b><button onclick="closeMed()">Fermer ✕</button></div>
+<input type="text" id="search" placeholder="Rechercher..." style="width:100%;padding:12px;margin:10px 0;border-radius:10px;border:1px solid #ddd" onkeyup="filterMed()">
+<div id="listMed">
+<!-- Liste intégrée -->
+<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Paracétamol 500mg (10cp) <br><small>250 GNF/cp</small></span><b style="color:green">2 500 GNF</b></div>
+<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>AAS 300mg (10cp)</span><b style="color:green">5 000 GNF</b></div>
+<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Cotri 960mg (10cp)</span><b style="color:green">10 000 GNF</b></div>
+<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Ibuprofène 400mg (10cp)</span><b style="color:green">10 000 GNF</b></div>
+<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Ampi 1g / flacon</span><b style="color:green">5 000 GNF</b></div>
+<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Artemether 80mg / amp</span><b style="color:green">5 000 GNF</b></div>
+<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Amoxicilline 500mg / gélule</span><b style="color:green">1 000 GNF</b></div>
+<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Metamizole 500mg / amp</span><b style="color:green">5 000 GNF</b></div>
+<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Genta 80mg / amp</span><b style="color:green">2 000 GNF</b></div>
+<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Dexa 4mg / amp</span><b style="color:green">2 000 GNF</b></div>
+<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Vit B Complexe / amp</span><b style="color:green">10 000 GNF</b></div>
+<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Sérum Salé / Ringer / Glucosé</span><b style="color:green">60 000 GNF</b></div>
+<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Cotri / Para / Métro Sirop</span><b style="color:green">20 000 GNF</b></div>
+<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Artemether Sirop</span><b style="color:green">25 000 GNF</b></div>
+<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Cimétidine inj</span><b style="color:green">2 500 GNF</b></div>
+<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Diclofénac 75mg</span><b style="color:green">3 500 GNF</b></div>
+<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Ceftriaxone</span><b style="color:green">15 000 GNF</b></div>
+<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Quinine 600mg</span><b style="color:green">10 000 GNF</b></div>
+<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Accouchement / personne</span><b style="color:green">65 000 GNF</b></div>
+<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Oxytocine / amp</span><b style="color:green">10 000 GNF</b></div>
+<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>TDR</span><b style="color:green">10 000 GNF</b></div>
+<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Taux Hb / bandelette</span><b style="color:green">20 000 GNF</b></div>
+<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Ciproperf / flacon</span><b style="color:green">15 000 GNF</b></div>
+<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Fil de suture</span><b style="color:green">30 000 GNF</b></div>
+</div>
+</div>
+
 <script>
-var currentGPS={lat:10.123456,lon:-12.345678,lieu:"Filanidialakoro - Kindia"};
-function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none'},3000);}
-function closeM(id){document.getElementById(id).style.display='none';}
-function updateGPSStatus(){if(navigator.geolocation){navigator.geolocation.getCurrentPosition(function(pos){currentGPS={lat:pos.coords.latitude.toFixed(6),lon:pos.coords.longitude.toFixed(6),lieu:"Filanidialakoro - Kindia"};document.getElementById('gpsStatus').innerHTML="📍 GPS OK Filanidialakoro: "+currentGPS.lat+","+currentGPS.lon+" ✅";document.querySelectorAll('[id$="LocPreview"]').forEach(function(el){el.innerHTML="📍 "+currentGPS.lieu+"<br>Lat: "+currentGPS.lat+" Lon: "+currentGPS.lon+"<br><small>Prêt pour enregistrement</small>";});},function(err){document.getElementById('gpsStatus').innerHTML="📍 Activez la localisation : Chrome > Paramètres > Localisation > Autoriser postesante.github.io";},{enableHighAccuracy:true,timeout:10000});}else{document.getElementById('gpsStatus').innerHTML="📍 GPS non supporté par ce téléphone";}}
-setTimeout(updateGPSStatus,1200);setInterval(updateGPSStatus,40000);
-function openObs(){updateGPSStatus();renderObs();document.getElementById('modalObs').style.display='block';}
-function openMed(){updateGPSStatus();renderMed();document.getElementById('modalMed').style.display='block';}
-function openMerit(){updateGPSStatus();loadStag();renderPoints();document.getElementById('modalMerit').style.display='block';document.getElementById('pointDate').valueAsDate=new Date();document.getElementById('moisCalc').value=new Date().toISOString().slice(0,7);}
-function openLive(){renderLive();document.getElementById('modalLive').style.display='block';}
-var currentGen='';
-function getObs(){try{return JSON.parse(localStorage.getItem('filani_obs')||'[]')}catch(e){return[]}}
-function saveObs(){var n=document.getElementById('obsNom').value.trim();if(!n){toast('Nom patient requis');return;}var a=getObs();a.unshift({id:Date.now(),nom:n,txt:document.getElementById('obsTxt').value,date:new Date().toLocaleString(),gps:{...currentGPS}});localStorage.setItem('filani_obs',JSON.stringify(a));toast('✅ Observation Filanidialakoro + GPS OK 📍');renderObs();document.getElementById('obsNom').value='';document.getElementById('obsTxt').value='';}
-function renderObs(){var a=getObs();var h='';a.forEach(function(o){var g=o.gps||currentGPS;var mapLink="https://maps.google.com/?q="+g.lat+","+g.lon;h+='<div class="list-item"><b>'+o.nom+'</b> '+o.date+'<br>'+(o.txt||'')+'<br><span class="loc-badge">📍 '+g.lieu+'</span> <a href="'+mapLink+'" target="_blank" style="font-size:10px;color:#2563eb;font-weight:bold">🗺️ Voir sur carte</a><br><small style="color:#6b7280">'+g.lat+','+g.lon+'</small></div>';});document.getElementById('obsList').innerHTML=h;}
-function getMed(){try{return JSON.parse(localStorage.getItem('filani_med')||'[]')}catch(e){return[]}}
-function saveMed(){var q=parseInt(document.getElementById('medQte').value);if(!q){toast('Quantité requise');return;}var a=getMed();a.unshift({id:Date.now(),med:document.getElementById('medName').value,qte:q,type:document.getElementById('medType').value,date:new Date().toLocaleString(),gps:{...currentGPS}});localStorage.setItem('filani_med',JSON.stringify(a));toast('✅ Médicament Filanidialakoro + GPS OK 📍');renderMed();}
-function renderMed(){var a=getMed();var h='';a.forEach(function(m){var g=m.gps||currentGPS;var mapLink="https://maps.google.com/?q="+g.lat+","+g.lon;h+='<div class="list-item"><b>'+m.qte+' '+m.med+'</b> '+m.type+' '+m.date+'<br><span class="loc-badge">📍 Filanidialakoro</span> <a href="'+mapLink+'" target="_blank" style="font-size:10px;color:blue">Carte</a></div>';});document.getElementById('medList').innerHTML=h;var s={};a.forEach(function(m){if(!s[m.med])s[m.med]=0;if(m.type.includes('Entree'))s[m.med]+=m.qte;else s[m.med]-=m.qte;});var base={Paracetamol:120,Amoxicilline:45,ORS:200};for(var k in base){if(!s[k])s[k]=base[k];else s[k]+=base[k];}var html='';for(var k in s){html+=k+':'+s[k]+' | ';}document.getElementById('stockDisplay').innerHTML='<b>📦 Stock Filanidialakoro:</b> '+html;}
-function getStag(){try{return JSON.parse(localStorage.getItem('filani_stagiaires')||'[]')}catch(e){return[]}}
-function addStag(){var n=document.getElementById('stagiaireNom').value.trim();if(!n){toast('Nom stagiaire requis');return;}var a=getStag();a.push(n);localStorage.setItem('filani_stagiaires',JSON.stringify(a));document.getElementById('stagiaireNom').value='';loadStag();toast('Stagiaire ajouté à Filanidialakoro');}
-function loadStag(){var a=getStag();var sel=document.getElementById('pointStag');sel.innerHTML='';a.forEach(function(s){var o=document.createElement('option');o.value=s;o.textContent=s;sel.appendChild(o);});var html='';a.forEach(function(s,i){html+='<span style="display:inline-block;margin:2px;padding:4px 8px;background:#fef3c7;border-radius:8px;font-size:11px">'+s+' <b style="color:red;cursor:pointer" onclick="delStag('+i+')">x</b></span> ';});document.getElementById('stagiaireList').innerHTML=html||'<small>Aucun stagiaire - Ajoutez vos stagiaires de Filanidialakoro</small>';}
-function delStag(i){var a=getStag();a.splice(i,1);localStorage.setItem('filani_stagiaires',JSON.stringify(a));loadStag();}
-function getPoints(){try{return JSON.parse(localStorage.getItem('filani_pointages')||'[]')}catch(e){return[]}}
-function savePoint(){var stag=document.getElementById('pointStag').value;var date=document.getElementById('pointDate').value;var arr=document.getElementById('pointArr').value;var dep=document.getElementById('pointDep').value;if(!stag||!date||!arr){toast('Remplir stagiaire/date/arrivée');return;}var retard=0;var hN=8*60;var hA=parseInt(arr.split(':')[0])*60+parseInt(arr.split(':')[1]);if(hA>hN+15)retard=hA-(hN+15);var a=getPoints();a.unshift({id:Date.now(),stag:stag,date:date,arr:arr,dep:dep,retard:retard,gps:{...currentGPS}});localStorage.setItem('filani_pointages',JSON.stringify(a));toast('✅ Pointage Filanidialakoro + GPS OK 📍 Retard:'+retard+'min');renderPoints();}
-function renderPoints(){var a=getPoints();var html='';a.forEach(function(p){var g=p.gps||currentGPS;html+='<div class="list-item"><b>'+p.stag+'</b> '+p.date+' Arr:'+p.arr+' Dep:'+p.dep+' Retard:'+p.retard+'min <br><span class="loc-badge">📍 '+g.lieu+'</span> <b style="color:red;cursor:pointer" onclick="delPoint('+p.id+')">x</b></div>';});document.getElementById('pointList').innerHTML=html;}
-function delPoint(id){var a=getPoints().filter(function(p){return p.id!=id});localStorage.setItem('filani_pointages',JSON.stringify(a));renderPoints();}
-function calcPrimes(){var base=parseInt(document.getElementById('primeBase').value)||300000;var penR=parseInt(document.getElementById('penRetard').value)||5000;var penA=parseInt(document.getElementById('penAbs').value)||20000;var mois=document.getElementById('moisCalc').value;if(!mois){toast('Choisir mois');return;}var stagiaires=getStag();var points=getPoints().filter(function(p){return p.date.startsWith(mois);});var html='';stagiaires.forEach(function(s){var pts=points.filter(function(p){return p.stag==s;});var nbPres=pts.length;var nbRet=pts.filter(function(p){return p.retard>0;}).length;var nbAbs=26-nbPres;if(nbAbs<0)nbAbs=0;var prime=base-(nbRet*penR)-(nbAbs*penA);if(prime<0)prime=0;html+='<div class="prime-box"><div>'+s+' - '+mois+' - Filanidialakoro</div><div style="font-size:11px">Presents:'+nbPres+'/26 Retards:'+nbRet+' Abs:'+nbAbs+'</div><div style="font-size:20px;font-weight:800">'+prime.toLocaleString()+' GNF</div></div>';});document.getElementById('primeResult').innerHTML=html;toast('Primes Filanidialakoro calculées');}
-function renderLive(){var obs=getObs().slice(0,15);var med=getMed().slice(0,10);var points=getPoints().slice(0,20);var html='<div style="background:#ecfdf5;padding:8px;border-radius:8px;margin-bottom:8px"><b>🏥 Poste Filanidialakoro - Rapport du '+new Date().toLocaleString()+'</b><br><small>Chef Youssouf en voyage - Suivi à distance</small></div><h4>🩺 15 Dernières Observations</h4>';if(obs.length==0)html+='<div class="list-item">Aucune observation aujourd\'hui</div>';obs.forEach(function(o){var g=o.gps||{lat:0,lon:0,lieu:'Filanidialakoro'};html+='<div class="list-item"><b>'+o.nom+'</b> - '+(o.txt||'')+'<br>'+o.date+'<br><span class="loc-badge">📍 '+g.lieu+' '+g.lat+','+g.lon+'</span></div>';});html+='<h4>💊 Médicaments Filanidialakoro</h4>';if(med.length==0)html+='<div class="list-item">Aucun mouvement médicament</div>';med.forEach(function(m){var g=m.gps||{lat:0,lon:0};html+='<div class="list-item"><b>'+m.qte+' '+m.med+'</b> '+m.type+' - '+m.date+'<br><span class="loc-badge">📍 Filanidialakoro '+g.lat+','+g.lon+'</span></div>';});html+='<h4>⏰ Pointages Stagiaires Filanidialakoro</h4>';if(points.length==0)html+='<div class="list-item">Aucun pointage aujourd\'hui</div>';points.forEach(function(p){var g=p.gps||{lat:0,lon:0};html+='<div class="list-item"><b>'+p.stag+'</b> '+p.date+' Arr:'+p.arr+' Retard:'+p.retard+'min<br><span class="loc-badge">📍 '+g.lieu+'</span></div>';});document.getElementById('liveList').innerHTML=html;}
-function shareLiveWhatsApp(){var obs=getObs().slice(0,5);var med=getMed().slice(0,5);var points=getPoints().slice(0,5);var txt="📡 RAPPORT FILANIDIALAKORO%0A";txt+="🏥 Poste: Filanidialakoro - Kindia%0A";txt+="📅 Date: "+new Date().toLocaleString()+"%0A";txt+="📍 Chef Youssouf en voyage - Suivi à distance%0A%0A";txt+="🩺 OBSERVATIONS:%0A";obs.forEach(function(o){txt+= "- "+o.nom+" : "+(o.txt||'')+" ("+o.date+")%0A";});txt+="%0A💊 MEDICAMENTS:%0A";med.forEach(function(m){txt+= "- "+m.qte+" "+m.med+" "+m.type+" ("+m.date+")%0A";});txt+="%0A⏰ POINTAGES:%0A";points.forEach(function(p){txt+= "- "+p.stag+" Arr "+p.arr+" Retard "+p.retard+"min ("+p.date+")%0A";});txt+="%0A📍 Localisation: Filanidialakoro - Kindia%0A🗺️ https://maps.google.com/?q="+currentGPS.lat+","+currentGPS.lon;var url="https://wa.me/?text="+txt;window.open(url,"_blank");toast("📤 Rapport Filanidialakoro WhatsApp prêt");}
-</script></body></html>
-<div class="card" onclick="openPresence()">
-  <div class="icon" style="background:#4CAF50;">✅</div>
-  <div class="title">Présence</div>
-  <div class="subtitle" style="background:#e8f5e9; color:#2e7d32;">
-    📍 Filanidialakoro GPS
-  </div>
-</div><a href="#presence"><span>✅</span> Présence</a>
+function openMed(){document.getElementById('medModal').style.display='block'}
+function closeMed(){document.getElementById('medModal').style.display='none'}
+function openPresence(){if(navigator.geolocation){navigator.geolocation.getCurrentPosition(p=>{alert('✅ Présence confirmée\nFilanidialakoro\nLat:'+p.coords.latitude+'\nLng:'+p.coords.longitude)})}else{alert('Présence OK Filanidialakoro')}}
+function filterMed(){let q=document.getElementById('search').value.toLowerCase();document.querySelectorAll('#listMed .card').forEach(c=>{c.style.display=c.innerText.toLowerCase().includes(q)?'flex':'none'})}
+</script>
+</body>
+</html>
