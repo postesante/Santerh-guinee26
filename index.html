@@ -3,75 +3,50 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SanteRH - Filanidialakoro V7.2</title>
+<title>Filanidialakoro V8.0</title>
 <style>
-body{font-family:system-ui;margin:0;background:#f2f5ff;padding:0 12px 80px}
-.top{background:#1a73e8;color:#fff;padding:14px;border-radius:0 0 16px 16px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
-.card{background:#fff;border-radius:16px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,.06);text-align:center}
+body{font-family:system-ui;background:#f2f5ff;margin:0;padding:0 12px 90px}
+.top{background:#1a73e8;color:#fff;padding:14px;border-radius:0 0 16px 16px;position:sticky;top:0;z-index:10}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.card{background:#fff;border-radius:16px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,.06);text-align:center;cursor:pointer}
 .icon{width:48px;height:48px;border-radius:12px;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:24px}
-.title{font-weight:700;font-size:13px}
-.subtitle{font-size:10px;margin-top:4px;padding:3px 6px;border-radius:6px;display:inline-block}
-#medModal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#f5f7fb;z-index:99;overflow:auto;padding:12px}
+.title{font-weight:700;font-size:13px}.subtitle{font-size:10px;margin-top:4px;padding:3px 6px;border-radius:6px;display:inline-block}
+.modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#f5f7fb;z-index:100;overflow:auto;padding:12px}
+.med-item{background:#fff;border-radius:12px;padding:10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+.cart{position:fixed;bottom:0;left:0;right:0;background:#1a73e8;color:#fff;padding:12px;z-index:101;border-radius:16px 16px 0 0}
+.btn{padding:6px 10px;border-radius:8px;border:none;font-weight:700;cursor:pointer}
+.btn-add{background:#e8f5e9;color:#2e7d32}.btn-moins{background:#ffebee;color:#c62828}
+input{width:100%;padding:12px;border-radius:10px;border:1px solid #ddd;box-sizing:border-box;margin:8px 0}
 </style>
 </head>
 <body>
-<div class="top">
-<b>SanteRH Filanidialakoro</b><br>
-<span style="font-size:12px">📍 GPS OK 11.259809, -8.940853 - V7.2</span>
-</div>
+<div class="top"><b>SanteRH Filanidialakoro V8.0</b><br><span style="font-size:12px">📍 GPS OK 11.259809, -8.940853</span></div>
 
 <div class="grid">
-<div class="card" onclick="alert('Observation')"><div class="icon" style="background:#e3f2fd">📝</div><div class="title">Observation</div><div class="subtitle" style="background:#e3f2fd;color:#1565c0">Consultation</div></div>
-
-<div class="card" onclick="openMed()"><div class="icon" style="background:#fce4ec">💊</div><div class="title">Medicaments</div><div class="subtitle" style="background:#fce4ec;color:#c2185b">28 articles avec prix</div></div>
-
-<div class="card"><div class="icon" style="background:#fff8e1">🏆</div><div class="title">Merite PRIMES</div><div class="subtitle" style="background:#fff8e1;color:#f57f17">Primes</div></div>
-
-<div class="card"><div class="icon" style="background:#e8f5e9">📈</div><div class="title">SUIVI LIVE</div><div class="subtitle" style="background:#e8f5e9;color:#2e7d32">Temps réel</div></div>
-
-<div class="card" onclick="openPresence()" style="border:2px solid #4CAF50"><div class="icon" style="background:#4CAF50;color:#fff">✅</div><div class="title">Présence</div><div class="subtitle" style="background:#e8f5e9;color:#2e7d32">📍 Filanidialakoro GPS</div></div>
-
-<div class="card"><div class="icon" style="background:#f3e5f5">🏥</div><div class="title">Garde</div><div class="subtitle" style="background:#f3e5f5;color:#7b1fa2">Planning</div></div>
+<div class="card" onclick="openM('obs')"><div class="icon" style="background:#e3f2fd">📝</div><div class="title">Observation</div><div class="subtitle" style="background:#e3f2fd;color:#1565c0">Consultation</div></div>
+<div class="card" onclick="openM('med')"><div class="icon" style="background:#fce4ec">💊</div><div class="title">Medicaments</div><div class="subtitle" style="background:#fce4ec;color:#c2185b">28 prix - Panier actif</div></div>
+<div class="card" onclick="openM('prime')"><div class="icon" style="background:#fff8e1">🏆</div><div class="title">Merite PRIMES</div><div class="subtitle" style="background:#fff8e1;color:#f57f17">Primes</div></div>
+<div class="card" onclick="openM('suivi')"><div class="icon" style="background:#e8f5e9">📈</div><div class="title">SUIVI LIVE</div><div class="subtitle" style="background:#e8f5e9;color:#2e7d32">Temps réel</div></div>
+<div class="card" onclick="presence()" style="border:2px solid #4CAF50"><div class="icon" style="background:#4CAF50;color:#fff">✅</div><div class="title">Présence</div><div class="subtitle" style="background:#e8f5e9;color:#2e7d32">Pointer GPS</div></div>
+<div class="card" onclick="openM('dettes')"><div class="icon" style="background:#f3e5f5">📒</div><div class="title">Dettes / Compte-rendu</div><div class="subtitle" style="background:#f3e5f5;color:#7b1fa2">Voir les dettes</div></div>
 </div>
 
-<div id="medModal">
-<div style="background:#fff;padding:12px;border-radius:12px;display:flex;justify-content:space-between;align-items:center"><b>💊 Médicaments Filanidialakoro</b><button onclick="closeMed()">Fermer ✕</button></div>
-<input type="text" id="search" placeholder="Rechercher..." style="width:100%;padding:12px;margin:10px 0;border-radius:10px;border:1px solid #ddd" onkeyup="filterMed()">
-<div id="listMed">
-<!-- Liste intégrée -->
-<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Paracétamol 500mg (10cp) <br><small>250 GNF/cp</small></span><b style="color:green">2 500 GNF</b></div>
-<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>AAS 300mg (10cp)</span><b style="color:green">5 000 GNF</b></div>
-<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Cotri 960mg (10cp)</span><b style="color:green">10 000 GNF</b></div>
-<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Ibuprofène 400mg (10cp)</span><b style="color:green">10 000 GNF</b></div>
-<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Ampi 1g / flacon</span><b style="color:green">5 000 GNF</b></div>
-<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Artemether 80mg / amp</span><b style="color:green">5 000 GNF</b></div>
-<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Amoxicilline 500mg / gélule</span><b style="color:green">1 000 GNF</b></div>
-<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Metamizole 500mg / amp</span><b style="color:green">5 000 GNF</b></div>
-<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Genta 80mg / amp</span><b style="color:green">2 000 GNF</b></div>
-<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Dexa 4mg / amp</span><b style="color:green">2 000 GNF</b></div>
-<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Vit B Complexe / amp</span><b style="color:green">10 000 GNF</b></div>
-<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Sérum Salé / Ringer / Glucosé</span><b style="color:green">60 000 GNF</b></div>
-<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Cotri / Para / Métro Sirop</span><b style="color:green">20 000 GNF</b></div>
-<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Artemether Sirop</span><b style="color:green">25 000 GNF</b></div>
-<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Cimétidine inj</span><b style="color:green">2 500 GNF</b></div>
-<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Diclofénac 75mg</span><b style="color:green">3 500 GNF</b></div>
-<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Ceftriaxone</span><b style="color:green">15 000 GNF</b></div>
-<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Quinine 600mg</span><b style="color:green">10 000 GNF</b></div>
-<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Accouchement / personne</span><b style="color:green">65 000 GNF</b></div>
-<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Oxytocine / amp</span><b style="color:green">10 000 GNF</b></div>
-<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>TDR</span><b style="color:green">10 000 GNF</b></div>
-<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Taux Hb / bandelette</span><b style="color:green">20 000 GNF</b></div>
-<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Ciproperf / flacon</span><b style="color:green">15 000 GNF</b></div>
-<div class="card" style="text-align:left;display:flex;justify-content:space-between"><span>Fil de suture</span><b style="color:green">30 000 GNF</b></div>
+<!-- MODAL MEDOC -->
+<div id="med" class="modal">
+<div style="background:#fff;padding:12px;border-radius:12px;display:flex;justify-content:space-between"><b>💊 Médicaments - Clique pour ajouter</b><button class="btn" onclick="closeM('med')">Fermer ✕</button></div>
+<input id="search" placeholder="🔍 Rechercher..." onkeyup="filter()">
+<div id="list"></div>
+<div style="height:180px"></div>
+<div class="cart">
+<div id="cartDetail" style="font-size:13px;max-height:80px;overflow:auto;margin-bottom:8px">Panier vide</div>
+<div style="display:flex;gap:8px">
+<input id="nomPatient" placeholder="Nom du patient (dette)" style="margin:0;background:#fff;color:#000">
+<button class="btn" style="background:#fff;color:#1a73e8;white-space:nowrap" onclick="enregistrer()">Enregistrer Dette</button>
+</div>
+<div style="margin-top:8px;display:flex;justify-content:space-between;font-weight:800;font-size:16px"><span>Total:</span><span id="total">0 GNF</span></div>
 </div>
 </div>
 
-<script>
-function openMed(){document.getElementById('medModal').style.display='block'}
-function closeMed(){document.getElementById('medModal').style.display='none'}
-function openPresence(){if(navigator.geolocation){navigator.geolocation.getCurrentPosition(p=>{alert('✅ Présence confirmée\nFilanidialakoro\nLat:'+p.coords.latitude+'\nLng:'+p.coords.longitude)})}else{alert('Présence OK Filanidialakoro')}}
-function filterMed(){let q=document.getElementById('search').value.toLowerCase();document.querySelectorAll('#listMed .card').forEach(c=>{c.style.display=c.innerText.toLowerCase().includes(q)?'flex':'none'})}
-</script>
-</body>
-</html>
+<!-- AUTRES MODALS -->
+<div id="obs" class="modal"><div style="background:#fff;padding:12px;border-radius:12px;display:flex;justify-content:space-between"><b>Observation</b><button class="btn" onclick="closeM('obs')">Fermer</button></div><p style="background:#fff;padding:12px;border-radius:12px">Module Observation opérationnel ✅</p></div>
+<div id="prime" class="modal"><div style
