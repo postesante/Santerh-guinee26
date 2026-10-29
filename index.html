@@ -50,3 +50,33 @@ input{width:100%;padding:12px;border-radius:10px;border:1px solid #ddd;box-sizin
 <!-- AUTRES MODALS -->
 <div id="obs" class="modal"><div style="background:#fff;padding:12px;border-radius:12px;display:flex;justify-content:space-between"><b>Observation</b><button class="btn" onclick="closeM('obs')">Fermer</button></div><p style="background:#fff;padding:12px;border-radius:12px">Module Observation opérationnel ✅</p></div>
 <div id="prime" class="modal"><div style
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Filanidialakoro V8.1</title>
+<style>
+body{font-family:system-ui;background:#f2f5ff;margin:0;padding:0 12px 200px}
+.top{background:#1a73e8;color:#fff;padding:14px;border-radius:0 0 16px 16px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.card{background:#fff;border-radius:16px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,.08);text-align:center;cursor:pointer}
+.modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#f5f7fb;z-index:100;overflow:auto;padding:12px}
+.med-item{background:#fff;border-radius:12px;padding:10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+.cart{position:fixed;bottom:0;left:0;right:0;background:#1a73e8;color:#fff;padding:12px;border-radius:16px 16px 0 0}
+.btn{padding:6px 12px;border-radius:8px;border:none;font-weight:700}
+</style>
+</head>
+<body>
+<div class="top"><b>Filanidialakoro V8.1 - OK</b><br>📍 GPS OK 11.259809, -8.940853</div>
+<div class="grid">
+<div class="card" onclick="alert('Observation OK')"><div style="font-size:28px">📝</div><b>Observation</b></div>
+<div class="card" onclick="openMed()"><div style="font-size:28px">💊</div><b>Médicaments</b><br><small>Panier + Total</small></div>
+<div class="card" onclick="alert('Primes OK')"><div style="font-size:28px">🏆</div><b>Primes</b></div>
+<div class="card" onclick="alert('Suivi Live OK')"><div style="font-size:28px">📈</div><b>SUIVI LIVE</b></div>
+<div class="card" onclick="presence()" style="border:2px solid #4CAF50"><div style="font-size:28px">✅</div><b>Présence</b></div>
+<div class="card" onclick="openDettes()"><div style="font-size:28px">📒</div><b>Dettes</b></div>
+</div>
+
+<div id="med" class="modal">
+<div style="background
