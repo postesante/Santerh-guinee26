@@ -108,3 +108,22 @@ function openSuivi(){let stag=JSON.parse(localStorage.getItem('stag')||'[]');let
 function saveDette(){let n=document.getElementById('nom').value.trim();if(!n){alert('Nom');return}let t=0,its=[];for(let i in pan){its.push(meds[i][0]+' x'+pan[i]);t+=meds[i][1]*pan[i]}if(t==0){alert('Panier vide');return}let ds=JSON.parse(localStorage.getItem('dettes')||'[]');ds.push({n,its,t,d:new Date().toLocaleString()});localStorage.setItem('dettes',JSON.stringify(ds));pan={};document.getElementById('nom').value='';renderM();alert('OK')}
 function openDettes(){let ds=JSON.parse(localStorage.getItem('dettes')||'[]');let h="",gt=0;ds.forEach(x=>{gt+=x.t;h+=`<div class=box><b>${x.n}</b><br>${x.its.join(', ')}<br><b>${x.t} GNF</b></div>`});h+=`<div class=box style="background:#1a73e8;color:#fff;text-align:center"><b>TOTAL: ${gt} GNF</b></div>`;document.getElementById('LD').innerHTML=h||'Aucune dette';document.getElementById('dettes').style.display='block'}
 </script></body></html>
+function openDettes(){...}
+function saveDette(){...}function saveDette(){let n=document.getElementById('nom').value.trim();if(!n){alert('Nom');return}let t=0,its=[];for(let i in pan){its.push(meds[i][0]+' x'+pan[i]);t+=meds[i][1]*pan[i]}if(t==0){alert('Panier vide');return}let ds=JSON.parse(localStorage.getItem('dettes')||'[]');ds.push({n,its,t,d:new Date().toLocaleString(),paye:false});localStorage.setItem('dettes',JSON.stringify(ds));pan={};document.getElementById('nom').value='';renderM();alert('Dette enregistrée');}
+function openDettes(){
+ let ds=JSON.parse(localStorage.getItem('dettes')||'[]');
+ let h="",gt=0,impaye=0;
+ ds.forEach((x,i)=>{
+  if(!x.paye)gt+=x.t;
+  if(x.paye)impaye++;
+  h+=`<div class=box style="${x.paye?'background:#d1e7dd;opacity:0.6':''}"><b>${x.n}</b> - ${x.d}<br><small>${x.its.join(', ')}</small><br><b>${x.t} GNF</b> ${x.paye?'<span style="color:green">✅ PAYÉ</span>':''}<br>
+  ${!x.paye?`<button class=btn style="background:#4CAF50;color:#fff;margin-top:6px" onclick="payerDette(${i})">✅ Marquer Payé</button>`:''}
+  <button class=btn style="background:#ffcdd2;margin-left:6px;margin-top:6px" onclick="supprimerDette(${i})">🗑️ Supprimer</button>
+  </div>`;
+ });
+ h+=`<div class=box style="background:#1a73e8;color:#fff;text-align:center"><b>TOTAL IMPAYÉ: ${gt} GNF</b><br>Dettes payées: ${impaye}</div>`;
+ h+=`<div class=box"><button class=btn style="background:#ff0000;color:#fff;width:100%" onclick="if(confirm('Supprimer toutes les dettes payées?')){let ds=JSON.parse(localStorage.getItem('dettes')||'[]');ds=ds.filter(x=>!x.paye);localStorage.setItem('dettes',JSON.stringify(ds));openDettes();}">🗑️ Supprimer toutes les payées</button></div>`;
+ document.getElementById('LD').innerHTML=h||'Aucune dette';document.getElementById('dettes').style.display='block';
+}
+function payerDette(i){let ds=JSON.parse(localStorage.getItem('dettes')||'[]');ds[i].paye=true;ds[i].datePaye=new Date().toLocaleString();localStorage.setItem('dettes',JSON.stringify(ds));openDettes();}
+function supprimerDette(i){if(!confirm('Supprimer cette dette définitivement?'))return;let ds=JSON.parse(localStorage.getItem('dettes')||'[]');ds.splice(i,1);localStorage.setItem('dettes',JSON.stringify(ds));openDettes();}
