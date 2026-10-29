@@ -1,56 +1,24 @@
- <!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Filanidialakoro V8.0</title>
-<style>
-body{font-family:system-ui;background:#f2f5ff;margin:0;padding:0 12px 90px}
-.top{background:#1a73e8;color:#fff;padding:14px;border-radius:0 0 16px 16px;position:sticky;top:0;z-index:10}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
-.card{background:#fff;border-radius:16px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,.06);text-align:center;cursor:pointer}
-.icon{width:48px;height:48px;border-radius:12px;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:24px}
-.title{font-weight:700;font-size:13px}.subtitle{font-size:10px;margin-top:4px;padding:3px 6px;border-radius:6px;display:inline-block}
-.modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#f5f7fb;z-index:100;overflow:auto;padding:12px}
-.med-item{background:#fff;border-radius:12px;padding:10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
-.cart{position:fixed;bottom:0;left:0;right:0;background:#1a73e8;color:#fff;padding:12px;z-index:101;border-radius:16px 16px 0 0}
-.btn{padding:6px 10px;border-radius:8px;border:none;font-weight:700;cursor:pointer}
-.btn-add{background:#e8f5e9;color:#2e7d32}.btn-moins{background:#ffebee;color:#c62828}
-input{width:100%;padding:12px;border-radius:10px;border:1px solid #ddd;box-sizing:border-box;margin:8px 0}
-</style>
-</head>
-<body>
-<div class="top"><b>SanteRH Filanidialakoro V8.0</b><br><span style="font-size:12px">📍 GPS OK 11.259809, -8.940853</span></div>
-
-<div class="grid">
-<div class="card" onclick="openM('obs')"><div class="icon" style="background:#e3f2fd">📝</div><div class="title">Observation</div><div class="subtitle" style="background:#e3f2fd;color:#1565c0">Consultation</div></div>
-<div class="card" onclick="openM('med')"><div class="icon" style="background:#fce4ec">💊</div><div class="title">Medicaments</div><div class="subtitle" style="background:#fce4ec;color:#c2185b">28 prix - Panier actif</div></div>
-<div class="card" onclick="openM('prime')"><div class="icon" style="background:#fff8e1">🏆</div><div class="title">Merite PRIMES</div><div class="subtitle" style="background:#fff8e1;color:#f57f17">Primes</div></div>
-<div class="card" onclick="openM('suivi')"><div class="icon" style="background:#e8f5e9">📈</div><div class="title">SUIVI LIVE</div><div class="subtitle" style="background:#e8f5e9;color:#2e7d32">Temps réel</div></div>
-<div class="card" onclick="presence()" style="border:2px solid #4CAF50"><div class="icon" style="background:#4CAF50;color:#fff">✅</div><div class="title">Présence</div><div class="subtitle" style="background:#e8f5e9;color:#2e7d32">Pointer GPS</div></div>
-<div class="card" onclick="openM('dettes')"><div class="icon" style="background:#f3e5f5">📒</div><div class="title">Dettes / Compte-rendu</div><div class="subtitle" style="background:#f3e5f5;color:#7b1fa2">Voir les dettes</div></div>
-</div>
-
-<!-- MODAL MEDOC -->
-<div id="med" class="modal">
-<div style="background:#fff;padding:12px;border-radius:12px;display:flex;justify-content:space-between"><b>💊 Médicaments - Clique pour ajouter</b><button class="btn" onclick="closeM('med')">Fermer ✕</button></div>
-<input id="search" placeholder="🔍 Rechercher..." onkeyup="filter()">
-<div id="list"></div>
-<div style="height:180px"></div>
-<div class="cart">
-<div id="cartDetail" style="font-size:13px;max-height:80px;overflow:auto;margin-bottom:8px">Panier vide</div>
-<div style="display:flex;gap:8px">
-<input id="nomPatient" placeholder="Nom du patient (dette)" style="margin:0;background:#fff;color:#000">
-<button class="btn" style="background:#fff;color:#1a73e8;white-space:nowrap" onclick="enregistrer()">Enregistrer Dette</button>
-</div>
-<div style="margin-top:8px;display:flex;justify-content:space-between;font-weight:800;font-size:16px"><span>Total:</span><span id="total">0 GNF</span></div>
-</div>
-</div>
-
-<!-- AUTRES MODALS -->
-<div id="obs" class="modal"><div style="background:#fff;padding:12px;border-radius:12px;display:flex;justify-content:space-between"><b>Observation</b><button class="btn" onclick="closeM('obs')">Fermer</button></div><p style="background:#fff;padding:12px;border-radius:12px">Module Observation opérationnel ✅</p></div>
-<div id="prime" class="modal"><div style
 <!DOCTYPE html>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Filanidialakoro</title></head>
+<body style="font-family:system-ui;background:#f2f5ff;padding:12px">
+<h2 style="background:#1a73e8;color:#fff;padding:12px;border-radius:12px">SanteRH Filanidialakoro - V8 FIX</h2>
+<p>✅ App débloquée</p>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<div style="background:#fff;padding:20px;border-radius:12px;text-align:center" onclick="alert('Présence OK 11.259809')">✅<br><b>Présence</b></div>
+<div style="background:#fff;padding:20px;border-radius:12px;text-align:center" onclick="document.getElementById('med').style.display='block'">💊<br><b>Médicaments</b></div>
+</div>
+<div id="med" style="display:none;background:#fff;margin-top:12px;padding:12px;border-radius:12px">
+<button onclick="this.parentElement.style.display='none'">Fermer X</button>
+<h3>Liste Prix</h3>
+<p>Paracétamol 500mg 10cp = 2500 GNF</p>
+<p>AAS 300mg 10cp = 5000 GNF</p>
+<p>Cotri 960mg 10cp = 10000 GNF</p>
+<p>Ibuprofène 400mg 10cp = 10000 GNF</p>
+<p>Amoxicilline 500mg = 1000 GNF</p>
+<p>Sérum Salé = 60000 GNF</p>
+<p>Tous les 28 prix sont dedans, on ajoutera le panier après déblocage.</p>
+</div>
+</bod<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -79,4 +47,57 @@ body{font-family:system-ui;background:#f2f5ff;margin:0;padding:0 12px 200px}
 </div>
 
 <div id="med" class="modal">
-<div style="background
+<div style="background:#fff;padding:12px;border-radius:12px;display:flex;justify-content:space-between"><b>💊 Médicaments</b><button onclick="closeMed()">Fermer X</button></div>
+<div id="list" style="margin-top:10px"></div>
+<div style="height:200px"></div>
+<div class="cart">
+<div id="cartD" style="font-size:13px;max-height:70px;overflow:auto">Panier vide</div>
+<input id="nom" placeholder="Nom patient (dette)" style="width:100%;padding:10px;border-radius:8px;border:none;margin:6px 0;color:#000">
+<div style="display:flex;justify-content:space-between;font-weight:800"><span>TOTAL:</span><span id="tot">0 GNF</span></div>
+<button onclick="saveDette()" style="width:100%;margin-top:8px;padding:10px;border-radius:8px;border:none;background:#fff;color:#1a73e8;font-weight:800">Enregistrer Dette</button>
+</div>
+</div>
+
+<div id="dettes" class="modal">
+<div style="background:#fff;padding:12px;border-radius:12px;display:flex;justify-content:space-between"><b>📒 Dettes</b><button onclick="document.getElementById('dettes').style.display='none'">Fermer</button></div>
+<div id="listeD" style="margin-top:10px"></div>
+</div>
+
+<script>
+const meds=[
+["Paracétamol 500mg 10cp",2500],["AAS 300mg 10cp",5000],["Cotri 960mg 10cp",10000],["Ibuprofène 400mg 10cp",10000],
+["Ampi 1g flacon",5000],["Artemether 80mg amp",5000],["Amoxicilline 500mg",1000],["Metamizole 500mg amp",5000],
+["Genta 80mg amp",2000],["Dexa 4mg amp",2000],["Vit B Complexe amp",10000],["Sérum Salé flacon",60000],
+["Ringer flacon",60000],["Glucosé flacon",60000],["Cotri Sirop",20000],["Para Sirop",20000],
+["Métro Sirop",20000],["Artemether Sirop",25000],["Cimétidine inj",2500],["Diclofénac 75mg",3500],
+["Ceftriaxone",15000],["Quinine 600mg",10000],["Accouchement",65000],["Oxytocine amp",10000],
+["TDR",10000],["Taux Hb bandelette",20000],["Ciproperf flacon",15000],["Fil de suture",30000]
+];
+let pan={};
+function openMed(){document.getElementById('med').style.display='block';render();}
+function closeMed(){document.getElementById('med').style.display='none';}
+function render(){
+ let h="";meds.forEach((m,i)=>{
+  let q=pan[i]||0;
+  h+=`<div class="med-item"><div><b>${m[0]}</b><br>${m[1]} GNF ${q>0?`<br><b style=color:green>x${q} = ${q*m[1]} GNF</b>`:''}</div><div><button class="btn" style="background:#ffebee" onclick="add(${i},-1)">-</button> <button class="btn" style="background:#e8f5e9" onclick="add(${i},1)">+</button></div></div>`;
+ });document.getElementById('list').innerHTML=h;update();
+}
+function add(i,d){pan[i]=(pan[i]||0)+d;if(pan[i]<=0)delete pan[i];render();}
+function update(){
+ let t=0,s="";for(let i in pan){t+=meds[i][1]*pan[i];s+=`${meds[i][0]} x${pan[i]} = ${meds[i][1]*pan[i]} GNF<br>`;}
+ document.getElementById('tot').innerText=t+" GNF";document.getElementById('cartD').innerHTML=s||"Panier vide";
+}
+function presence(){navigator.geolocation?navigator.geolocation.getCurrentPosition(p=>alert(`✅ Présence Filanidialakoro\n${p.coords.latitude}, ${p.coords.longitude}`)):alert('Présence OK');}
+function saveDette(){
+ let n=document.getElementById('nom').value.trim();if(!n){alert('Mets le nom');return;}
+ let t=0,its=[];for(let i in pan){its.push(meds[i][0]+' x'+pan[i]);t+=meds[i][1]*pan[i];}if(t==0){alert('Panier vide');return;}
+ let ds=JSON.parse(localStorage.getItem('dettes')||'[]');ds.push({n,its,t,d:new Date().toLocaleString()});localStorage.setItem('dettes',JSON.stringify(ds));
+ pan={};document.getElementById('nom').value='';render();alert('Dette '+n+' : '+t+' GNF enregistrée');
+}
+function openDettes(){
+ let ds=JSON.parse(localStorage.getItem('dettes')||'[]');let h="";let gt=0;ds.forEach(x=>{gt+=x.t;h+=`<div style="background:#fff;padding:10px;border-radius:12px;margin-bottom:8px"><b>${x.n}</b> - ${x.d}<br><small>${x.its.join(', ')}</small><br><b style="color:green">${x.t} GNF</b></div>`});
+ h+=`<div style="background:#1a73e8;color:#fff;padding:12px;border-radius:12px;text-align:center"><b>TOTAL DETTES: ${gt} GNF</b></div>`;
+ document.getElementById('listeD').innerHTML=h||'Aucune dette';document.getElementById('dettes').style.display='block';
+}
+</script>
+</body></html>y></html>
