@@ -1,93 +1,30 @@
- <!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Filanidialakoro V9 SUPERVISEUR</title>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-<style>body{font-family:system-ui;background:#f2f5ff;margin:0;padding:0 12px 100px}.top{padding:14px;border-radius:0 0 16px 16px;text-align:center}.patron{background:#1a73e8;color:#fff}.suppleant{background:#ff9800;color:#fff}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}.card{background:#fff;border-radius:16px;padding:18px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.08);cursor:pointer}.locked{opacity:0.4;pointer-events:none}.modal{display:none;position:fixed;inset:0;background:#f5f7fb;z-index:99;overflow:auto;padding:12px}.box{background:#fff;border-radius:12px;padding:12px;margin-bottom:8px}.btn{padding:10px 14px;border-radius:8px;border:none;font-weight:700}</style></head><body>
-<div id="topBar" class="top patron"><b id="roleTxt"></b><br><span id="syncTxt">🟢 Sync auto en cours...</span></div>
-<div class="grid">
-<div class="card" onclick="openObs()">📝<br><b>Observation</b></div>
-<div class="card" onclick="openMed()">💊<br><b>Médicaments 28</b></div>
-<div id="cardPrime" class="card" onclick="openPrimes()">🏆<br><b>Primes</b></div>
-<div class="card" onclick="openSuivi()">📈<br><b>SUIVI LIVE</b></div>
-<div class="card" onclick="openPres()" style="background:#e8f5e9;border:2px solid #4CAF50">✅<br><b>Présence 600k</b></div>
-<div class="card" onclick="openDettes()">📒<br><b>Dettes Payé</b></div>
+ <!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poste Santé - V10 Lock</title>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+<style>
+body{font-family:system-ui,sans-serif;background:#f5f7fb;margin:0}
+.header{color:white;text-align:center;padding:18px 10px;font-weight:bold}
+.patron{background:#2563eb}.suppleant{background:#ea580c}
+.sync{margin-top:6px;font-size:13px;background:rgba(255,255,255,.25);display:inline-block;padding:4px 12px;border-radius:20px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:14px}
+.card{background:white;border-radius:14px;padding:18px 8px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.08);cursor:pointer;font-weight:600;position:relative;min-height:75px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.card.locked{opacity:.38;pointer-events:none;background:#e5e7eb}
+.card.locked::after{content:"🔒 Verrouillé";position:absolute;bottom:4px;font-size:10px;background:#111;color:white;padding:2px 6px;border-radius:8px}
+.live{background:white;margin:0 14px 14px;border-radius:12px;padding:12px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.small{font-size:12px;color:#6b7280}
+input,textarea{width:100%;padding:10px;margin:6px 0;border-radius:8px;border:1px solid #d1d5db;box-sizing:border-box}
+button.btn{width:100%;padding:12px;border:none;border-radius:10px;background:#2563eb;color:white;font-weight:bold;margin-top:6px}
+.view{display:none;padding:14px}.view.show{display:block}
+</style>
+</head>
+<body>
+<div id="header" class="header patron">
+  <div id="title">👑 PATRON - Filanidialakoro</div>
+  <div id="sync" class="sync">🟡 Connexion...</div>
 </div>
-<div class="box" style="margin-top:12px"><b>📡 Activité en direct du poste :</b><div id="liveFeed" style="font-size:13px;max-height:150px;overflow:auto">En attente de sync...</div></div>
-
-<div id="pres" class="modal"><div class="box" style="display:flex;justify-content:space-between"><b>✅ Présence 600k -5000 / -20000 + GPS</b><button onclick="cls('pres')">Fermer</button></div><div class="box"><input id="nomStag" placeholder="Nom stagiaire" style="width:60%;padding:10px"><button class="btn" style="background:#1a73e8;color:#fff" onclick="addStag()">+ Ajouter</button></div><div id="listStag"></div><div class="box"><button class="btn" style="background:#ff9800;color:#fff;width:100%" onclick="marquerAbsence()">Marquer Absences (-20000)</button> Heure limite <input id="heureLim" type="time" value="08:30"></div></div>
-<div id="med" class="modal"><div class="box" style="display:flex;justify-content:space-between"><b>💊 Médicaments</b><button onclick="cls('med')">Fermer</button></div><div id="L"></div><div style="height:200px"></div><div style="position:fixed;bottom:0;left:0;right:0;background:#1a73e8;color:#fff;padding:12px"><div id="cd">Panier vide</div><input id="nom" placeholder="Nom patient" style="width:100%;padding:10px;margin:6px 0;color:#000"><div style="display:flex;justify-content:space-between"><span>TOTAL:</span><span id="tot">0</span></div><button onclick="saveDette()" style="width:100%;padding:12px;background:#fff;color:#1a73e8;font-weight:800;border:none;border-radius:8px">Enregistrer Dette</button></div></div>
-<div id="obs" class="modal"><div class="box" style="display:flex;justify-content:space-between"><b>Obs</b><button onclick="cls('obs')">Fermer</button></div><div class="box"><textarea id="obsTxt" style="width:100%;height:80px"></textarea><button class="btn" style="background:#1a73e8;color:#fff;width:100%" onclick="saveObs()">Enregistrer</button></div><div id="obsList"></div></div>
-<div id="primes" class="modal"><div class="box" style="display:flex;justify-content:space-between"><b>🏆 Primes PATRON</b><button onclick="cls('primes')">Fermer</button></div><div class="box">Consultation 500 - Accouchement 5000 - Visible seulement par patron</div></div>
-<div id="suivi" class="modal"><div class="box" style="display:flex;justify-content:space-between"><b>SUIVI LIVE</b><button onclick="cls('suivi')">Fermer</button></div><div id="suiviData"></div></div>
-<div id="dettes" class="modal"><div class="box" style="display:flex;justify-content:space-between"><b>Dettes Payé / Supprimer</b><button onclick="cls('dettes')">Fermer</button></div><div id="LD"></div></div>
-
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyDizSc5pDZcubKwwujuVWE",
-  authDomain: "filanidialakoro.firebaseapp.com",
-  projectId: "filanidialakoro",
-  storageBucket: "filanidialakoro.firebasestorage.app",
-  messagingSenderId: "865196967108",
-  appId: "1:865196967108:web:c6ffe0143a0a0b0c0d0e0f",
-  databaseURL: "https://filanidialakoro-default-rtdb.firebaseio.com",
-  measurementId: "G-VCVWRLGVEW"
-};
-let db=null;try{firebase.initializeApp(firebaseConfig);db=firebase.database();document.getElementById('syncTxt').innerText="🟢 Sync Firebase OK";}catch(e){document.getElementById('syncTxt').innerText="🔴 Sync Firebase erreur - vérifie Realtime DB";}
-
-const urlParams=new URLSearchParams(window.location.search);
-const role=urlParams.get('role')||'patron';
-const isPatron=role==='patron';
-document.getElementById('roleTxt').innerText=isPatron?'👑 PATRON - Filanidialakoro (tu vois tout + primes)':'👷 SUPPLÉANT - Filanidialakoro (primes verrouillées 🔒)';
-document.getElementById('topBar').className='top '+(isPatron?'patron':'suppleant');
-if(!isPatron){document.getElementById('cardPrime').classList.add('locked');document.getElementById('cardPrime').innerHTML='🏆<br><b>Primes 🔒</b><br><small>Verrouillé</small>';}
-
-function syncPush(type,data){
- let feed=document.getElementById('liveFeed');
- let txt=new Date().toLocaleTimeString()+' - '+type+' - '+(data.n||data.t||'');
- feed.innerHTML=txt+'<br>'+feed.innerHTML;
- if(db){db.ref('postes/filanidialakoro/'+type).push({data:data,time:Date.now(),by:role,poste:'filanidialakoro'});}
-}
-function cls(id){document.getElementById(id).style.display='none'}
-const meds=[["Paracétamol 500mg 10cp",2500],["AAS 300mg 10cp",5000],["Cotri 960mg 10cp",10000],["Ibuprofène 400mg 10cp",10000],["Ampi 1g flacon",5000],["Artemether 80mg amp",5000],["Amoxicilline 500mg",1000],["Metamizole 500mg amp",5000],["Genta 80mg amp",2000],["Dexa 4mg amp",2000],["Vit B Complexe amp",10000],["Sérum Salé flacon",60000],["Ringer flacon",60000],["Glucosé flacon",60000],["Cotri Sirop",20000],["Para Sirop",20000],["Métro Sirop",20000],["Artemether Sirop",25000],["Cimétidine inj",2500],["Diclofénac 75mg",3500],["Ceftriaxone",15000],["Quinine 600mg",10000],["Accouchement",65000],["Oxytocine amp",10000],["TDR",10000],["Taux Hb bandelette",20000],["Ciproperf flacon",15000],["Fil de suture",30000]];
-let pan={};
-function openMed(){document.getElementById('med').style.display='block';renderM()}
-function renderM(){let h="";meds.forEach((m,i)=>{let q=pan[i]||0;h+=`<div class=box style="display:flex;justify-content:space-between"><div><b>${m[0]}</b><br>${m[1]} GNF ${q?`<b style=color:green>x${q}</b>`:''}</div><div><button class=btn onclick="add(${i},-1)">-</button> <button class=btn onclick="add(${i},1)">+</button></div></div>`});document.getElementById('L').innerHTML=h;let t=0;for(let i in pan)t+=meds[i][1]*pan[i];document.getElementById('tot').innerText=t+" GNF";document.getElementById('cd').innerText=Object.keys(pan).length?"Panier: "+t+" GNF":"Panier vide";}
-function add(i,d){pan[i]=(pan[i]||0)+d;if(pan[i]<=0)delete pan[i];renderM()}
-function openPres(){document.getElementById('pres').style.display='block';renderStag()}
-function addStag(){let n=document.getElementById('nomStag').value.trim();if(!n)return;let list=JSON.parse(localStorage.getItem('stag')||'[]');list.push({n,historique:[],enCours:null});localStorage.setItem('stag',JSON.stringify(list));syncPush('presence',{n:'Nouveau stagiaire '+n});renderStag()}
-function renderStag(){let list=JSON.parse(localStorage.getItem('stag')||'[]');let h="";list.forEach((s,i)=>{let r=0,a=0,p=0;(s.historique||[]).forEach(j=>{if(j.type=='retard')r++; if(j.type=='absence')a++; if(j.type=='present'||j.type=='retard')p++;});let mont=600000-r*5000-a*20000;if(mont<0)mont=0;h+=`<div class=box><b>${s.n}</b><br>Prés ${p} | Ret ${r} (-${r*5000}) | Abs ${a} (-${a*20000}) => <b>${mont} GNF</b><br>${s.enCours?`<button class=btn style="background:#ff9800;color:#fff" onclick="pointerDepart(${i})">Départ GPS</button>`:`<button class=btn style="background:#4CAF50;color:#fff" onclick="pointerArrivee(${i})">Arrivée GPS</button>`} <button class=btn onclick="delStag(${i})">X</button></div>`});document.getElementById('listStag').innerHTML=h||'Aucun';}
-function getLim(){let v=document.getElementById('heureLim').value||"08:30";let [hh,mm]=v.split(':').map(Number);return hh*60+mm;}
-function pointerArrivee(i){navigator.geolocation.getCurrentPosition(p=>{let gps=p.coords.latitude.toFixed(5)+','+p.coords.longitude.toFixed(5);let list=JSON.parse(localStorage.getItem('stag')||'[]');list[i].enCours={arr:Date.now(),gps};localStorage.setItem('stag',JSON.stringify(list));syncPush('presence',{n:list[i].n+' Arrivée '+gps});renderStag();});}
-function pointerDepart(i){navigator.geolocation.getCurrentPosition(p=>{finish(i,p.coords.latitude.toFixed(5)+','+p.coords.longitude.toFixed(5));});}
-function finish(i,gps){let list=JSON.parse(localStorage.getItem('stag')||'[]');let arrDate=new Date(list[i].enCours.arr);let arrMin=arrDate.getHours()*60+arrDate.getMinutes();let type=arrMin>getLim()?'retard':'present';list[i].historique.push({date:new Date().toLocaleDateString(),type,arrGPS:list[i].enCours.gps,depGPS:gps});delete list[i].enCours;localStorage.setItem('stag',JSON.stringify(list));syncPush('presence',{n:list[i].n+' '+type+' '+gps});renderStag();}
-function marquerAbsence(){let list=JSON.parse(localStorage.getItem('stag')||'[]');let today=new Date().toLocaleDateString();list.forEach(s=>{if(!s.historique.some(h=>h.date==today)&&!s.enCours){s.historique.push({date:today,type:'absence'});}});localStorage.setItem('stag',JSON.stringify(list));syncPush('presence',{n:'Absences du jour (-20000)'});renderStag();}
-function delStag(i){let list=JSON.parse(localStorage.getItem('stag')||'[]');list.splice(i,1);localStorage.setItem('stag',JSON.stringify(list));renderStag();}
-function openObs(){document.getElementById('obs').style.display='block';let ds=JSON.parse(localStorage.getItem('obs')||'[]');let h="";ds.forEach(o=>h+=`<div class=box><small>${o.d}</small><br>${o.t}</div>`);document.getElementById('obsList').innerHTML=h}
-function saveObs(){let t=document.getElementById('obsTxt').value.trim();if(!t)return;let ds=JSON.parse(localStorage.getItem('obs')||'[]');ds.push({t,d:new Date().toLocaleString()});localStorage.setItem('obs',JSON.stringify(ds));syncPush('observation',{t:t});document.getElementById('obsTxt').value='';openObs();}
-function openPrimes(){if(!isPatron){alert('🔒 Primes verrouillées pour suppléant');return;}document.getElementById('primes').style.display='block'}
-function openSuivi(){let stag=JSON.parse(localStorage.getItem('stag')||'[]');let ds=JSON.parse(localStorage.getItem('dettes')||'[]');let totalDette=ds.filter(x=>!x.paye).reduce((a,b)=>a+b.t,0);let txt="";let totalMois=0;stag.forEach(s=>{let r=0,a=0;(s.historique||[]).forEach(h=>{if(h.type=='retard')r++; if(h.type=='absence')a++;});let mont=600000-r*5000-a*20000;if(mont<0)mont=0;totalMois+=mont;txt+=`<div class=box><b>${s.n}</b> Ret ${r} Abs ${a} => ${mont} GNF</div>`});document.getElementById('suiviData').innerHTML=txt+`<div class=box style="background:#1a73e8;color:#fff"><b>TOTAL STAGIAIRES: ${totalMois} GNF</b><br>Dettes impayées: ${totalDette} GNF</div>`;document.getElementById('suivi').style.display='block'}
-function saveDette(){let n=document.getElementById('nom').value.trim();if(!n){alert('Nom');return}let t=0,its=[];for(let i in pan){its.push(meds[i][0]+' x'+pan[i]);t+=meds[i][1]*pan[i]}if(t==0)return;let ds=JSON.parse(localStorage.getItem('dettes')||'[]');ds.push({n,its,t,d:new Date().toLocaleString(),paye:false});localStorage.setItem('dettes',JSON.stringify(ds));syncPush('dette',{n:n+' '+t+' GNF'});pan={};document.getElementById('nom').value='';renderM();}
-function openDettes(){let ds=JSON.parse(localStorage.getItem('dettes')||'[]');let h="",gt=0;ds.forEach((x,i)=>{if(!x.paye)gt+=x.t;h+=`<div class=box style="${x.paye?'background:#d1e7dd':''}"><b>${x.n}</b> ${x.d}<br><small>${x.its.join(', ')}</small><br><b>${x.t} GNF</b> ${x.paye?'✅ PAYÉ':''}<br>${!x.paye?`<button class=btn style="background:#4CAF50;color:#fff" onclick="payerDette(${i})">Payé</button>`:''} <button class=btn style="background:#ffcdd2" onclick="supprimerDette(${i})">Supprimer</button></div>`});h+=`<div class=box style="background:#1a73e8;color:#fff;text-align:center">IMPAYÉ: ${gt} GNF</div>`;document.getElementById('LD').innerHTML=h||'Aucune';document.getElementById('dettes').style.display='block';}
-function payerDette(i){let ds=JSON.parse(localStorage.getItem('dettes')||'[]');ds[i].paye=true;ds[i].datePaye=new Date().toLocaleString();localStorage.setItem('dettes',JSON.stringify(ds));syncPush('dette',{n:'Dette PAYÉE '+ds[i].n});openDettes();}
-function supprimerDette(i){if(!confirm('Supprimer?'))return;let ds=JSON.parse(localStorage.getItem('dettes')||'[]');ds.splice(i,1);localStorage.setItem('dettes',JSON.stringify(ds));openDettes();}
-if(db){
- db.ref('postes/filanidialakoro').on('child_added',snap=>{
-  let v=snap.val(); if(!v||v.by===role) return;
-  let feed=document.getElementById('liveFeed');
-  feed.innerHTML=new Date(v.time).toLocaleTimeString()+' - '+v.by.toUpperCase()+': '+(v.data.n||v.data.t||'')+'<br>'+feed.innerHTML;
- });
-}
-</script></body></html>
-// VERROUILLAGE SUPPLEANT - V10
-const r = new URLSearchParams(location.search).get('role');
-if(r === 'suppleant'){
-  ['Primes','SUIVI LIVE','Présence 600k','Dettes'].forEach(nom=>{
-    document.querySelectorAll('.card').forEach(c=>{
-      if(c.innerText.includes(nom)){
-        c.style.opacity='0.35';
-        c.style.pointerEvents='none';
-        c.innerHTML += '<br><small style="background:black;color:white;padding:2px 6px;border-radius:8px;font-size:10px">🔒 Verrouillé</small>';
-      }
-    })
-  });
-  document.getElementById('title').innerText='🟠 SUPPLÉANT - Observation + Médicaments seulement';
-}
+<div id="home" class="view show
