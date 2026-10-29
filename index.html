@@ -1,108 +1,6 @@
- <!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Filanidialakoro V8.3.1</title>
-<style>body{font-family:system-ui;background:#f2f5ff;margin:0;padding:0 12px 100px}.top{background:#1a73e8;color:#fff;padding:14px;border-radius:0 0 16px 16px;text-align:center}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}.card{background:#fff;border-radius:16px;padding:18px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.08);cursor:pointer}.modal{display:none;position:fixed;inset:0;background:#f5f7fb;z-index:99;overflow:auto;padding:12px}.box{background:#fff;border-radius:12px;padding:12px;margin-bottom:8px}.btn{padding:10px 14px;border-radius:8px;border:none;font-weight:700;cursor:pointer}</style></head><body>
-<div class="top"><b>Filanidialakoro V8.3.1 - Avec Metamizole</b><br>📍 11.259809, -8.940853</div>
-<div class="grid">
-<div class="card" onclick="openObs()">📝<br><b>Observation</b></div>
-<div class="card" onclick="openMed()">💊<br><b>Médicaments</b><br><small>28 médicaments</small></div>
-<div class="card" onclick="openPrimes()">🏆<br><b>Primes</b></div>
-<div class="card" onclick="openSuivi()">📈<br><b>SUIVI LIVE</b></div>
-<div class="card" onclick="openPres()" style="background:#e8f5e9;border:2px solid #4CAF50">✅<br><b>Présence Stagiaires</b></div>
-<div class="card" onclick="openDettes()">📒<br><b>Dettes</b></div>
-</div>
-
-<div id="pres" class="modal">
-<div class="box" style="display:flex;justify-content:space-between"><b>✅ Présence Stagiaires</b><button onclick="cls('pres')">Fermer</button></div>
-<div class="box"><input id="nomStag" placeholder="Nom stagiaire" style="width:70%;padding:10px;border-radius:8px;border:1px solid #ccc"> <button class="btn" style="background:#1a73e8;color:#fff" onclick="addStag()">+ Ajouter</button></div>
-<div id="listStag"></div>
-<div class="box" style="background:#fff3cd"><b>Règle Prix Pain :</b><br>≥ 8h = 5000 GNF<br>4h-7h59 = 2500 GNF<br>< 4h = 0 GNF</div>
-</div>
-
-<div id="med" class="modal"><div class="box" style="display:flex;justify-content:space-between"><b>💊 Médicaments (28)</b><button onclick="cls('med')">Fermer</button></div><div id="L"></div><div style="height:180px"></div><div style="position:fixed;bottom:0;left:0;right:0;background:#1a73e8;color:#fff;padding:12px"><div id="cd" style="max-height:60px;overflow:auto;font-size:13px">Panier vide</div><input id="nom" placeholder="Nom patient dette" style="width:100%;padding:10px;border-radius:8px;border:none;margin:6px 0;color:#000"><div style="display:flex;justify-content:space-between;font-weight:800"><span>TOTAL:</span><span id="tot">0 GNF</span></div><button onclick="saveDette()" style="width:100%;padding:12px;border-radius:8px;border:none;background:#fff;color:#1a73e8;font-weight:800">Enregistrer Dette</button></div></div>
-
-<div id="obs" class="modal"><div class="box" style="display:flex;justify-content:space-between"><b>Observation</b><button onclick="cls('obs')">Fermer</button></div><div class="box"><textarea id="obsTxt" style="width:100%;height:100px" placeholder="Observation..."></textarea><button class="btn" style="background:#1a73e8;color:#fff;width:100%;margin-top:8px" onclick="saveObs()">Enregistrer</button></div><div id="obsList"></div></div>
-<div id="primes" class="modal"><div class="box" style="display:flex;justify-content:space-between"><b>Primes</b><button onclick="cls('primes')">Fermer</button></div><div class="box">Consultation 500 - Accouchement 5000 - CPN 500 - Vaccination 250</div></div>
-<div id="suivi" class="modal"><div class="box" style="display:flex;justify-content:space-between"><b>SUIVI LIVE</b><button onclick="cls('suivi')">Fermer</button></div><div id="suiviData" class="box"></div></div>
-<div id="dettes" class="modal"><div class="box" style="display:flex;justify-content:space-between"><b>Dettes</b><button onclick="cls('dettes')">Fermer</button></div><div id="LD"></div></div>
-
-<script>
-function cls(id){document.getElementById(id).style.display='none'}
-const meds=[["Paracétamol 500mg 10cp",2500],["AAS 300mg 10cp",5000],["Cotri 960mg 10cp",10000],["Ibuprofène 400mg 10cp",10000],["Ampi 1g flacon",5000],["Artemether 80mg amp",5000],["Amoxicilline 500mg",1000],["Metamizole 500mg amp",5000],["Genta 80mg amp",2000],["Dexa 4mg amp",2000],["Vit B Complexe amp",10000],["Sérum Salé flacon",60000],["Ringer flacon",60000],["Glucosé flacon",60000],["Cotri Sirop",20000],["Para Sirop",20000],["Métro Sirop",20000],["Artemether Sirop",25000],["Cimétidine inj",2500],["Diclofénac 75mg",3500],["Ceftriaxone",15000],["Quinine 600mg",10000],["Accouchement",65000],["Oxytocine amp",10000],["TDR",10000],["Taux Hb bandelette",20000],["Ciproperf flacon",15000],["Fil de suture",30000]];
-let pan={};
-function openMed(){document.getElementById('med').style.display='block';renderM()}
-function renderM(){let h="";meds.forEach((m,i)=>{let q=pan[i]||0;h+=`<div class=box style="display:flex;justify-content:space-between"><div><b>${m[0]}</b><br>${m[1]} GNF ${q?`<br><b style=color:green>x${q}=${q*m[1]} GNF</b>`:''}</div><div><button class=btn onclick="add(${i},-1)">-</button> <button class=btn style="background:#e8f5e9" onclick="add(${i},1)">+</button></div></div>`});document.getElementById('L').innerHTML=h;upd()}
-function add(i,d){pan[i]=(pan[i]||0)+d;if(pan[i]<=0)delete pan[i];renderM()}
-function upd(){let t=0,s="";for(let i in pan){t+=meds[i][1]*pan[i];s+=meds[i][0]+" x"+pan[i]+"<br>"}document.getElementById('tot').innerText=t+" GNF";document.getElementById('cd').innerHTML=s||"Panier vide"}
-
-function openPres(){document.getElementById('pres').style.display='block';renderStag()}
-function addStag(){let n=document.getElementById('nomStag').value.trim();if(!n)return;let list=JSON.parse(localStorage.getItem('stag')||'[]');list.push({n,arr:null,dep:null});localStorage.setItem('stag',JSON.stringify(list));document.getElementById('nomStag').value='';renderStag()}
-function renderStag(){let list=JSON.parse(localStorage.getItem('stag')||'[]');let h="";list.forEach((s,i)=>{let duree="-";let pain=0;if(s.arr&&s.dep){let ms=s.dep-s.arr;let hm=ms/3600000;duree=hm.toFixed(1)+"h";if(hm>=8)pain=5000;else if(hm>=4)pain=2500;}h+=`<div class=box><b>${s.n}</b><br>Arrivée: ${s.arr?new Date(s.arr).toLocaleTimeString():'-'} ${!s.arr?`<button class=btn style="background:#4CAF50;color:#fff" onclick="point(${i},'arr')">Pointer Arrivée</button>`:''}<br>Départ: ${s.dep?new Date(s.dep).toLocaleTimeString():'-'} ${s.arr&&!s.dep?`<button class=btn style="background:#ff9800;color:#fff" onclick="point(${i},'dep')">Pointer Départ</button>`:''}<br><b>Durée: ${duree} | Pain: ${pain} GNF</b> <button class=btn style="background:#ffebee;margin-left:8px" onclick="delStag(${i})">X</button></div>`});document.getElementById('listStag').innerHTML=h||'Aucun stagiaire';}
-function point(i,t){let list=JSON.parse(localStorage.getItem('stag')||'[]');let now=Date.now();if(t=='arr')list[i].arr=now;else list[i].dep=now;localStorage.setItem('stag',JSON.stringify(list));renderStag()}
-function delStag(i){let list=JSON.parse(localStorage.getItem('stag')||'[]');list.splice(i,1);localStorage.setItem('stag',JSON.stringify(list));renderStag()}
-
-function openObs(){document.getElementById('obs').style.display='block';let ds=JSON.parse(localStorage.getItem('obs')||'[]');let h="";ds.forEach(o=>h+=`<div class=box><small>${o.d}</small><br>${o.t}</div>`);document.getElementById('obsList').innerHTML=h}
-function saveObs(){let t=document.getElementById('obsTxt').value.trim();if(!t)return;let ds=JSON.parse(localStorage.getItem('obs')||'[]');ds.push({t,d:new Date().toLocaleString()});localStorage.setItem('obs',JSON.stringify(ds));document.getElementById('obsTxt').value='';openObs();alert('OK')}
-function openPrimes(){document.getElementById('primes').style.display='block'}
-function openSuivi(){let ds=JSON.parse(localStorage.getItem('dettes')||'[]');let stag=JSON.parse(localStorage.getItem('stag')||'[]');let total=0;ds.forEach(x=>total+=x.t);let painTotal=0;stag.forEach(s=>{if(s.arr&&s.dep){let h=(s.dep-s.arr)/3600000;if(h>=8)painTotal+=5000;else if(h>=4)painTotal+=2500}});document.getElementById('suiviData').innerHTML=`Dettes: ${ds.length}<br>Total dettes: ${total} GNF<br>Stagiaires: ${stag.length}<br><b>Total Pain: ${painTotal} GNF</b>`;document.getElementById('suivi').style.display='block'}
-function saveDette(){let n=document.getElementById('nom').value.trim();if(!n){alert('Nom');return}let t=0,its=[];for(let i in pan){its.push(meds[i][0]+' x'+pan[i]);t+=meds[i][1]*pan[i]}if(t==0){alert('Panier vide');return}let ds=JSON.parse(localStorage.getItem('dettes')||'[]');ds.push({n,its,t,d:new Date().toLocaleString()});localStorage.setItem('dettes',JSON.stringify(ds));pan={};document.getElementById('nom').value='';renderM();alert('Dette '+t+' GNF OK')}
-function openDettes(){let ds=JSON.parse(localStorage.getItem('dettes')||'[]');let h="",gt=0;ds.forEach(x=>{gt+=x.t;h+=`<div class=box><b>${x.n}</b> - ${x.d}<br><small>${x.its.join(', ')}</small><br><b>${x.t} GNF</b></div>`});h+=`<div class=box style="background:#1a73e8;color:#fff;text-align:center"><b>TOTAL: ${gt} GNF</b></div>`;document.getElementById('LD').innerHTML=h||'Aucune dette';document.getElementById('dettes').style.display='block'}
-</script></body></html>
-<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Filanidialakoro V8.3.2 GPS</title>
-<style>body{font-family:system-ui;background:#f2f5ff;margin:0;padding:0 12px 100px}.top{background:#1a73e8;color:#fff;padding:14px;border-radius:0 0 16px 16px;text-align:center}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}.card{background:#fff;border-radius:16px;padding:18px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.08);cursor:pointer}.modal{display:none;position:fixed;inset:0;background:#f5f7fb;z-index:99;overflow:auto;padding:12px}.box{background:#fff;border-radius:12px;padding:12px;margin-bottom:8px}.btn{padding:10px 14px;border-radius:8px;border:none;font-weight:700;cursor:pointer}</style></head><body>
-<div class="top"><b>Filanidialakoro V8.3.2 - GPS à l'appui</b><br>📍 Poste Filanidialakoro 11.259809, -8.940853</div>
-<div class="grid">
-<div class="card" onclick="openObs()">📝<br><b>Observation</b></div>
-<div class="card" onclick="openMed()">💊<br><b>Médicaments</b></div>
-<div class="card" onclick="openPrimes()">🏆<br><b>Primes</b></div>
-<div class="card" onclick="openSuivi()">📈<br><b>SUIVI LIVE</b></div>
-<div class="card" onclick="openPres()" style="background:#e8f5e9;border:2px solid #4CAF50">✅<br><b>Présence + GPS</b></div>
-<div class="card" onclick="openDettes()">📒<br><b>Dettes</b></div>
-</div>
-
-<div id="pres" class="modal">
-<div class="box" style="display:flex;justify-content:space-between"><b>✅ Présence Stagiaires + GPS</b><button onclick="cls('pres')">Fermer</button></div>
-<div class="box"><input id="nomStag" placeholder="Nom stagiaire" style="width:70%;padding:10px;border-radius:8px;border:1px solid #ccc"> <button class="btn" style="background:#1a73e8;color:#fff" onclick="addStag()">+ Ajouter</button></div>
-<div id="listStag"></div>
-<div class="box" style="background:#fff3cd"><b>GPS à l'appui activé</b><br>Chaque pointage enregistre heure + position<br>≥8h=5000 GNF | 4-7h=2500 GNF</div>
-</div>
-
-<div id="med" class="modal"><div class="box" style="display:flex;justify-content:space-between"><b>💊 28 Médicaments</b><button onclick="cls('med')">Fermer</button></div><div id="L"></div><div style="height:180px"></div><div style="position:fixed;bottom:0;left:0;right:0;background:#1a73e8;color:#fff;padding:12px"><div id="cd" style="max-height:60px;overflow:auto;font-size:13px">Panier vide</div><input id="nom" placeholder="Nom patient" style="width:100%;padding:10px;border-radius:8px;border:none;margin:6px 0;color:#000"><div style="display:flex;justify-content:space-between;font-weight:800"><span>TOTAL:</span><span id="tot">0 GNF</span></div><button onclick="saveDette()" style="width:100%;padding:12px;border-radius:8px;border:none;background:#fff;color:#1a73e8;font-weight:800">Enregistrer Dette</button></div></div>
-<div id="obs" class="modal"><div class="box" style="display:flex;justify-content:space-between"><b>Observation</b><button onclick="cls('obs')">Fermer</button></div><div class="box"><textarea id="obsTxt" style="width:100%;height:100px"></textarea><button class="btn" style="background:#1a73e8;color:#fff;width:100%;margin-top:8px" onclick="saveObs()">Enregistrer</button></div><div id="obsList"></div></div>
-<div id="primes" class="modal"><div class="box" style="display:flex;justify-content:space-between"><b>Primes</b><button onclick="cls('primes')">Fermer</button></div><div class="box">Consultation 500 - Accouchement 5000</div></div>
-<div id="suivi" class="modal"><div class="box" style="display:flex;justify-content:space-between"><b>SUIVI LIVE</b><button onclick="cls('suivi')">Fermer</button></div><div id="suiviData" class="box"></div></div>
-<div id="dettes" class="modal"><div class="box" style="display:flex;justify-content:space-between"><b>Dettes</b><button onclick="cls('dettes')">Fermer</button></div><div id="LD"></div></div>
-
-<script>
-function cls(id){document.getElementById(id).style.display='none'}
-const meds=[["Paracétamol 500mg 10cp",2500],["AAS 300mg 10cp",5000],["Cotri 960mg 10cp",10000],["Ibuprofène 400mg 10cp",10000],["Ampi 1g flacon",5000],["Artemether 80mg amp",5000],["Amoxicilline 500mg",1000],["Metamizole 500mg amp",5000],["Genta 80mg amp",2000],["Dexa 4mg amp",2000],["Vit B Complexe amp",10000],["Sérum Salé flacon",60000],["Ringer flacon",60000],["Glucosé flacon",60000],["Cotri Sirop",20000],["Para Sirop",20000],["Métro Sirop",20000],["Artemether Sirop",25000],["Cimétidine inj",2500],["Diclofénac 75mg",3500],["Ceftriaxone",15000],["Quinine 600mg",10000],["Accouchement",65000],["Oxytocine amp",10000],["TDR",10000],["Taux Hb bandelette",20000],["Ciproperf flacon",15000],["Fil de suture",30000]];
-let pan={};
-function openMed(){document.getElementById('med').style.display='block';renderM()}
-function renderM(){let h="";meds.forEach((m,i)=>{let q=pan[i]||0;h+=`<div class=box style="display:flex;justify-content:space-between"><div><b>${m[0]}</b><br>${m[1]} GNF ${q?`<br><b style=color:green>x${q}=${q*m[1]} GNF</b>`:''}</div><div><button class=btn onclick="add(${i},-1)">-</button> <button class=btn style="background:#e8f5e9" onclick="add(${i},1)">+</button></div></div>`});document.getElementById('L').innerHTML=h;upd()}
-function add(i,d){pan[i]=(pan[i]||0)+d;if(pan[i]<=0)delete pan[i];renderM()}
-function upd(){let t=0,s="";for(let i in pan){t+=meds[i][1]*pan[i];s+=meds[i][0]+" x"+pan[i]+"<br>"}document.getElementById('tot').innerText=t+" GNF";document.getElementById('cd').innerHTML=s||"Panier vide"}
-
-function openPres(){document.getElementById('pres').style.display='block';renderStag()}
-function addStag(){let n=document.getElementById('nomStag').value.trim();if(!n)return;let list=JSON.parse(localStorage.getItem('stag')||'[]');list.push({n,arr:null,arrGPS:null,dep:null,depGPS:null});localStorage.setItem('stag',JSON.stringify(list));document.getElementById('nomStag').value='';renderStag()}
-function renderStag(){let list=JSON.parse(localStorage.getItem('stag')||'[]');let h="";list.forEach((s,i)=>{let duree="-";let pain=0;if(s.arr&&s.dep){let hm=(s.dep-s.arr)/3600000;duree=hm.toFixed(1)+"h";if(hm>=8)pain=5000;else if(hm>=4)pain=2500;}h+=`<div class=box><b>${s.n}</b><br>🟢 Arrivée: ${s.arr?new Date(s.arr).toLocaleTimeString():'-'}<br><small style=color:green>${s.arrGPS||''}</small> ${!s.arr?`<button class=btn style="background:#4CAF50;color:#fff" onclick="point(${i},'arr')">📍 Pointer Arrivée + GPS</button>`:''}<br>🔴 Départ: ${s.dep?new Date(s.dep).toLocaleTimeString():'-'}<br><small style=color:red>${s.depGPS||''}</small> ${s.arr&&!s.dep?`<button class=btn style="background:#ff9800;color:#fff" onclick="point(${i},'dep')">📍 Pointer Départ + GPS</button>`:''}<br><b>Durée: ${duree} | Pain: ${pain} GNF</b> <button class=btn style="background:#ffebee;margin-left:8px" onclick="delStag(${i})">X</button></div>`});document.getElementById('listStag').innerHTML=h||'Aucun stagiaire';}
-function point(i,type){
-  if(!navigator.geolocation){alert('GPS non supporté');savePoint(i,type,'GPS non dispo');return;}
-  navigator.geolocation.getCurrentPosition(pos=>{
-    let gps=pos.coords.latitude.toFixed(6)+', '+pos.coords.longitude.toFixed(6);
-    savePoint(i,type,gps);
-  },err=>{
-    savePoint(i,type,'GPS refusé - heure seule');
-    alert('Active le GPS et autorise la localisation');
-  },{enableHighAccuracy:true,timeout:10000});
-}
-function savePoint(i,type,gps){let list=JSON.parse(localStorage.getItem('stag')||'[]');let now=Date.now();if(type=='arr'){list[i].arr=now;list[i].arrGPS=gps;}else{list[i].dep=now;list[i].depGPS=gps;}localStorage.setItem('stag',JSON.stringify(list));renderStag();}
-function delStag(i){let list=JSON.parse(localStorage.getItem('stag')||'[]');list.splice(i,1);localStorage.setItem('stag',JSON.stringify(list));renderStag()}
-
-function openObs(){document.getElementById('obs').style.display='block';let ds=JSON.parse(localStorage.getItem('obs')||'[]');let h="";ds.forEach(o=>h+=`<div class=box><small>${o.d}</small><br>${o.t}</div>`);document.getElementById('obsList').innerHTML=h}
-function saveObs(){let t=document.getElementById('obsTxt').value.trim();if(!t)return;let ds=JSON.parse(localStorage.getItem('obs')||'[]');ds.push({t,d:new Date().toLocaleString()});localStorage.setItem('obs',JSON.stringify(ds));document.getElementById('obsTxt').value='';openObs()}
-function openPrimes(){document.getElementById('primes').style.display='block'}
-function openSuivi(){let ds=JSON.parse(localStorage.getItem('dettes')||'[]');let stag=JSON.parse(localStorage.getItem('stag')||'[]');let total=0;ds.forEach(x=>total+=x.t);let painTotal=0;stag.forEach(s=>{if(s.arr&&s.dep){let h=(s.dep-s.arr)/3600000;if(h>=8)painTotal+=5000;else if(h>=4)painTotal+=2500}});document.getElementById('suiviData').innerHTML=`Dettes: ${ds.length}<br>Total dettes: ${total} GNF<br>Stagiaires: ${stag.length}<br><b>Total Pain: ${painTotal} GNF</b>
-<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Filanidialakoro V8.4 600k</title>
-<style>body{font-family:system-ui;background:#f2f5ff;margin:0;padding:0 12px 100px}.top{background:#1a73e8;color:#fff;padding:14px;border-radius:0 0 16px 16px;text-align:center}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}.card{background:#fff;border-radius:16px;padding:18px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.08);cursor:pointer}.modal{display:none;position:fixed;inset:0;background:#f5f7fb;z-index:99;overflow:auto;padding:12px}.box{background:#fff;border-radius:12px;padding:12px;margin-bottom:8px}.btn{padding:10px 14px;border-radius:8px;border:none;font-weight:700;cursor:pointer}</style></head><body>
-<div class="top"><b>Filanidialakoro V8.4 - 600 000 GNF/mois</b><br>📍 11.259809, -8.940853</div>
+ <!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Filanidialakoro V8.5</title>
+<style>body{font-family:system-ui;background:#f2f5ff;margin:0;padding:0 12px 100px}.top{background:#1a73e8;color:#fff;padding:14px;border-radius:0 0 16px 16px;text-align:center}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}.card{background:#fff;border-radius:16px;padding:18px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.08);cursor:pointer}.modal{display:none;position:fixed;inset:0;background:#f5f7fb;z-index:99;overflow:auto;padding:12px}.box{background:#fff;border-radius:12px;padding:12px;margin-bottom:8px}.btn{padding:10px 14px;border-radius:8px;border:none;font-weight:700}</style></head><body>
+<div class="top"><b>Filanidialakoro V8.5 - 600k - Retard - Absence</b><br>Retard -5000 | Absence -20000 | GPS</div>
 <div class="grid">
 <div class="card" onclick="openObs()">📝<br><b>Observation</b></div>
 <div class="card" onclick="openMed()">💊<br><b>Médicaments</b></div>
@@ -113,16 +11,24 @@ function openSuivi(){let ds=JSON.parse(localStorage.getItem('dettes')||'[]');let
 </div>
 
 <div id="pres" class="modal">
-<div class="box" style="display:flex;justify-content:space-between"><b>✅ Présence Stagiaires - 600 000 GNF/mois</b><button onclick="cls('pres')">Fermer</button></div>
-<div class="box"><input id="nomStag" placeholder="Nom stagiaire" style="width:70%;padding:10px;border-radius:8px;border:1px solid #ccc"> <button class="btn" style="background:#1a73e8;color:#fff" onclick="addStag()">+ Ajouter</button></div>
+<div class="box" style="display:flex;justify-content:space-between"><b>✅ Présence 600k</b><button onclick="cls('pres')">Fermer</button></div>
+<div class="box"><input id="nomStag" placeholder="Nom stagiaire" style="width:60%;padding:10px;border-radius:8px;border:1px solid #ccc"> <button class="btn" style="background:#1a73e8;color:#fff" onclick="addStag()">+ Ajouter</button></div>
 <div id="listStag"></div>
-<div class="box" style="background:#d1e7dd"><b>Règle 600 000 GNF/mois :</b><br>Présence complète (≥8h) = 1 jour compté = 20 000 GNF<br>Demi journée (4-7h) = 0,5 jour = 10 000 GNF<br>Objectif 30 jours = 600 000 GNF<br><br>Exemple: 15 jours complets = 300 000 GNF</div>
+<div class="box" style="background:#fff3cd">
+<b>Règles :</b><br>
+Base 600 000 GNF<br>
+Heure limite arrivée: <input id="heureLim" type="time" value="08:30" style="width:100px"> (retard si après)<br>
+Retard = -5000 GNF<br>
+Absence = -20 000 GNF<br>
+GPS à chaque pointage
+</div>
+<div class="box"><button class="btn" style="background:#ff9800;color:#fff;width:100%" onclick="marquerAbsence()">Marquer Absence du jour (pour tous les non pointés)</button></div>
 </div>
 
-<div id="med" class="modal"><div class="box" style="display:flex;justify-content:space-between"><b>💊 28 Médicaments</b><button onclick="cls('med')">Fermer</button></div><div id="L"></div><div style="height:180px"></div><div style="position:fixed;bottom:0;left:0;right:0;background:#1a73e8;color:#fff;padding:12px"><div id="cd" style="max-height:60px;overflow:auto;font-size:13px">Panier vide</div><input id="nom" placeholder="Nom patient" style="width:100%;padding:10px;border-radius:8px;border:none;margin:6px 0;color:#000"><div style="display:flex;justify-content:space-between;font-weight:800"><span>TOTAL:</span><span id="tot">0 GNF</span></div><button onclick="saveDette()" style="width:100%;padding:12px;border-radius:8px;border:none;background:#fff;color:#1a73e8;font-weight:800">Enregistrer Dette</button></div></div>
-<div id="obs" class="modal"><div class="box" style="display:flex;justify-content:space-between"><b>Observation</b><button onclick="cls('obs')">Fermer</button></div><div class="box"><textarea id="obsTxt" style="width:100%;height:100px"></textarea><button class="btn" style="background:#1a73e8;color:#fff;width:100%;margin-top:8px" onclick="saveObs()">Enregistrer</button></div><div id="obsList"></div></div>
+<div id="med" class="modal"><div class="box" style="display:flex;justify-content:space-between"><b>💊 Médicaments</b><button onclick="cls('med')">Fermer</button></div><div id="L"></div><div style="height:180px"></div><div style="position:fixed;bottom:0;left:0;right:0;background:#1a73e8;color:#fff;padding:12px"><div id="cd" style="max-height:60px;overflow:auto;font-size:13px">Panier vide</div><input id="nom" placeholder="Nom patient" style="width:100%;padding:10px;border-radius:8px;border:none;margin:6px 0;color:#000"><div style="display:flex;justify-content:space-between;font-weight:800"><span>TOTAL:</span><span id="tot">0 GNF</span></div><button onclick="saveDette()" style="width:100%;padding:12px;border-radius:8px;border:none;background:#fff;color:#1a73e8;font-weight:800">Enregistrer</button></div></div>
+<div id="obs" class="modal"><div class="box" style="display:flex;justify-content:space-between"><b>Obs</b><button onclick="cls('obs')">Fermer</button></div><div class="box"><textarea id="obsTxt" style="width:100%;height:100px"></textarea><button class="btn" style="background:#1a73e8;color:#fff;width:100%;margin-top:8px" onclick="saveObs()">Enregistrer</button></div><div id="obsList"></div></div>
 <div id="primes" class="modal"><div class="box" style="display:flex;justify-content:space-between"><b>Primes</b><button onclick="cls('primes')">Fermer</button></div><div class="box">Consultation 500 - Accouchement 5000</div></div>
-<div id="suivi" class="modal"><div class="box" style="display:flex;justify-content:space-between"><b>SUIVI LIVE</b><button onclick="cls('suivi')">Fermer</button></div><div id="suiviData" class="box"></div></div>
+<div id="suivi" class="modal"><div class="box" style="display:flex;justify-content:space-between"><b>SUIVI LIVE 600k</b><button onclick="cls('suivi')">Fermer</button></div><div id="suiviData" class="box"></div></div>
 <div id="dettes" class="modal"><div class="box" style="display:flex;justify-content:space-between"><b>Dettes</b><button onclick="cls('dettes')">Fermer</button></div><div id="LD"></div></div>
 
 <script>
@@ -135,24 +41,70 @@ function add(i,d){pan[i]=(pan[i]||0)+d;if(pan[i]<=0)delete pan[i];renderM()}
 function upd(){let t=0,s="";for(let i in pan){t+=meds[i][1]*pan[i];s+=meds[i][0]+" x"+pan[i]+"<br>"}document.getElementById('tot').innerText=t+" GNF";document.getElementById('cd').innerHTML=s||"Panier vide"}
 
 function openPres(){document.getElementById('pres').style.display='block';renderStag()}
-function addStag(){let n=document.getElementById('nomStag').value.trim();if(!n)return;let list=JSON.parse(localStorage.getItem('stag')||'[]');list.push({n,historique:[]});localStorage.setItem('stag',JSON.stringify(list));document.getElementById('nomStag').value='';renderStag()}
+function addStag(){let n=document.getElementById('nomStag').value.trim();if(!n)return;let list=JSON.parse(localStorage.getItem('stag')||'[]');list.push({n,historique:[],enCours:null});localStorage.setItem('stag',JSON.stringify(list));document.getElementById('nomStag').value='';renderStag()}
 function renderStag(){
+ let lim=document.getElementById('heureLim').value||"08:30";
  let list=JSON.parse(localStorage.getItem('stag')||'[]');
  let h="";list.forEach((s,i)=>{
-  let jours=0; (s.historique||[]).forEach(j=>{if(j.duree>=8)jours+=1; else if(j.duree>=4)jours+=0.5});
-  let montant=jours*20000;
+  let retards=0,absences=0,pres=0;
+  (s.historique||[]).forEach(j=>{if(j.type=='retard')retards++; if(j.type=='absence')absences++; if(j.type=='present' || j.type=='retard')pres++;});
+  let montant=600000 - retards*5000 - absences*20000;
+  if(montant<0)montant=0;
   let enCours=s.enCours;
-  h+=`<div class=box><b>${s.n}</b> - Ce mois: ${jours} jours = <b style=color:green>${montant} GNF / 600 000 GNF</b><br>
-  ${enCours?`Arrivée: ${new Date(enCours.arr).toLocaleTimeString()} GPS:${enCours.gps||''} <button class=btn style="background:#ff9800;color:#fff" onclick="pointerDepart(${i})">📍 Pointer Départ + GPS</button>`:`<button class=btn style="background:#4CAF50;color:#fff" onclick="pointerArrivee(${i})">📍 Pointer Arrivée + GPS</button>`}
-  <br><small>Historique: ${(s.historique||[]).map(j=>j.date+' '+j.duree.toFixed(1)+'h').join(', ')}</small>
-  <br><button class=btn style="background:#ffebee" onclick="delStag(${i})">Supprimer</button></div>`;
+  h+=`<div class=box><b>${s.n}</b><br>Présent: ${pres}j | Retards: ${retards} (-${retards*5000}) | Absences: ${absences} (-${absences*20000})<br><b style="color:#1a73e8">À payer: ${montant} GNF / 600000</b><br>
+  ${enCours?`Arrivée ${new Date(enCours.arr).toLocaleTimeString()} GPS:${enCours.gps} <button class=btn style="background:#ff9800;color:#fff" onclick="pointerDepart(${i})">📍 Départ + GPS</button>`:`<button class=btn style="background:#4CAF50;color:#fff" onclick="pointerArrivee(${i})">📍 Arrivée + GPS</button>`}
+  <br><small>${(s.historique||[]).slice(-5).map(j=>j.date+':'+j.type).join(', ')}</small>
+  <button class=btn style="background:#ffebee;margin-left:6px" onclick="delStag(${i})">X</button></div>`;
  });
  document.getElementById('listStag').innerHTML=h||'Aucun stagiaire';
 }
-function pointerArrivee(i){navigator.geolocation.getCurrentPosition(p=>{let gps=p.coords.latitude.toFixed(6)+','+p.coords.longitude.toFixed(6);let list=JSON.parse(localStorage.getItem('stag')||'[]');list[i].enCours={arr:Date.now(),gps};localStorage.setItem('stag',JSON.stringify(list));renderStag();},()=>{let list=JSON.parse(localStorage.getItem('stag')||'[]');list[i].enCours={arr:Date.now(),gps:'GPS refusé'};localStorage.setItem('stag',JSON.stringify(list));renderStag();});}
-function pointerDepart(i){navigator.geolocation.getCurrentPosition(p=>{let gps=p.coords.latitude.toFixed(6)+','+p.coords.longitude.toFixed(6);finishJournee(i,gps);},()=>{finishJournee(i,'GPS refusé');});}
-function finishJournee(i,gpsDep){let list=JSON.parse(localStorage.getItem('stag')||'[]');let enCours=list[i].enCours;let duree=(Date.now()-enCours.arr)/3600000;list[i].historique=list[i].historique||[];list[i].historique.push({date:new Date().toLocaleDateString(),duree,arrGPS:enCours.gps,depGPS:gpsDep});delete list[i].enCours;localStorage.setItem('stag',JSON.stringify(list));renderStag();}
+function getLimiteMinutes(){let v=document.getElementById('heureLim').value||"08:30";let [hh,mm]=v.split(':').map(Number);return hh*60+mm;}
+function pointerArrivee(i){
+ navigator.geolocation.getCurrentPosition(p=>{
+  let gps=p.coords.latitude.toFixed(6)+','+p.coords.longitude.toFixed(6);
+  let list=JSON.parse(localStorage.getItem('stag')||'[]');
+  list[i].enCours={arr:Date.now(),gps};
+  localStorage.setItem('stag',JSON.stringify(list));renderStag();
+ },()=>{
+  let list=JSON.parse(localStorage.getItem('stag')||'[]');
+  list[i].enCours={arr:Date.now(),gps:'GPS refusé'};
+  localStorage.setItem('stag',JSON.stringify(list));renderStag();
+ });
+}
+function pointerDepart(i){
+ navigator.geolocation.getCurrentPosition(p=>{
+  finish(i,p.coords.latitude.toFixed(6)+','+p.coords.longitude.toFixed(6));
+ },()=>{finish(i,'GPS refusé');});
+}
+function finish(i,gpsDep){
+ let list=JSON.parse(localStorage.getItem('stag')||'[]');
+ let enCours=list[i].enCours;
+ let now=new Date();
+ let lim=getLimiteMinutes();
+ let arrMin=now.getHours()*60+now.getMinutes(); // approximation, on prend heure de depart comme reference? on prend heure arrivée stockée
+ let arrDate=new Date(enCours.arr);
+ let arrMinReel=arrDate.getHours()*60+arrDate.getMinutes();
+ let type = arrMinReel > lim ? 'retard' : 'present';
+ list[i].historique.push({date:now.toLocaleDateString(),type,arrGPS:enCours.gps,depGPS:gpsDep,duree:(Date.now()-enCours.arr)/3600000});
+ delete list[i].enCours;
+ localStorage.setItem('stag',JSON.stringify(list));renderStag();
+}
+function marquerAbsence(){
+ let list=JSON.parse(localStorage.getItem('stag')||'[]');
+ let today=new Date().toLocaleDateString();
+ list.forEach(s=>{
+  let deja=s.historique.some(h=>h.date==today);
+  let enCours=s.enCours;
+  if(!deja && !enCours){s.historique.push({date:today,type:'absence'});}
+ });
+ localStorage.setItem('stag',JSON.stringify(list));renderStag();alert('Absences du jour marquées -20000 pour absents');
+}
 function delStag(i){let list=JSON.parse(localStorage.getItem('stag')||'[]');list.splice(i,1);localStorage.setItem('stag',JSON.stringify(list));renderStag();}
 
 function openObs(){document.getElementById('obs').style.display='block';let ds=JSON.parse(localStorage.getItem('obs')||'[]');let h="";ds.forEach(o=>h+=`<div class=box><small>${o.d}</small><br>${o.t}</div>`);document.getElementById('obsList').innerHTML=h}
-function saveObs(){let t=document.getElementById('obsTxt').value.trim();if(!t)return;let ds=JSON.parse(localStorage.getItem('obs')||'[]');ds.push({t,d:new Date().toLocaleString()});localStorage.setItem('obs',JSON.stringify(ds));document.getElementById('obsTxt').value
+function saveObs(){let t=document.getElementById('obsTxt').value.trim();if(!t)return;let ds=JSON.parse(localStorage.getItem('obs')||'[]');ds.push({t,d:new Date().toLocaleString()});localStorage.setItem('obs',JSON.stringify(ds));document.getElementById('obsTxt').value='';openObs()}
+function openPrimes(){document.getElementById('primes').style.display='block'}
+function openSuivi(){let stag=JSON.parse(localStorage.getItem('stag')||'[]');let ds=JSON.parse(localStorage.getItem('dettes')||'[]');let totalDette=0;ds.forEach(x=>totalDette+=x.t);let txt="";let totalMois=0;stag.forEach(s=>{let r=0,a=0;(s.historique||[]).forEach(h=>{if(h.type=='retard')r++; if(h.type=='absence')a++;});let mont=600000 - r*5000 - a*20000;if(mont<0)mont=0;totalMois+=mont;txt+=`<div class=box><b>${s.n}</b>: Retards ${r} x5000=${r*5000} | Abs ${a} x20000=${a*20000} => <b>${mont} GNF</b></div>`});document.getElementById('suiviData').innerHTML=txt+`<div class=box style="background:#1a73e8;color:#fff"><b>TOTAL À PAYER STAGIAIRES: ${totalMois} GNF</b><br>Dettes patients: ${totalDette} GNF</div>`;document.getElementById('suivi').style.display='block'}
+function saveDette(){let n=document.getElementById('nom').value.trim();if(!n){alert('Nom');return}let t=0,its=[];for(let i in pan){its.push(meds[i][0]+' x'+pan[i]);t+=meds[i][1]*pan[i]}if(t==0){alert('Panier vide');return}let ds=JSON.parse(localStorage.getItem('dettes')||'[]');ds.push({n,its,t,d:new Date().toLocaleString()});localStorage.setItem('dettes',JSON.stringify(ds));pan={};document.getElementById('nom').value='';renderM();alert('OK')}
+function openDettes(){let ds=JSON.parse(localStorage.getItem('dettes')||'[]');let h="",gt=0;ds.forEach(x=>{gt+=x.t;h+=`<div class=box><b>${x.n}</b><br>${x.its.join(', ')}<br><b>${x.t} GNF</b></div>`});h+=`<div class=box style="background:#1a73e8;color:#fff;text-align:center"><b>TOTAL: ${gt} GNF</b></div>`;document.getElementById('LD').innerHTML=h||'Aucune dette';document.getElementById('dettes').style.display='block'}
+</script></body></html>
