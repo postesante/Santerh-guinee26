@@ -77,30 +77,3 @@ if(db){
  });
 }
 </script></body></html> 
-<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Poste Sante</title><style>body{font-family:sans-serif;background:#f4f6f5;margin:0}.header{background:#009944;color:#fff;padding:15px;text-align:center;font-weight:bold}.card{background:#fff;margin:12px;padding:15px;border-radius:10px}.btn{background:#009944;color:#fff;border:none;padding:13px;width:100%;border-radius:8px;font-weight:bold;font-size:17px}input,select{width:100%;padding:10px;margin:6px 0;border:1px solid #ccc;border-radius:6px}</style></head><body>
-<div class="header">POSTE SANTE - SUPPLEANT</div>
-<div class="card">
-<h3>Vente de Médicament</h3>
-Date <input type="date" id="date">
-Médicament <select id="med"><option>CTA</option><option>Amoxicilline</option><option>Paracetamol</option><option>Autre</option></select>
-Prix <input type="number" id="prix" placeholder="Ex: 5000">
-Argent reçu <input type="number" id="recu">
-<label style="background:#fff3cd;padding:10px;display:block;border-radius:6px;margin:10px 0"><input type="checkbox" id="envoye" style="width:auto"> J'AI ENVOYE SUR ORANGE MONEY</label>
-N° Transaction <input type="text" id="trans">
-<button style="background:#009944;color:#fff;border:none;padding:15px;width:100%;border-radius:8px;font-weight:bold;font-size:18px" onclick="valider()">VALIDER</button>
-<p id="msg"></p>
-</div>
-<script>
-const NUMERO_PATRON = "224XXXXXXXXX"; // <-- METS TON NUMERO ICI EX: 224621000000
-document.getElementById('date').valueAsDate=new Date();
-function valider(){
-let prix=document.getElementById('prix').value;
-if(!prix){alert('Mets le prix');return}
-let vente={date:document.getElementById('date').value,med:document.getElementById('med').value,prix:prix,recu:document.getElementById('recu').value,envoye:document.getElementById('envoye').checked,trans:document.getElementById('trans').value,heure:new Date().toLocaleString()};
-let arr=JSON.parse(localStorage.getItem('ventes')||'[]');arr.push(vente);localStorage.setItem('ventes',JSON.stringify(arr));
-let etat = vente.envoye ? "✅ ARGENT ENVOYE OM: "+vente.trans : "❌ ALERTE NON ENVOYE - DETTE";
-let message = `ALERTE POSTE SANTE%0ADate:${vente.date}%0AMed:${vente.med}%0APrix:${vente.prix} GNF%0ARecu:${vente.recu} GNF%0A${etat}%0AHeure:${vente.heure}`;
-window.open("https://wa.me/"+NUMERO_PATRON+"?text="+message, "_blank");
-document.getElementById('msg').innerHTML = "<b style='color:red'>Message WhatsApp ouvert - Clique ENVOYER</b>";
-}
-</script></body></html>
