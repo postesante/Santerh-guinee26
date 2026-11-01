@@ -1,1 +1,31 @@
- https://postesante.github.io/?role=suppleant
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Poste Sante - Guinee</title><style>body{font-family:sans-serif;background:#f4f6f5;margin:0}.header{background:#009944;color:#fff;padding:15px;text-align:center;font-weight:bold;font-size:19px}.card{background:#fff;margin:12px;padding:15px;border-radius:10px}.btn{background:#009944;color:#fff;border:none;padding:15px;width:100%;border-radius:8px;font-weight:bold;font-size:18px}input,select{width:100%;padding:10px;margin:6px 0;border:1px solid #ccc;border-radius:6px}</style></head><body>
+<div class="header">POSTE SANTE - SUPPLEANT</div>
+<div class="card">
+<h3>Vente Medicament</h3>
+Date <input type="date" id="date">
+Medicament <select id="med"><option>CTA</option><option>Amoxicilline</option><option>Paracetamol</option><option>Quinine</option><option>Cotrimoxazole</option><option>Autre</option></select>
+Prix vendu (GNF) <input type="number" id="prix" placeholder="5000">
+Argent recu (GNF) <input type="number" id="recu" placeholder="5000">
+<label style="background:#fff3cd;padding:12px;display:block;border-radius:8px;margin:10px 0;border:1px solid #ffc107"><input type="checkbox" id="envoye" style="width:auto"> J'AI ENVOYE SUR ORANGE MONEY</label>
+Numero Transaction OM <input type="text" id="trans" placeholder="Ex: 123456">
+<button class="btn" onclick="valider()">VALIDER ET ENVOYER AU PATRON</button>
+<p id="msg"></p>
+</div>
+<div class="card"><h4>Historique</h4><div id="liste"></div></div>
+<script>
+const NUMERO_PATRON = "224622015764";
+document.getElementById('date').valueAsDate=new Date();
+function valider(){
+let prix=document.getElementById('prix').value;
+if(!prix){alert('Mets le prix');return}
+let vente={date:document.getElementById('date').value,med:document.getElementById('med').value,prix:prix,recu:document.getElementById('recu').value,envoye:document.getElementById('envoye').checked,trans:document.getElementById('trans').value,heure:new Date().toLocaleString()};
+let arr=JSON.parse(localStorage.getItem('ventes')||'[]');arr.push(vente);localStorage.setItem('ventes',JSON.stringify(arr));
+let etat = vente.envoye ? "✅ ARGENT ENVOYE OM: "+vente.trans : "❌ ALERTE NON ENVOYE - DETTE - A RECLAMER";
+let message = `POSTE SANTE - VENTE%0ADate: ${vente.date}%0AMed: ${vente.med}%0APrix: ${vente.prix} GNF%0ARecu: ${vente.recu} GNF%0A${etat}%0AHeure: ${vente.heure}`;
+window.open("https://wa.me/"+NUMERO_PATRON+"?text="+message, "_blank");
+document.getElementById('msg').innerHTML = "<b style='color:green'>✅ Message WhatsApp ouvert vers 622015764 - Clique sur ENVOYER</b>";
+afficher();
+}
+function afficher(){let arr=JSON.parse(localStorage.getItem('ventes')||'[]');let h='';arr.slice().reverse().forEach(x=>{h+=`<div style="border-bottom:1px solid #eee;padding:6px">${x.date} - ${x.med} - ${x.prix}GNF - ${x.envoye?'✅ '+x.trans:'❌ NON ENVOYE'}</div>`});document.getElementById('liste').innerHTML=h||'Aucune vente'}
+afficher();
+</script></body></html>
