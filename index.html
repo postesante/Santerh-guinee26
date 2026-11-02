@@ -60,3 +60,31 @@ document.getElementById('menu').style.display='grid';
 </script>
 </body>
 </html>
+function enregistrerMed(){function enregistrerMed(){
+  const nom = document.getElementById('nomMed').value;
+  const qte = document.getElementById('qteMed').value;
+  if(!nom || !qte){ alert('Mets nom et quantité'); return; }
+  
+  // ENVOIE CHEZ LE PATRON
+  firebase.database().ref('filanidialakoro/medicaments').push({
+    nom: nom,
+    quantite: qte,
+    qui: 'suppleant',
+    heure: new Date().toLocaleString()
+  });
+  
+  alert('✅ Envoyé chez le patron !');
+  document.getElementById('nomMed').value='';
+  document.getElementById('qteMed').value='';
+}
+
+// Pour que le patron VOIT tout ce qui arrive
+firebase.database().ref('filanidialakoro/medicaments').on('value', snap => {
+  let liste = '';
+  snap.forEach(child => {
+    const m = child.val();
+    liste += `<div>💊 ${m.nom} - ${m.quantite} (par ${m.qui})</div>`;
+  });
+  const zone = document.getElementById('listeMeds');
+  if(zone) zone.innerHTML = liste;
+});
