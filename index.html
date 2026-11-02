@@ -10,78 +10,73 @@
 body{font-family:Arial;background:#f0f2f5;margin:0;padding:10px}
 .header{background:#1877f2;color:white;padding:12px;text-align:center;border-radius:10px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
-.card{background:white;padding:20px;border-radius:12px;text-align:center;box-shadow:0 2px 5px rgba(0,0,0,.1);cursor:pointer;font-weight:bold}
+.card{background:white;padding:18px;border-radius:12px;text-align:center;box-shadow:0 2px 5px rgba(0,0,0,.1);cursor:pointer;font-weight:bold}
 #content{background:white;margin-top:15px;padding:15px;border-radius:12px}
-input,textarea,select{width:100%;padding:10px;margin:6px 0;border:1px solid #ccc;border-radius:8px;box-sizing:border-box}
-.btn{background:#1877f2;color:white;border:none;padding:12px;border-radius:8px;width:100%;font-weight:bold}
-.btn-green{background:#42b72a} table{width:100%;border-collapse:collapse} th,td{border:1px solid #ddd;padding:7px}
-.hidden{display:none}
+input{width:100%;padding:12px;margin:6px 0;border:1px solid #ccc;border-radius:8px;box-sizing:border-box}
+.btn{border:none;padding:12px;border-radius:8px;width:100%;font-weight:bold;color:white}
+.btn-blue{background:#1877f2} .btn-green{background:#42b72a}
+table{width:100%;border-collapse:collapse;margin-top:10px} th,td{border:1px solid #ddd;padding:8px;font-size:14px}
 </style>
 </head>
 <body>
-<div class="header" id="header">Chargement...</div>
+<div class="header" id="header"></div>
 <div class="grid" id="grid"></div>
-<div id="content">Clique un bouton</div>
+<div id="content"></div>
 <script>
+// === TA CONFIG FIREBASE - REMPLACE APIKEY SI BESOIN ===
 const firebaseConfig = {
-  apiKey: "AIzaSy...",
+  apiKey: "AIzaSyDummyRemplaceMoi",
   authDomain: "filanidialakoro.firebaseapp.com",
   databaseURL: "https://filanidialakoro-default-rtdb.firebaseio.com",
   projectId: "filanidialakoro",
   storageBucket: "filanidialakoro.appspot.com",
-  messagingSenderId: "...",
-  appId: "..."
+  messagingSenderId: "123456789",
+  appId: "1:123456789:web:abcd"
 };
+// Si tu as déjà ta vraie config dans ton ancien fichier, copie-colle la ici
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+
 const role = new URLSearchParams(location.search).get('role')||'patron';
 const isPatron = role==='patron';
-document.getElementById('header').innerHTML = isPatron ? '👑 PATRON - Accès complet (6 modules)' : '👤 SUPPLÉANT - Accès limité (2 modules)';
-let gridHTML='';
-gridHTML+=`<div class="card" onclick="openModule('medicaments')">💊 Médicaments<br><small id="countMed">28</small></div>`;
-gridHTML+=`<div class="card" onclick="openModule('dettes')">📒 Dettes Payé</div>`;
-if(isPatron){
- gridHTML+=`<div class="card" onclick="openModule('suivi')">📈 SUIVI LIVE</div>`;
- gridHTML+=`<div class="card" onclick="openModule('primes')">🏆 Primes</div>`;
- gridHTML+=`<div class="card" onclick="openModule('observation')">📝 Observation</div>`;
- gridHTML+=`<div class="card" onclick="openModule('presence')">✅ Présence 600k</div>`;
-}
+document.getElementById('header').innerHTML = isPatron ? '👑 PATRON - Accès complet (6 modules)' : '👤 SUPPLÉANT - 2 modules seulement';
+let gridHTML=`<div class="card" onclick="openModule('medicaments')">💊 Médicaments<br><small id="countMed">...</small></div><div class="card" onclick="openModule('dettes')">📒 Dettes Payé</div>`;
+if(isPatron){ gridHTML+=`<div class="card" onclick="openModule('suivi')">📈 SUIVI LIVE</div><div class="card" onclick="openModule('primes')">🏆 Primes</div><div class="card" onclick="openModule('observation')">📝 Observation</div><div class="card" onclick="openModule('presence')">✅ Présence 600k</div>`; }
 document.getElementById('grid').innerHTML=gridHTML;
 
-function openModule(n){
- if(n==='medicaments') loadMedicaments();
- if(n==='dettes') loadDettes();
- if(n==='suivi') loadSuivi();
- if(n==='primes') loadPrimes();
- if(n==='observation') loadObservation();
- if(n==='presence') loadPresence();
-}
+const LISTE_28 = ["Paracetamol","Amoxicilline","Metronidazole","Ibuprofene","Ciprofloxacine","Omeprazole","Diclofenac","Cotrimoxazole","Artemether","Quinine","Fer","Vitamine C","Vitamine B Complex","Albendazole","Mebendazole","Salbutamol","Prednisolone","Dexamethasone","Gentamicine","Doxycycline","Azithromycine","Chloroquine","Loperamide","SRO","Betadine","Cotton","Alcool"];
+
+function openModule(n){ if(n==='medicaments') loadMedicaments(); if(n==='dettes') loadDettes(); if(n==='suivi') loadSuivi(); if(n==='primes') loadPrimes(); if(n==='observation') loadObservation(); if(n==='presence') loadPresence(); }
+
 function loadMedicaments(){
- let h=`<h3>💊 Médicaments</h3>`;
- if(isPatron) h+=`<input id="newMedName" placeholder="Nom médicament"><button class="btn btn-green" onclick="addMedicament()">AUGMENTER LA LISTE</button>`;
- h+=`<div id="medTable">Chargement...</div>`;
- if(isPatron) h+=`<div style="margin-top:10px;background:#fff8e1;padding:8px;border-radius:8px"><b>PATRON SUIT SUPPLÉANT</b><div id="lv"></div></div>`;
+ let h=`<h3>💊 Médicaments</h3>
+ <input id="newMedName" placeholder="Nom nouveau médicament">
+ <button class="btn btn-green" onclick="addMedicament()">AUGMENTER LA LISTE</button>
+ <div id="medTable" style="margin-top:10px">Chargement...</div>`;
+ if(isPatron) h+=`<div style="margin-top:10px;background:#fff8e1;padding:8px;border-radius:8px"><b>PATRON SUIT SUPPLÉANT</b><div id="lv">Aucune vente</div></div>`;
  document.getElementById('content').innerHTML=h;
- db.ref('postes').on('value',s=>{
-  let d=s.val()||{}, t='<table><tr><th>Nom</th><th>Qté</th>'+(isPatron?'<th>X</th>':'')+'</tr>',c=0;
-  for(let k in d){c++; t+=`<tr><td>${d[k].nom||k}</td><td><input id="q_${k}" type="number" value="${d[k].quantite||0}" onchange="updateQ('${k}')"></td>${isPatron?`<td><button onclick="deleteMed('${k}')">X</button></td>`:''}</tr>`;}
-  t+='</table><p>'+c+' médicaments - permanent</p>'; document.getElementById('medTable').innerHTML=t; let e=document.getElementById('countMed'); if(e) e.innerText=c;
+ 
+ db.ref('postes').once('value').then(s=>{
+  if(!s.exists()){
+   // Crée les 28 médicaments automatiquement si vide
+   let updates={};
+   LISTE_28.forEach(name=>{ let k=name.replace(/[^a-zA-Z0-9]/g,'_'); updates[k]={nom:name,quantite:0}; });
+   db.ref('postes').set(updates);
+  }
  });
- if(isPatron) db.ref('ventes_suppleant').on('value',s=>{let d=s.val()||{},hh=''; for(let k in d)hh+=`<div>${d[k].med}:${d[k].qte} ${d[k].date}</div>`; let el=document.getElementById('lv'); if(el) el.innerHTML=hh||'Aucune';});
+ 
+ db.ref('postes').on('value',snap=>{
+  let d=snap.val()||{};
+  let c=Object.keys(d).length;
+  if(c===0){ document.getElementById('medTable').innerHTML='Base vide, création en cours... recharge'; return; }
+  let t='<table><tr><th>Nom</th><th>Qté</th>'+(isPatron?'<th>X</th>':'')+'</tr>';
+  for(let k in d){ t+=`<tr><td>${d[k].nom||k}</td><td><input id="q_${k}" type="number" value="${d[k].quantite||0}" onchange="updateQ('${k}')" style="padding:6px"></td>${isPatron?`<td><button onclick="deleteMed('${k}')">X</button></td>`:''}</tr>`; }
+  t+='</table><p><b>'+c+' médicaments</b> - permanent, ne disparait plus</p>';
+  document.getElementById('medTable').innerHTML=t;
+  document.getElementById('countMed').innerText=c;
+ }, err=>{ document.getElementById('medTable').innerHTML='Erreur Firebase: '+err.message+'<br>Vérifie les règles: Mets .read:true et .write:true'; });
 }
-function addMedicament(){let nom=document.getElementById('newMedName').value.trim(); if(!nom)return; let key=nom.replace(/[^a-zA-Z0-9]/g,'_'); db.ref('postes/'+key).set({nom,quantite:0}).then(()=>document.getElementById('newMedName').value='');}
+
+function addMedicament(){let nom=document.getElementById('newMedName').value.trim(); if(!nom)return alert('Tape un nom'); let key=nom.replace(/[^a-zA-Z0-9]/g,'_')+'_'+Date.now(); db.ref('postes/'+key).set({nom:nom,quantite:0}).then(()=>{document.getElementById('newMedName').value=''; alert(nom+' ajouté !');});}
 function updateQ(k){let q=document.getElementById('q_'+k).value; db.ref('postes/'+k+'/quantite').set(parseInt(q)||0); if(!isPatron) db.ref('ventes_suppleant').push({med:k,qte:q,date:new Date().toLocaleString()});}
-function deleteMed(k){if(confirm('Supprimer?')) db.ref('postes/'+k).remove();}
-function loadDettes(){document.getElementById('content').innerHTML='<h3>📒 Dettes Payé</h3><input id="dNom" placeholder="Nom client"><input id="dMont" type="number" placeholder="Montant"><button class="btn" onclick="saveDette()">Enregistrer</button><div id="dList"></div>'; db.ref('dettes_paye').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Client</th><th>Montant</th><th>Date</th></tr>'; for(let k in d)h+=`<tr><td>${d[k].nom}</td><td>${d[k].montant}</td><td>${d[k].date}</td></tr>`; document.getElementById('dList').innerHTML=h+'</table>';});}
-function saveDette(){let n=document.getElementById('dNom').value,m=document.getElementById('dMont').value; if(!n||!m)return; db.ref('dettes_paye').push({nom:n,montant:m,date:new Date().toLocaleString()}); document.getElementById('dNom').value=''; document.getElementById('dMont').value='';}
-function loadSuivi(){document.getElementById('content').innerHTML='<h3>📈 SUIVI LIVE</h3><div id="box"></div>'; db.ref('ventes_suppleant').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Med</th><th>Qté</th><th>Date</th></tr>'; for(let k in d)h+=`<tr><td>${d[k].med}</td><td>${d[k].qte}</td><td>${d[k].date}</td></tr>`; document.getElementById('box').innerHTML=h+'</table>';});}
-function loadPrimes(){document.getElementById('content').innerHTML='<h3>🏆 Primes</h3><input id="pNom" placeholder="Nom"><input id="pMont" type="number" placeholder="Montant"><textarea id="pMot" placeholder="Motif"></textarea><button class="btn" onclick="savePrime()">Enregistrer</button><div id="pList"></div>'; db.ref('primes').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Nom</th><th>Montant</th><th>Motif</th></tr>'; for(let k in d)h+=`<tr><td>${d[k].nom}</td><td>${d[k].montant}</td><td>${d[k].motif}</td></tr>`; document.getElementById('pList').innerHTML=h+'</table>';});}
-function savePrime(){let n=document.getElementById('pNom').value,m=document.getElementById('pMont').value,mo=document.getElementById('pMot').value; db.ref('primes').push({nom:n,montant:m,motif:mo,date:new Date().toLocaleString()});}
-function loadObservation(){document.getElementById('content').innerHTML='<h3>📝 Observation</h3><textarea id="oTxt" rows="4" placeholder="Observation..."></textarea><button class="btn" onclick="saveObs()">Enregistrer</button><div id="oList"></div>'; db.ref('observations').on('value',s=>{let d=s.val()||{},h=''; for(let k in d)h+=`<div style="padding:8px;border-bottom:1px solid #eee"><b>${d[k].date}</b><br>${d[k].texte}</div>`; document.getElementById('oList').innerHTML=h;});}
-function saveObs(){let t=document.getElementById('oTxt').value; if(!t)return; db.ref('observations').push({texte:t,date:new Date().toLocaleString()});}
-function loadPresence(){document.getElementById('content').innerHTML='<h3>✅ Présence 600k</h3><input id="prNom" placeholder="Nom"><select id="prSt"><option>Présent</option><option>Absent</option></select><button class="btn" onclick="savePres()">Valider 600k</button><div id="prList"></div>'; db.ref('presence_600k').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Nom</th><th>Statut</th><th>Date</th></tr>'; for(let k in d)h+=`<tr><td>${d[k].nom}</td><td>${d[k].statut}</td><td>${d[k].date}</td></tr>`; document.getElementById('prList').innerHTML=h+'</table>';});}
-function savePres(){let n=document.getElementById('prNom').value,s=document.getElementById('prSt').value; db.ref('presence_600k').push({nom:n,statut:s,date:new Date().toLocaleString(),montant:'600k'});}
-loadMedicaments();
-</script>
-</body>
-</html>
+function deleteMed(k){if(confirm('
