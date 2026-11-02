@@ -1,43 +1,119 @@
  <!DOCTYPE html>
 <html>
 <head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Filanidialakoro - Poste Santé</title>
+<title>Filanidialakoro - Patron Suit Suppléant</title>
 <style>
-body{font-family:Arial;margin:0;background:#f2f4f7}
-.header{padding:15px;text-align:center;color:white;border-radius:0 0 15px 15px}
-.patron{background:#2563eb}
-.suppleant{background:#ea580c}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:15px}
-.card{background:white;padding:20px;border-radius:12px;text-align:center;font-weight:bold;box-shadow:0 2px 5px #0001}
-.locked{opacity:0.2;pointer-events:none;position:relative}
-.locked:after{content:"🔒";position:absolute;top:5px;right:10px}
+body{font-family:Arial;margin:0;background:#f0f2f5}
+.header{padding:12px;text-align:center;color:white}
+.patron{background:#2563eb} .suppleant{background:#ea580c}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:15px}
+.card{background:white;padding:18px;border-radius:12px;text-align:center;font-weight:bold;cursor:pointer}
+.locked{opacity:0.25;pointer-events:none}
+.page{display:none;padding:15px}
+.box{background:white;padding:15px;border-radius:12px;margin-bottom:12px}
+input{width:100%;padding:12px;border:1px solid #ccc;border-radius:8px;margin:6px 0;box-sizing:border-box}
+.btn{padding:13px;background:#2563eb;color:white;border:none;border-radius:8px;width:100%;font-weight:bold}
+.btn-orange{background:#ea580c}
+.live{padding:10px;border-left:4px solid #2563eb;background:#f8fafc;margin:6px 0;border-radius:6px}
+.live-supp{border-left-color:#ea580c;background:#fff7ed}
 </style>
 </head>
 <body>
 <div id="top" class="header patron">
-<div id="roleTitle">👑 PATRON - Filanidialakoro</div>
-<div>🟢 Sync Firebase OK</div>
+  <div id="title">👑 PATRON - Filanidialakoro</div>
+  <div id="sync">🟢 Prêt - Patron suit suppléant</div>
 </div>
-<div class="grid">
-<div class="card">📝<br>Observation</div>
-<div class="card">💊<br>Médicaments 28</div>
-<div id="btnPrimes" class="card">🏆<br>Primes</div>
-<div class="card">📈<br>SUIVI LIVE</div>
-<div class="card" style="border:2px solid #22c55e">✅<br>Présence 600k</div>
-<div id="btnDettes" class="card">📒<br>Dettes Payé</div>
+
+<div id="menu" class="grid">
+  <div class="card" onclick="ouvrir('meds')">💊<br>Médicaments<div style="font-size:11px" id="count">0</div></div>
+  <div class="card" onclick="ouvrir('suivi')" style="border:2px solid #ea580c">📈<br>SUIVI LIVE<br><small>Patron suit suppléant</small></div>
+  <div id="bPrimes" class="card" onclick="ouvrir('primes')">🏆<br>Primes</div>
+  <div id="bDettes" class="card" onclick="ouvrir('dettes')">📒<br>Dettes Payé</div>
+  <div class="card">📝<br>Observation</div>
+  <div class="card">✅<br>Présence 600k</div>
 </div>
+
+<div id="meds" class="page">
+  <div class="box">
+    <h3>💊 Ajouter Médicament</h3>
+    <input id="nom" placeholder="Nom: Paracétamol">
+    <input id="qte" type="number" placeholder="Quantité: 20">
+    <button class="btn" id="btnAdd" onclick="ajouter()">ENREGISTRER + ENVOYER AU PATRON</button>
+  </div>
+  <div class="box"><h3>Stock (vu par les 2 en même temps)</h3><div id="liste">Chargement...</div></div>
+  <button class="btn" style="background:#666" onclick="retour()">Retour</button>
+</div>
+
+<div id="suivi" class="page">
+  <div class="box" style="background:#2563eb;color:white;text-align:center"><h3>👀 PATRON SUIT SUPPLÉANT EN DIRECT</h3></div>
+  <div class="box"><div id="live">En attente...</div></div>
+  <button class="btn" style="background:#666" onclick="retour()">Retour</button>
+</div>
+
+<div id="primes" class="page"><div class="box">🏆 Primes réservé patron</div><button class="btn" style="background:#666" onclick="retour()">Retour</button></div>
+<div id="dettes" class="page"><div class="box">📒 Dettes réservé patron</div><button class="btn" style="background:#666" onclick="retour()">Retour</button></div>
+
 <script>
-const params=new URLSearchParams(window.location.search);
-const role=params.get('role')||'patron';
-if(role==='suppleant'){
-document.getElementById('top').className='header suppleant';
-document.getElementById('roleTitle').innerText='🟠 SUPPLÉANT - Filanidialakoro (verrouillé)';
-document.getElementById('btnPrimes').classList.add('locked');
-document.getElementById('btnDettes').classList.add('locked');
-document.getElementById('btnPrimes').innerHTML='🏆<br>Primes<br><small>Verrouillé</small>';
-document.getElementById('btnDettes').innerHTML='📒<br>Dettes Payé<br><small>Verrouillé</small>';
+const DB = "https://filanidialakoro-default-rtdb.firebaseio.com";
+const params = new URLSearchParams(location.search);
+const role = params.get('role') || 'patron';
+const isSupp = role === 'suppleant';
+
+if(isSupp){
+  document.getElementById('top').className='header suppleant';
+  document.getElementById('title').innerText='🟠 SUPPLÉANT - Filanidialakoro';
+  document.getElementById('bPrimes').classList.add('locked');
+  document.getElementById('bDettes').classList.add('locked');
+  document.getElementById('btnAdd').className='btn btn-orange';
+  document.getElementById('btnAdd').innerText='ENVOYER AU PATRON';
 }
+
+function ouvrir(id){ 
+  if(isSupp && (id==='primes'||id==='dettes')){alert('🔒 Réservé patron');return;}
+  document.getElementById('menu').style.display='none';
+  document.getElementById(id).style.display='block';
+  charger();
+}
+function retour(){ 
+  document.querySelectorAll('.page').forEach(p=>p.style.display='none');
+  document.getElementById('menu').style.display='grid';
+}
+
+async function ajouter(){
+  const nom=document.getElementById('nom').value.trim();
+  const qte=document.getElementById('qte').value.trim();
+  if(!nom||!qte){alert('Remplis tout');return;}
+  await fetch(`${DB}/postes/medicaments.json`,{
+    method:'POST',
+    body: JSON.stringify({nom:nom,qte:qte,qui:role,date:new Date().toLocaleString('fr-GN')})
+  });
+  document.getElementById('nom').value=''; document.getElementById('qte').value='';
+  alert('✅ Envoyé ! Le patron le voit en direct');
+  charger();
+}
+
+async function charger(){
+  try{
+    const r = await fetch(`${DB}/postes/medicaments.json`);
+    const data = await r.json();
+    let html=''; let live=''; let c=0;
+    if(data){
+      Object.values(data).reverse().forEach(m=>{
+        c++;
+        const cls = m.qui==='suppleant' ? 'live live-supp' : 'live';
+        const line = `<div class="${cls}"><b>${m.nom}</b> - ${m.qte}<br><small>👤 ${m.qui} à ${m.date}</small></div>`;
+        html+=line; live+=line;
+      });
+    }
+    document.getElementById('liste').innerHTML = html || 'Aucun';
+    document.getElementById('live').innerHTML = live || 'Aucune action';
+    document.getElementById('count').innerText = c+' ajoutés';
+  }catch(e){ document.getElementById('sync').innerText='🔴 Vérifie Règles Firebase'; }
+}
+setInterval(charger, 3000);
+charger();
 </script>
 </body>
 </html>
