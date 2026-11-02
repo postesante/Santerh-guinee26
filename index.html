@@ -3,32 +3,34 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Filanidialakoro - Patron Suit Suppléant</title>
+<title>Filanidialakoro - 28 Médicaments</title>
 <style>
-body{font-family:Arial;margin:0;background:#f0f2f5}
-.header{padding:12px;text-align:center;color:white}
+body{font-family:Arial;margin:0;background:#f0f2f5;font-size:14px}
+.header{padding:12px;text-align:center;color:white;position:sticky;top:0;z-index:10}
 .patron{background:#2563eb} .suppleant{background:#ea580c}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:15px}
-.card{background:white;padding:18px;border-radius:12px;text-align:center;font-weight:bold;cursor:pointer}
+.card{background:white;padding:15px;border-radius:12px;text-align:center;font-weight:bold;cursor:pointer;box-shadow:0 2px 5px #0001}
 .locked{opacity:0.25;pointer-events:none}
-.page{display:none;padding:15px}
-.box{background:white;padding:15px;border-radius:12px;margin-bottom:12px}
-input{width:100%;padding:12px;border:1px solid #ccc;border-radius:8px;margin:6px 0;box-sizing:border-box}
-.btn{padding:13px;background:#2563eb;color:white;border:none;border-radius:8px;width:100%;font-weight:bold}
+.page{display:none;padding:10px}
+.box{background:white;padding:12px;border-radius:12px;margin-bottom:10px}
+.btn{padding:12px;background:#2563eb;color:white;border:none;border-radius:8px;width:100%;font-weight:bold;margin-top:8px}
 .btn-orange{background:#ea580c}
-.live{padding:10px;border-left:4px solid #2563eb;background:#f8fafc;margin:6px 0;border-radius:6px}
-.live-supp{border-left-color:#ea580c;background:#fff7ed}
+table{width:100%;border-collapse:collapse;background:white;border-radius:8px;overflow:hidden}
+th{background:#2563eb;color:white;padding:10px;text-align:left}
+td{padding:8px;border-bottom:1px solid #eee}
+input.qte{width:70px;padding:6px;border:1px solid #ccc;border-radius:6px;text-align:center}
+.live{padding:8px;border-left:4px solid #ea580c;background:#fff7ed;margin:5px 0;border-radius:6px;font-size:13px}
 </style>
 </head>
 <body>
 <div id="top" class="header patron">
-  <div id="title">👑 PATRON - Filanidialakoro</div>
-  <div id="sync">🟢 Prêt - Patron suit suppléant</div>
+  <div id="title" style="font-weight:bold">👑 PATRON - Filanidialakoro</div>
+  <div id="sync">🟢 Tableau 28 médicaments - Patron suit suppléant</div>
 </div>
 
 <div id="menu" class="grid">
-  <div class="card" onclick="ouvrir('meds')">💊<br>Médicaments<div style="font-size:11px" id="count">0</div></div>
-  <div class="card" onclick="ouvrir('suivi')" style="border:2px solid #ea580c">📈<br>SUIVI LIVE<br><small>Patron suit suppléant</small></div>
+  <div class="card" onclick="ouvrir('meds')" style="border:2px solid #2563eb">💊<br>Médicaments 28<br><small id="count">Chargement...</small></div>
+  <div class="card" onclick="ouvrir('suivi')" style="border:2px solid #ea580c">📈<br>SUIVI LIVE<br><small>Derniers ajouts</small></div>
   <div id="bPrimes" class="card" onclick="ouvrir('primes')">🏆<br>Primes</div>
   <div id="bDettes" class="card" onclick="ouvrir('dettes')">📒<br>Dettes Payé</div>
   <div class="card">📝<br>Observation</div>
@@ -37,23 +39,27 @@ input{width:100%;padding:12px;border:1px solid #ccc;border-radius:8px;margin:6px
 
 <div id="meds" class="page">
   <div class="box">
-    <h3>💊 Ajouter Médicament</h3>
-    <input id="nom" placeholder="Nom: Paracétamol">
-    <input id="qte" type="number" placeholder="Quantité: 20">
-    <button class="btn" id="btnAdd" onclick="ajouter()">ENREGISTRER + ENVOYER AU PATRON</button>
+    <h3 style="margin:0 0 10px 0">💊 Tableau des 28 Médicaments</h3>
+    <small>Le suppléant modifie la quantité, le patron voit en direct</small>
+    <div style="overflow:auto;margin-top:10px">
+      <table>
+        <thead><tr><th>#</th><th>Médicament</th><th>Qté Stock</th><th>Action</th></tr></thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
   </div>
-  <div class="box"><h3>Stock (vu par les 2 en même temps)</h3><div id="liste">Chargement...</div></div>
-  <button class="btn" style="background:#666" onclick="retour()">Retour</button>
+  <div class="box"><h4>➕ Ajouter nouveau médicament</h4><input id="nomNew" placeholder="Nom médicament"><input id="qteNew" type="number" placeholder="Qté"><button class="btn" id="btnAdd" onclick="ajouterNouveau()">AJOUTER AU TABLEAU</button></div>
+  <button class="btn" style="background:#666" onclick="retour()">⬅ Retour menu</button>
 </div>
 
 <div id="suivi" class="page">
-  <div class="box" style="background:#2563eb;color:white;text-align:center"><h3>👀 PATRON SUIT SUPPLÉANT EN DIRECT</h3></div>
-  <div class="box"><div id="live">En attente...</div></div>
+  <div class="box" style="background:#ea580c;color:white;text-align:center"><h3 style="margin:0">👀 CE QUE LE SUPPLÉANT VIENT DE FAIRE</h3></div>
+  <div class="box"><div id="liveFeed">En attente...</div></div>
   <button class="btn" style="background:#666" onclick="retour()">Retour</button>
 </div>
 
-<div id="primes" class="page"><div class="box">🏆 Primes réservé patron</div><button class="btn" style="background:#666" onclick="retour()">Retour</button></div>
-<div id="dettes" class="page"><div class="box">📒 Dettes réservé patron</div><button class="btn" style="background:#666" onclick="retour()">Retour</button></div>
+<div id="primes" class="page"><div class="box">🏆 Primes - Patron seul</div><button class="btn" style="background:#666" onclick="retour()">Retour</button></div>
+<div id="dettes" class="page"><div class="box">📒 Dettes Payé - Patron seul</div><button class="btn" style="background:#666" onclick="retour()">Retour</button></div>
 
 <script>
 const DB = "https://filanidialakoro-default-rtdb.firebaseio.com";
@@ -61,59 +67,70 @@ const params = new URLSearchParams(location.search);
 const role = params.get('role') || 'patron';
 const isSupp = role === 'suppleant';
 
+// LISTE DE TES 28 MÉDICAMENTS DE BASE
+const medsBase = ["Paracétamol 500mg","Amoxicilline 500mg","Métronidazole 250mg","Quinine 500mg","Cotrimoxazole","Ibuprofène 400mg","Chloroquine","Mebendazole","Artemether","Fer + Acide Folique","Amoxicilline sirop","Paracétamol sirop","SRO (Sel réhydratation)","Ciproflaxacine","Oméprazole","Diclofénac","Gentamicine injectable","Pénicilline","Vitamine A","Vitamine B complexe","Albendazole","Captopril","Salbutamol","Doxycycline","Azithromycine","Lidocaïne","Ringer Lactate","Sérum Glucose"];
+
 if(isSupp){
   document.getElementById('top').className='header suppleant';
   document.getElementById('title').innerText='🟠 SUPPLÉANT - Filanidialakoro';
   document.getElementById('bPrimes').classList.add('locked');
   document.getElementById('bDettes').classList.add('locked');
   document.getElementById('btnAdd').className='btn btn-orange';
-  document.getElementById('btnAdd').innerText='ENVOYER AU PATRON';
 }
 
-function ouvrir(id){ 
-  if(isSupp && (id==='primes'||id==='dettes')){alert('🔒 Réservé patron');return;}
-  document.getElementById('menu').style.display='none';
-  document.getElementById(id).style.display='block';
-  charger();
-}
-function retour(){ 
-  document.querySelectorAll('.page').forEach(p=>p.style.display='none');
-  document.getElementById('menu').style.display='grid';
-}
+function ouvrir(id){ if(isSupp && (id==='primes'||id==='dettes')){alert('🔒 Réservé patron');return;} document.getElementById('menu').style.display='none'; document.getElementById(id).style.display='block'; if(id==='meds') chargerStock(); }
+function retour(){ document.querySelectorAll('.page').forEach(p=>p.style.display='none'); document.getElementById('menu').style.display='grid'; }
 
-async function ajouter(){
-  const nom=document.getElementById('nom').value.trim();
-  const qte=document.getElementById('qte').value.trim();
-  if(!nom||!qte){alert('Remplis tout');return;}
-  await fetch(`${DB}/postes/medicaments.json`,{
-    method:'POST',
-    body: JSON.stringify({nom:nom,qte:qte,qui:role,date:new Date().toLocaleString('fr-GN')})
+async function chargerStock(){
+  const r = await fetch(`${DB}/postes/stock28.json`);
+  const stock = await r.json() || {};
+  let html='';
+  medsBase.forEach((nom,i)=>{
+    const qte = stock[i]?.qte || 0;
+    const qui = stock[i]?.qui || '';
+    html+=`<tr><td>${i+1}</td><td><b>${nom}</b><br><small style="color:#ea580c">${qui? 'par '+qui:''}</small></td><td><input class="qte" id="q_${i}" type="number" value="${qte}"></td><td><button style="padding:6px 10px;background:#22c55e;color:white;border:none;border-radius:6px" onclick="sauverQte(${i},'${nom}')">✔️</button></td></tr>`;
   });
-  document.getElementById('nom').value=''; document.getElementById('qte').value='';
-  alert('✅ Envoyé ! Le patron le voit en direct');
-  charger();
+  // Médicaments ajoutés en plus
+  Object.keys(stock).forEach(k=>{
+    if(k>=28){
+      const m=stock[k];
+      html+=`<tr style="background:#fff7ed"><td>+</td><td><b>${m.nom}</b><br><small>par ${m.qui}</small></td><td><input class="qte" id="q_${k}" type="number" value="${m.qte}"></td><td><button style="padding:6px 10px;background:#22c55e;color:white;border:none;border-radius:6px" onclick="sauverQte(${k},'${m.nom}')">✔️</button></td></tr>`;
+    }
+  });
+  document.getElementById('tableBody').innerHTML=html;
+  document.getElementById('count').innerText= Object.keys(stock).length + ' médicaments';
+  
+  // Live feed
+  const r2 = await fetch(`${DB}/postes/historique.json`);
+  const hist = await r2.json();
+  let live='';
+  if(hist){ Object.values(hist).reverse().slice(0,20).forEach(h=>{ live+=`<div class="live"><b>${h.nom}</b> → ${h.qte}<br><small>👤 ${h.qui} à ${h.date}</small></div>`; }); }
+  document.getElementById('liveFeed').innerHTML=live||'Aucun mouvement';
 }
 
-async function charger(){
-  try{
-    const r = await fetch(`${DB}/postes/medicaments.json`);
-    const data = await r.json();
-    let html=''; let live=''; let c=0;
-    if(data){
-      Object.values(data).reverse().forEach(m=>{
-        c++;
-        const cls = m.qui==='suppleant' ? 'live live-supp' : 'live';
-        const line = `<div class="${cls}"><b>${m.nom}</b> - ${m.qte}<br><small>👤 ${m.qui} à ${m.date}</small></div>`;
-        html+=line; live+=line;
-      });
-    }
-    document.getElementById('liste').innerHTML = html || 'Aucun';
-    document.getElementById('live').innerHTML = live || 'Aucune action';
-    document.getElementById('count').innerText = c+' ajoutés';
-  }catch(e){ document.getElementById('sync').innerText='🔴 Vérifie Règles Firebase'; }
+async function sauverQte(index, nom){
+  const qte = document.getElementById('q_'+index).value;
+  if(qte===''){alert('Mets quantité');return;}
+  await fetch(`${DB}/postes/stock28/${index}.json`,{method:'PUT',body:JSON.stringify({nom:nom,qte:qte,qui:role,date:new Date().toLocaleString('fr-GN')})});
+  await fetch(`${DB}/postes/historique.json`,{method:'POST',body:JSON.stringify({nom:nom,qte:qte,qui:role,date:new Date().toLocaleString('fr-GN')})});
+  document.getElementById('sync').innerText=`✅ ${nom} = ${qte} envoyé au patron !`;
+  setTimeout(()=>document.getElementById('sync').innerText='🟢 Tableau 28 médicaments - Sync OK',2000);
 }
-setInterval(charger, 3000);
-charger();
+
+async function ajouterNouveau(){
+  const nom=document.getElementById('nomNew').value.trim();
+  const qte=document.getElementById('qteNew').value.trim();
+  if(!nom||!qte){alert('Remplis nom et qté');return;}
+  const r = await fetch(`${DB}/postes/stock28.json`); const s = await r.json() || {}; const newIndex = Object.keys(s).length + 100;
+  await sauverQte(newIndex, nom); 
+  // corrige la qte
+  await fetch(`${DB}/postes/stock28/${newIndex}.json`,{method:'PUT',body:JSON.stringify({nom:nom,qte:qte,qui:role,date:new Date().toLocaleString('fr-GN')})});
+  document.getElementById('nomNew').value=''; document.getElementById('qteNew').value='';
+  chargerStock();
+}
+
+setInterval(()=>{ if(document.getElementById('meds').style.display==='block' || document.getElementById('suivi').style.display==='block') chargerStock(); },3000);
+chargerStock();
 </script>
 </body>
 </html>
