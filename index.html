@@ -1,51 +1,20 @@
- <!DOCTYPE html>
-<html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Filanidialakoro - Poste Santé</title>
-<style>
-body{font-family:Arial; margin:0; background:#f2f4f7}
-.header{padding:15px; text-align:center; color:white; border-radius:0 0 15px 15px}
-.patron{background:#2563eb}
-.suppleant{background:#ea580c}
-.grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:15px}
-.card{background:white; padding:20px; border-radius:12px; text-align:center; font-weight:bold; box-shadow:0 2px 5px #0001; cursor:pointer}
-.locked{opacity:0.3; pointer-events:none; position:relative}
-.locked:after{content:"🔒"; position:absolute; top:5px; right:10px}
-</style>
-</head>
-<body>
-<div id="top" class="header patron">
-  <div id="roleTitle">👑 PATRON - Filanidialakoro (tu vois tout + primes)</div>
-  <div id="sync">🟢 Sync Firebase OK</div>
-</div>
-
-<div class="grid">
-  <div class="card">📝<br>Observation</div>
-  <div class="card">💊<br>Médicaments 28</div>
-  <div id="btnPrimes" class="card">🏆<br>Primes</div>
-  <div class="card">📈<br>SUIVI LIVE</div>
-  <div class="card" style="border:2px solid #22c55e">✅<br>Présence 600k</div>
-  <div id="btnDettes" class="card">📒<br>Dettes Payé</div>
-</div>
-
-<script>
-// LIT LE ROLE DANS LE LIEN
-const params = new URLSearchParams(window.location.search);
-const role = params.get('role') || 'patron';
-
+ <script>
+// CODE DE VERROUILLAGE - à mettre tout en haut de ton <script>
+const urlParams = new URLSearchParams(window.location.search);
+const role = urlParams.get('role');
 if(role === 'suppleant'){
-  document.getElementById('top').className = 'header suppleant';
-  document.getElementById('roleTitle').innerText = '🟠 SUPPLÉANT - Filanidialakoro (primes verrouillées 🔒)';
-  // VERROUILLE LES 2 BOUTONS
-  document.getElementById('btnPrimes').classList.add('locked');
-  document.getElementById('btnDettes').classList.add('locked');
-  document.getElementById('btnPrimes').innerHTML = '🏆<br>Primes<br><small>Verrouillé</small>';
-  document.getElementById('btnDettes').innerHTML = '📒<br>Dettes Payé<br><small>Verrouillé</small>';
+  window.addEventListener('DOMContentLoaded', ()=>{
+    document.querySelectorAll('#btnPrimes, #btnDettes, .primes-box, .dettes-box').forEach(el=>{
+      if(el){
+        el.style.opacity='0.2';
+        el.style.pointerEvents='none';
+        el.innerHTML += '<br><span style=\"color:red\">🔒 Verrouillé</span>';
+      }
+    });
+    const top = document.getElementById('top') || document.querySelector('.header');
+    if(top){ top.style.background='#ea580c'; }
+    const title = document.getElementById('roleTitle');
+    if(title){ title.innerText='🟠 SUPPLÉANT - Filanidialakoro (primes verrouillées)'; }
+  });
 }
-
-// ICI TU GARDES TON CODE FIREBASE EXISTANT
-// Ton numéro 622015764 etc...
 </script>
-</body>
-</html>
