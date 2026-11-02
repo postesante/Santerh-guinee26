@@ -2,16 +2,17 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Filanidialakoro - Poste Santé</title>
+<title>Filanidialakoro</title>
 <style>
 body{font-family:Arial;margin:0;background:#f2f4f7}
-.header{padding:15px;text-align:center;color:white;border-radius:0 0 15px 15px}
-.patron{background:#2563eb}
-.suppleant{background:#ea580c}
+.header{padding:15px;text-align:center;color:white}
+.patron{background:#2563eb} .suppleant{background:#ea580c}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:15px}
-.card{background:white;padding:20px;border-radius:12px;text-align:center;font-weight:bold;box-shadow:0 2px 5px #0001}
-.locked{opacity:0.2;pointer-events:none;position:relative}
-.locked:after{content:"🔒";position:absolute;top:5px;right:10px}
+.card{background:white;padding:20px;border-radius:12px;text-align:center;font-weight:bold;cursor:pointer}
+.locked{opacity:0.2;pointer-events:none}
+.page{display:none;padding:20px;background:white;margin:15px;border-radius:12px}
+button{padding:12px 20px;background:#2563eb;color:white;border:none;border-radius:8px;width:100%;margin-top:10px}
+input,textarea{width:100%;padding:10px;margin:5px 0;border:1px solid #ccc;border-radius:8px}
 </style>
 </head>
 <body>
@@ -19,14 +20,23 @@ body{font-family:Arial;margin:0;background:#f2f4f7}
 <div id="roleTitle">👑 PATRON - Filanidialakoro</div>
 <div>🟢 Sync Firebase OK</div>
 </div>
-<div class="grid">
-<div class="card">📝<br>Observation</div>
-<div class="card">💊<br>Médicaments 28</div>
-<div id="btnPrimes" class="card">🏆<br>Primes</div>
-<div class="card">📈<br>SUIVI LIVE</div>
-<div class="card" style="border:2px solid #22c55e">✅<br>Présence 600k</div>
-<div id="btnDettes" class="card">📒<br>Dettes Payé</div>
+
+<div id="menu" class="grid">
+<div class="card" onclick="ouvrir('obs')">📝<br>Observation</div>
+<div class="card" onclick="ouvrir('med')">💊<br>Médicaments 28</div>
+<div id="btnPrimes" class="card" onclick="ouvrir('primes')">🏆<br>Primes</div>
+<div class="card" onclick="ouvrir('suivi')">📈<br>SUIVI LIVE</div>
+<div class="card" style="border:2px solid #22c55e" onclick="ouvrir('presence')">✅<br>Présence 600k</div>
+<div id="btnDettes" class="card" onclick="ouvrir('dettes')">📒<br>Dettes Payé</div>
 </div>
+
+<div id="obs" class="page"><h3>Observation</h3><textarea placeholder="Écrire observation..."></textarea><button onclick="retour()">Enregistrer & Retour</button></div>
+<div id="med" class="page"><h3>Médicaments 28</h3><input placeholder="Nom médicament"><input placeholder="Quantité"><button onclick="retour()">Enregistrer</button></div>
+<div id="primes" class="page"><h3>Primes</h3><p>Ici tes primes patron</p><button onclick="retour()">Retour</button></div>
+<div id="dettes" class="page"><h3>Dettes Payé</h3><p>Liste des dettes</p><button onclick="retour()">Retour</button></div>
+<div id="presence" class="page"><h3>Présence 600k</h3><p>Présence validée</p><button onclick="retour()">Retour</button></div>
+<div id="suivi" class="page"><h3>SUIVI LIVE</h3><p>Suivi en direct</p><button onclick="retour()">Retour</button></div>
+
 <script>
 const params=new URLSearchParams(window.location.search);
 const role=params.get('role')||'patron';
@@ -37,6 +47,15 @@ document.getElementById('btnPrimes').classList.add('locked');
 document.getElementById('btnDettes').classList.add('locked');
 document.getElementById('btnPrimes').innerHTML='🏆<br>Primes<br><small>Verrouillé</small>';
 document.getElementById('btnDettes').innerHTML='📒<br>Dettes Payé<br><small>Verrouillé</small>';
+}
+function ouvrir(id){
+if(role==='suppleant' && (id==='primes' || id==='dettes')){alert('🔒 Accès verrouillé pour suppléant');return;}
+document.getElementById('menu').style.display='none';
+document.getElementById(id).style.display='block';
+}
+function retour(){
+document.querySelectorAll('.page').forEach(p=>p.style.display='none');
+document.getElementById('menu').style.display='grid';
 }
 </script>
 </body>
