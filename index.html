@@ -13,10 +13,12 @@ body{font-family:Arial;background:#f0f2f5;margin:0;padding:10px}
 .card{background:white;padding:16px;border-radius:10px;text-align:center;box-shadow:0 2px 4px rgba(0,0,0,.1);cursor:pointer;font-weight:bold}
 #content{background:white;margin-top:12px;padding:12px;border-radius:10px}
 input,select{width:100%;padding:10px;margin:5px 0;border:1px solid #ccc;border-radius:8px;box-sizing:border-box}
-.btn{border:none;padding:11px;border-radius:8px;width:100%;font-weight:bold;color:white;cursor:pointer}
-.btn-blue{background:#1877f2} .btn-green{background:#42b72a} .btn-orange{background:#ff9800}
-table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px} th,td{border:1px solid #ddd;padding:6px;text-align:left}
+.btn{border:none;padding:11px;border-radius:8px;width:100%;font-weight:bold;color:white;cursor:pointer;margin-top:5px}
+.btn-blue{background:#1877f2} .btn-green{background:#42b72a} .btn-orange{background:#ff9800} .btn-red{background:#e74c3c}
+table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px} th,td{border:1px solid #ddd;padding:6px}
 .section{background:#f8f9fa;padding:10px;border-radius:8px;margin-top:10px;border:1px solid #e0e0e0}
+.med-row{display:flex;gap:5px;align-items:center;margin-bottom:6px}
+.med-row select{flex:2} .med-row input{flex:1}
 </style>
 </head>
 <body>
@@ -25,7 +27,7 @@ table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px} th,td{b
 <div id="content"></div>
 <script>
 const firebaseConfig = {
-  apiKey: "COLLE TA VRAIE CLE ICI",
+  apiKey: "COLLE TA VRAIE CLE ICI - REGARDE HISTORY",
   authDomain: "filanidialakoro.firebaseapp.com",
   databaseURL: "https://filanidialakoro-default-rtdb.firebaseio.com",
   projectId: "filanidialakoro",
@@ -37,110 +39,120 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const role = new URLSearchParams(location.search).get('role')||'patron';
 const isPatron = role==='patron';
-document.getElementById('header').innerHTML = isPatron ? '👑 PATRON - Accès complet' : '👤 SUPPLÉANT - 2 modules seulement';
+document.getElementById('header').innerHTML = isPatron ? '👑 PATRON - Accès complet' : '👤 SUPPLÉANT - 2 modules';
 
 let gridHTML=`<div class="card" onclick="openModule('medicaments')">💊 Médicaments</div><div class="card" onclick="openModule('dettes')">📒 Dettes Payé</div>`;
 if(isPatron){ gridHTML+=`<div class="card" onclick="openModule('suivi')">📈 SUIVI LIVE</div><div class="card" onclick="openModule('primes')">🏆 Primes</div><div class="card" onclick="openModule('observation')">📝 Observation</div><div class="card" onclick="openModule('presence')">✅ Présence 600k</div>`; }
 document.getElementById('grid').innerHTML=gridHTML;
-
 function openModule(n){ if(n==='medicaments') loadMedicaments(); if(n==='dettes') loadDettes(); if(n==='suivi') loadSuivi(); if(n==='primes') loadPrimes(); if(n==='observation') loadObservation(); if(n==='presence') loadPresence(); }
 
+let postesData={};
 function loadMedicaments(){
 let h=`
-<h3>💊 Médicaments</h3>
 <div class="section">
-<b>STOCK PERMANENT (28 médicaments)</b>
+<b>STOCK PERMANENT</b>
 <input id="newMedName" placeholder="Nom nouveau médicament">
 <button class="btn btn-green" onclick="addMedicament()">AUGMENTER LA LISTE</button>
 <div id="medTable">Chargement...</div>
 </div>
 
 <div class="section" style="background:#e3f2fd">
-<b>👤 NOUVEAU PATIENT - Donner médicament</b>
+<b>👤 NOUVEAU PATIENT - Plusieurs médicaments</b>
 <input id="patientName" placeholder="Nom du patient">
-<select id="medSelect"><option>Chargement médicaments...</option></select>
-<input id="medQte" type="number" placeholder="Quantité donnée" value="1">
-<button class="btn btn-orange" onclick="saveConsultation()">ENREGISTRER PATIENT + DIMINUER STOCK</button>
+<div id="medRows"></div>
+<button class="btn btn-blue" onclick="addMedRow()">+ AJOUTER UN AUTRE MÉDICAMENT</button>
+<button class="btn btn-orange" onclick="saveConsultation()">✅ ENREGISTRER PATIENT + DIMINUER STOCK</button>
 </div>
 
 <div class="section">
-<b>📋 HISTORIQUE PAR PATIENT (chaque patient a sa colonne)</b>
+<b>📋 HISTORIQUE PAR PATIENT</b>
 <input id="searchPatient" placeholder="Rechercher patient..." oninput="filterPatients()">
 <div id="consultTable">Chargement...</div>
 </div>
 `;
-if(isPatron) h+=`<div class="section" style="background:#fff8e1"><b>👑 PATRON SUIT SUPPLÉANT (Live)</b><div id="lv"></div></div>`;
 document.getElementById('content').innerHTML=h;
 loadStock();
 loadConsultations();
-if(isPatron){ db.ref('ventes_suppleant').on('value',s=>{let d=s.val()||{},hh=''; for(let k in d)hh+=`<div>${d[k].date} - ${d[k].med} : ${d[k].qte}</div>`; let el=document.getElementById('lv'); if(el) el.innerHTML=hh||'Aucune'; }); }
+addMedRow(); // 1ère ligne par défaut
 }
 
 function loadStock(){
  db.ref('postes').on('value',snap=>{
-  let d=snap.val()||{};
-  let keys=Object.keys(d);
-  let t='<table><tr><th>Nom</th><th>Qté Stock</th>'+(isPatron?'<th>X</th>':'')+'</tr>';
-  let sel='<option value="">Choisir médicament</option>';
-  for(let k in d){
-   t+=`<tr><td>${d[k].nom||k}</td><td><input id="q_${k}" type="number" value="${d[k].quantite||0}" onchange="updateQ('${k}')" style="padding:4px"></td>${isPatron?`<td><button onclick="deleteMed('${k}')">X</button></td>`:''}</tr>`;
-   sel+=`<option value="${k}">${d[k].nom||k} (stock:${d[k].quantite||0})</option>`;
-  }
+  postesData=snap.val()||{};
+  let t='<table><tr><th>Nom</th><th>Stock</th>'+(isPatron?'<th>X</th>':'')+'</tr>';
+  for(let k in postesData){ t+=`<tr><td>${postesData[k].nom||k}</td><td><input id="q_${k}" type="number" value="${postesData[k].quantite||0}" onchange="updateQ('${k}')" style="padding:4px"></td>${isPatron?`<td><button onclick="deleteMed('${k}')">X</button></td>`:''}</tr>`; }
   t+='</table>';
   document.getElementById('medTable').innerHTML=t;
-  let selEl=document.getElementById('medSelect'); if(selEl) selEl.innerHTML=sel;
+  updateAllSelects();
  });
 }
+
+function getSelectHTML(){
+ let html='<option value="">Choisir médicament</option>';
+ for(let k in postesData){ html+=`<option value="${k}">${postesData[k].nom||k} (stock:${postesData[k].quantite||0})</option>`; }
+ return html;
+}
+function addMedRow(){
+ let div=document.createElement('div');
+ div.className='med-row';
+ div.innerHTML=`<select class="medSelect">${getSelectHTML()}</select><input type="number" class="medQte" placeholder="Qté" value="1" style="width:70px"><button class="btn btn-red" style="width:40px;padding:6px" onclick="this.parentElement.remove()">X</button>`;
+ document.getElementById('medRows').appendChild(div);
+}
+function updateAllSelects(){
+ let selHTML=getSelectHTML();
+ document.querySelectorAll('.medSelect').forEach(sel=>{ let val=sel.value; sel.innerHTML=selHTML; sel.value=val; });
+}
 function addMedicament(){let nom=document.getElementById('newMedName').value.trim(); if(!nom)return; let key=nom.replace(/[^a-zA-Z0-9]/g,'_')+'_'+Date.now(); db.ref('postes/'+key).set({nom:nom,quantite:0}).then(()=>document.getElementById('newMedName').value='');}
-function updateQ(k){let q=document.getElementById('q_'+k).value; db.ref('postes/'+k+'/quantite').set(parseInt(q)||0); if(!isPatron) db.ref('ventes_suppleant').push({med:k,qte:q,date:new Date().toLocaleString()});}
+function updateQ(k){let q=document.getElementById('q_'+k).value; db.ref('postes/'+k+'/quantite').set(parseInt(q)||0);}
 function deleteMed(k){if(confirm('Supprimer?')) db.ref('postes/'+k).remove();}
 
 function saveConsultation(){
  let patient=document.getElementById('patientName').value.trim();
- let medKey=document.getElementById('medSelect').value;
- let qte=parseInt(document.getElementById('medQte').value)||1;
- if(!patient||!medKey)return alert('Mets nom patient + médicament');
- db.ref('postes/'+medKey).once('value').then(s=>{
-  let cur=s.val(); let stock=cur.quantite||0;
-  if(stock < qte && isPatron===false){ /* suppléant peut quand même mais alerte */ }
-  let newStock = stock - qte;
-  db.ref('postes/'+medKey+'/quantite').set(newStock);
-  db.ref('consultations').push({patient:patient,med:cur.nom||medKey,medKey:medKey,qte:qte,date:new Date().toLocaleString(),role:role});
-  document.getElementById('patientName').value=''; document.getElementById('medQte').value='1';
-  alert(patient+' a reçu '+qte+' x '+cur.nom);
+ if(!patient) return alert('Mets nom du patient');
+ let rows=document.querySelectorAll('.med-row');
+ let meds=[];
+ for(let r of rows){
+  let key=r.querySelector('.medSelect').value;
+  let qte=parseInt(r.querySelector('.medQte').value)||0;
+  if(key && qte>0){ meds.push({key:key, nom:postesData[key]?.nom||key, qte:qte}); }
+ }
+ if(meds.length===0) return alert('Ajoute au moins 1 médicament');
+ // Diminuer stock
+ meds.forEach(m=>{
+  let cur=postesData[m.key]?.quantite||0;
+  db.ref('postes/'+m.key+'/quantite').set(cur - m.qte);
  });
+ // Enregistrer consultation
+ db.ref('consultations').push({patient:patient, meds:meds, date:new Date().toLocaleString(), role:role});
+ document.getElementById('patientName').value='';
+ document.getElementById('medRows').innerHTML='';
+ addMedRow(); addMedRow(); // remet 2 lignes pour le prochain patient
+ alert('✅ '+patient+' enregistré avec '+meds.length+' médicaments');
 }
 
 let allCons={};
-function loadConsultations(){
- db.ref('consultations').on('value',snap=>{
-  allCons=snap.val()||{};
-  renderConsultations(allCons);
- });
-}
+function loadConsultations(){ db.ref('consultations').on('value',snap=>{ allCons=snap.val()||{}; renderConsultations(allCons); });}
 function renderConsultations(data){
- let h='<table><tr><th>Date</th><th>Patient</th><th>Médicament</th><th>Qté</th>'+(isPatron?'<th>X</th>':'')+'</tr>';
+ let h='<table><tr><th>Date</th><th>Patient</th><th>Médicaments (plusieurs colonnes)</th>'+(isPatron?'<th>X</th>':'')+'</tr>';
  let keys=Object.keys(data).reverse();
  for(let k of keys){
   let c=data[k];
-  h+=`<tr><td>${c.date}</td><td><b>${c.patient}</b></td><td>${c.med}</td><td>${c.qte}</td>${isPatron?`<td><button onclick="db.ref('consultations/${k}').remove()">X</button></td>`:''}</tr>`;
+  let medsTxt='';
+  if(c.meds){ c.meds.forEach(m=>{ medsTxt+=`<div>• ${m.nom} : <b>${m.qte}</b></div>`; }); }
+  else { medsTxt=c.med||''; } // ancien format
+  h+=`<tr><td>${c.date}</td><td><b>${c.patient}</b></td><td>${medsTxt}</td>${isPatron?`<td><button onclick="db.ref('consultations/${k}').remove()">X</button></td>`:''}</tr>`;
  }
  h+='</table>';
  document.getElementById('consultTable').innerHTML = keys.length? h : 'Aucun patient encore';
 }
-function filterPatients(){
- let q=document.getElementById('searchPatient').value.toLowerCase();
- let filtered={}; for(let k in allCons){ if(allCons[k].patient.toLowerCase().includes(q)) filtered[k]=allCons[k]; }
- renderConsultations(filtered);
-}
+function filterPatients(){ let q=document.getElementById('searchPatient').value.toLowerCase(); let filtered={}; for(let k in allCons){ if(allCons[k].patient.toLowerCase().includes(q)) filtered[k]=allCons[k]; } renderConsultations(filtered); }
 
-// Autres modules simples
-function loadDettes(){document.getElementById('content').innerHTML='<h3>📒 Dettes Payé</h3><input id="dNom" placeholder="Nom client"><input id="dMont" type="number" placeholder="Montant"><button class="btn btn-blue" onclick="saveDette()">Enregistrer</button><div id="dList"></div>'; db.ref('dettes_paye').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Client</th><th>Montant</th><th>Date</th></tr>'; for(let k in d)h+=`<tr><td>${d[k].nom}</td><td>${d[k].montant}</td><td>${d[k].date}</td></tr>`; document.getElementById('dList').innerHTML=h+'</table>';});}
+function loadDettes(){document.getElementById('content').innerHTML='<h3>📒 Dettes Payé</h3><input id="dNom" placeholder="Nom"><input id="dMont" type="number" placeholder="Montant"><button class="btn btn-blue" onclick="saveDette()">Enregistrer</button><div id="dList"></div>'; db.ref('dettes_paye').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Client</th><th>Montant</th><th>Date</th></tr>'; for(let k in d)h+=`<tr><td>${d[k].nom}</td><td>${d[k].montant}</td><td>${d[k].date}</td></tr>`; document.getElementById('dList').innerHTML=h+'</table>';});}
 function saveDette(){let n=document.getElementById('dNom').value,m=document.getElementById('dMont').value; if(!n||!m)return; db.ref('dettes_paye').push({nom:n,montant:m,date:new Date().toLocaleString()});}
-function loadSuivi(){document.getElementById('content').innerHTML='<h3>📈 SUIVI LIVE</h3><div id="box"></div>'; db.ref('consultations').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Date</th><th>Patient</th><th>Médicament</th><th>Qté</th></tr>'; for(let k in d)h+=`<tr><td>${d[k].date}</td><td>${d[k].patient}</td><td>${d[k].med}</td><td>${d[k].qte}</td></tr>`; document.getElementById('box').innerHTML=h+'</table>';});}
+function loadSuivi(){document.getElementById('content').innerHTML='<h3>📈 SUIVI LIVE</h3><div id="box"></div>'; db.ref('consultations').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Date</th><th>Patient</th><th>Médicaments</th></tr>'; for(let k in d){ let txt=''; if(d[k].meds) d[k].meds.forEach(m=>txt+=m.nom+':'+m.qte+' '); else txt=d[k].med; h+=`<tr><td>${d[k].date}</td><td>${d[k].patient}</td><td>${txt}</td></tr>`;} document.getElementById('box').innerHTML=h+'</table>';});}
 function loadPrimes(){document.getElementById('content').innerHTML='<h3>🏆 Primes</h3><input id="pNom" placeholder="Nom"><input id="pMont" type="number" placeholder="Montant"><button class="btn btn-blue" onclick="savePrime()">Enregistrer</button><div id="pList"></div>'; db.ref('primes').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Nom</th><th>Montant</th></tr>'; for(let k in d)h+=`<tr><td>${d[k].nom}</td><td>${d[k].montant}</td></tr>`; document.getElementById('pList').innerHTML=h+'</table>';});}
 function savePrime(){let n=document.getElementById('pNom').value,m=document.getElementById('pMont').value; db.ref('primes').push({nom:n,montant:m,date:new Date().toLocaleString()});}
-function loadObservation(){document.getElementById('content').innerHTML='<h3>📝 Observation</h3><textarea id="oTxt" rows="3" placeholder="Observation..."></textarea><button class="btn btn-blue" onclick="saveObs()">Enregistrer</button><div id="oList"></div>'; db.ref('observations').on('value',s=>{let d=s.val()||{},h=''; for(let k in d)h+=`<div style="padding:6px;border-bottom:1px solid #eee"><b>${d[k].date}</b> ${d[k].texte}</div>`; document.getElementById('oList').innerHTML=h;});}
+function loadObservation(){document.getElementById('content').innerHTML='<h3>📝 Observation</h3><textarea id="oTxt" rows="3"></textarea><button class="btn btn-blue" onclick="saveObs()">Enregistrer</button><div id="oList"></div>'; db.ref('observations').on('value',s=>{let d=s.val()||{},h=''; for(let k in d)h+=`<div style="padding:6px;border-bottom:1px solid #eee"><b>${d[k].date}</b> ${d[k].texte}</div>`; document.getElementById('oList').innerHTML=h;});}
 function saveObs(){let t=document.getElementById('oTxt').value; if(!t)return; db.ref('observations').push({texte:t,date:new Date().toLocaleString()});}
 function loadPresence(){document.getElementById('content').innerHTML='<h3>✅ Présence 600k</h3><input id="prNom" placeholder="Nom"><select id="prSt"><option>Présent</option><option>Absent</option></select><button class="btn btn-blue" onclick="savePres()">Valider</button><div id="prList"></div>'; db.ref('presence_600k').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Nom</th><th>Statut</th><th>Date</th></tr>'; for(let k in d)h+=`<tr><td>${d[k].nom}</td><td>${d[k].statut}</td><td>${d[k].date}</td></tr>`; document.getElementById('prList').innerHTML=h+'</table>';});}
 function savePres(){let n=document.getElementById('prNom').value,s=document.getElementById('prSt').value; db.ref('presence_600k').push({nom:n,statut:s,date:new Date().toLocaleString()});}
