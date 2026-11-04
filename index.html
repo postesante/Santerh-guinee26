@@ -73,7 +73,7 @@ let h=`
 document.getElementById('content').innerHTML=h;
 loadStock();
 loadConsultations();
-addMedRow(); // 1ère ligne par défaut
+addMedRow();
 }
 
 function loadStock(){
@@ -117,16 +117,14 @@ function saveConsultation(){
   if(key && qte>0){ meds.push({key:key, nom:postesData[key]?.nom||key, qte:qte}); }
  }
  if(meds.length===0) return alert('Ajoute au moins 1 médicament');
- // Diminuer stock
  meds.forEach(m=>{
   let cur=postesData[m.key]?.quantite||0;
   db.ref('postes/'+m.key+'/quantite').set(cur - m.qte);
  });
- // Enregistrer consultation
  db.ref('consultations').push({patient:patient, meds:meds, date:new Date().toLocaleString(), role:role});
  document.getElementById('patientName').value='';
  document.getElementById('medRows').innerHTML='';
- addMedRow(); addMedRow(); // remet 2 lignes pour le prochain patient
+ addMedRow(); addMedRow();
  alert('✅ '+patient+' enregistré avec '+meds.length+' médicaments');
 }
 
@@ -139,7 +137,7 @@ function renderConsultations(data){
   let c=data[k];
   let medsTxt='';
   if(c.meds){ c.meds.forEach(m=>{ medsTxt+=`<div>• ${m.nom} : <b>${m.qte}</b></div>`; }); }
-  else { medsTxt=c.med||''; } // ancien format
+  else { medsTxt=c.med||''; }
   h+=`<tr><td>${c.date}</td><td><b>${c.patient}</b></td><td>${medsTxt}</td>${isPatron?`<td><button onclick="db.ref('consultations/${k}').remove()">X</button></td>`:''}</tr>`;
  }
  h+='</table>';
@@ -147,8 +145,12 @@ function renderConsultations(data){
 }
 function filterPatients(){ let q=document.getElementById('searchPatient').value.toLowerCase(); let filtered={}; for(let k in allCons){ if(allCons[k].patient.toLowerCase().includes(q)) filtered[k]=allCons[k]; } renderConsultations(filtered); }
 
-function loadDettes(){document.getElementById('content').innerHTML='<h3>📒 Dettes Payé</h3><input id="dNom" placeholder="Nom"><input id="dMont" type="number" placeholder="Montant"><button class="btn btn-blue" onclick="saveDette()">Enregistrer</button><div id="dList"></div>'; db.ref('dettes_paye').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Client</th><th>Montant</th><th>Date</th></tr>'; for(let k in d)h+=`<tr><td>${d[k].nom}</td><td>${d[k].montant}</td><td>${d[k].date}</td></tr>`; document.getElementById('dList').innerHTML=h+'</table>';});}
+// ===== SEULE PARTIE MODIFIEE : DETTES PAYE AVEC X SUR CHAQUE NOM =====
+function loadDettes(){document.getElementById('content').innerHTML='<h3>📒 Dettes Payé</h3><input id="dNom" placeholder="Nom"><input id="dMont" type="number" placeholder="Montant"><button class="btn btn-blue" onclick="saveDette()">Enregistrer</button><div id="dList"></div>'; db.ref('dettes_paye').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Client</th><th>Montant</th><th>Date</th><th>X</th></tr>'; for(let k in d)h+=`<tr><td>${d[k].nom}</td><td>${d[k].montant}</td><td>${d[k].date}</td><td><button onclick="deleteDette(\'${k}\')" style="background:#e74c3c;color:white;border:none;padding:6px 10px;border-radius:6px;font-weight:bold;cursor:pointer">X</button></td></tr>`; document.getElementById('dList').innerHTML=h+'</table>';});}
 function saveDette(){let n=document.getElementById('dNom').value,m=document.getElementById('dMont').value; if(!n||!m)return; db.ref('dettes_paye').push({nom:n,montant:m,date:new Date().toLocaleString()});}
+function deleteDette(k){ if(confirm('Tu veux vraiment supprimer cette dette ?')){ db.ref('dettes_paye/'+k).remove(); } }
+// ===== FIN DE LA MODIFICATION DETTES =====
+
 function loadSuivi(){document.getElementById('content').innerHTML='<h3>📈 SUIVI LIVE</h3><div id="box"></div>'; db.ref('consultations').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Date</th><th>Patient</th><th>Médicaments</th></tr>'; for(let k in d){ let txt=''; if(d[k].meds) d[k].meds.forEach(m=>txt+=m.nom+':'+m.qte+' '); else txt=d[k].med; h+=`<tr><td>${d[k].date}</td><td>${d[k].patient}</td><td>${txt}</td></tr>`;} document.getElementById('box').innerHTML=h+'</table>';});}
 function loadPrimes(){document.getElementById('content').innerHTML='<h3>🏆 Primes</h3><input id="pNom" placeholder="Nom"><input id="pMont" type="number" placeholder="Montant"><button class="btn btn-blue" onclick="savePrime()">Enregistrer</button><div id="pList"></div>'; db.ref('primes').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Nom</th><th>Montant</th></tr>'; for(let k in d)h+=`<tr><td>${d[k].nom}</td><td>${d[k].montant}</td></tr>`; document.getElementById('pList').innerHTML=h+'</table>';});}
 function savePrime(){let n=document.getElementById('pNom').value,m=document.getElementById('pMont').value; db.ref('primes').push({nom:n,montant:m,date:new Date().toLocaleString()});}
