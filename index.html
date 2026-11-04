@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -19,6 +19,7 @@ table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px} th,td{b
 .section{background:#f8f9fa;padding:10px;border-radius:8px;margin-top:10px;border:1px solid #e0e0e0}
 .med-row{display:flex;gap:5px;align-items:center;margin-bottom:6px}
 .med-row select{flex:2} .med-row input{flex:1}
+.total-box{background:#e3f2fd;padding:10px;border-radius:8px;text-align:center;font-weight:bold;margin-top:8px}
 </style>
 </head>
 <body>
@@ -47,13 +48,17 @@ document.getElementById('grid').innerHTML=gridHTML;
 function openModule(n){ if(n==='medicaments') loadMedicaments(); if(n==='dettes') loadDettes(); if(n==='suivi') loadSuivi(); if(n==='primes') loadPrimes(); if(n==='observation') loadObservation(); if(n==='presence') loadPresence(); }
 
 let postesData={};
+
+// ===== MEDICAMENTS AMELIORE : NOM - STOCK - PRIX UNITAIRE - TOTAL =====
 function loadMedicaments(){
 let h=`
 <div class="section">
 <b>STOCK PERMANENT</b>
 <input id="newMedName" placeholder="Nom nouveau médicament">
+<input id="newMedPrix" type="number" placeholder="Prix unitaire ex: 500">
 <button class="btn btn-green" onclick="addMedicament()">AUGMENTER LA LISTE</button>
 <div id="medTable">Chargement...</div>
+<div id="totalStockBox"></div>
 </div>
 
 <div class="section" style="background:#e3f2fd">
@@ -79,17 +84,25 @@ addMedRow();
 function loadStock(){
  db.ref('postes').on('value',snap=>{
   postesData=snap.val()||{};
-  let t='<table><tr><th>Nom</th><th>Stock</th>'+(isPatron?'<th>X</th>':'')+'</tr>';
-  for(let k in postesData){ t+=`<tr><td>${postesData[k].nom||k}</td><td><input id="q_${k}" type="number" value="${postesData[k].quantite||0}" onchange="updateQ('${k}')" style="padding:4px"></td>${isPatron?`<td><button onclick="deleteMed('${k}')">X</button></td>`:''}</tr>`; }
+  let t='<table><tr><th>Nom</th><th>Stock</th><th>Prix unitaire</th><th>Total de prix</th>'+(isPatron?'<th>X</th>':'')+'</tr>';
+  let grandTotal=0;
+  for(let k in postesData){
+    let q = postesData[k].quantite||0;
+    let p = postesData[k].prix||0;
+    let total = q * p;
+    grandTotal += total;
+    t+=`<tr><td>${postesData[k].nom||k}</td><td><input id="q_${k}" type="number" value="${q}" onchange="updateQ('${k}')" style="padding:4px"></td><td><input id="p_${k}" type="number" value="${p}" onchange="updatePrix('${k}')" placeholder="0" style="padding:4px"></td><td><b>${total.toLocaleString()} GNF</b></td>${isPatron?`<td><button onclick="deleteMed('${k}')">X</button></td>`:''}</tr>`;
+  }
   t+='</table>';
   document.getElementById('medTable').innerHTML=t;
+  document.getElementById('totalStockBox').innerHTML=`<div class="total-box">💰 TOTAL STOCK : ${grandTotal.toLocaleString()} GNF</div>`;
   updateAllSelects();
  });
 }
 
 function getSelectHTML(){
  let html='<option value="">Choisir médicament</option>';
- for(let k in postesData){ html+=`<option value="${k}">${postesData[k].nom||k} (stock:${postesData[k].quantite||0})</option>`; }
+ for(let k in postesData){ html+=`<option value="${k}">${postesData[k].nom||k} (stock:${postesData[k].quantite||0} - prix:${postesData[k].prix||0})</option>`; }
  return html;
 }
 function addMedRow(){
@@ -102,8 +115,18 @@ function updateAllSelects(){
  let selHTML=getSelectHTML();
  document.querySelectorAll('.medSelect').forEach(sel=>{ let val=sel.value; sel.innerHTML=selHTML; sel.value=val; });
 }
-function addMedicament(){let nom=document.getElementById('newMedName').value.trim(); if(!nom)return; let key=nom.replace(/[^a-zA-Z0-9]/g,'_')+'_'+Date.now(); db.ref('postes/'+key).set({nom:nom,quantite:0}).then(()=>document.getElementById('newMedName').value='');}
+function addMedicament(){
+  let nom=document.getElementById('newMedName').value.trim();
+  let prix=parseInt(document.getElementById('newMedPrix').value)||0;
+  if(!nom)return;
+  let key=nom.replace(/[^a-zA-Z0-9]/g,'_')+'_'+Date.now();
+  db.ref('postes/'+key).set({nom:nom,quantite:0,prix:prix}).then(()=>{
+    document.getElementById('newMedName').value='';
+    document.getElementById('newMedPrix').value='';
+  });
+}
 function updateQ(k){let q=document.getElementById('q_'+k).value; db.ref('postes/'+k+'/quantite').set(parseInt(q)||0);}
+function updatePrix(k){let p=document.getElementById('p_'+k).value; db.ref('postes/'+k+'/prix').set(parseInt(p)||0);}
 function deleteMed(k){if(confirm('Supprimer?')) db.ref('postes/'+k).remove();}
 
 function saveConsultation(){
@@ -114,7 +137,7 @@ function saveConsultation(){
  for(let r of rows){
   let key=r.querySelector('.medSelect').value;
   let qte=parseInt(r.querySelector('.medQte').value)||0;
-  if(key && qte>0){ meds.push({key:key, nom:postesData[key]?.nom||key, qte:qte}); }
+  if(key && qte>0){ meds.push({key:key, nom:postesData[key]?.nom||key, qte:qte, prix:postesData[key]?.prix||0}); }
  }
  if(meds.length===0) return alert('Ajoute au moins 1 médicament');
  meds.forEach(m=>{
@@ -136,7 +159,7 @@ function renderConsultations(data){
  for(let k of keys){
   let c=data[k];
   let medsTxt='';
-  if(c.meds){ c.meds.forEach(m=>{ medsTxt+=`<div>• ${m.nom} : <b>${m.qte}</b></div>`; }); }
+  if(c.meds){ c.meds.forEach(m=>{ let pt=(m.prix||0)*m.qte; medsTxt+=`<div>• ${m.nom} : <b>${m.qte}</b> x ${m.prix||0} = ${pt} GNF</div>`; }); }
   else { medsTxt=c.med||''; }
   h+=`<tr><td>${c.date}</td><td><b>${c.patient}</b></td><td>${medsTxt}</td>${isPatron?`<td><button onclick="db.ref('consultations/${k}').remove()">X</button></td>`:''}</tr>`;
  }
@@ -145,11 +168,10 @@ function renderConsultations(data){
 }
 function filterPatients(){ let q=document.getElementById('searchPatient').value.toLowerCase(); let filtered={}; for(let k in allCons){ if(allCons[k].patient.toLowerCase().includes(q)) filtered[k]=allCons[k]; } renderConsultations(filtered); }
 
-// ===== SEULE PARTIE MODIFIEE : DETTES PAYE AVEC X SUR CHAQUE NOM =====
+// ===== DETTES PAYE AVEC X - NE PAS TOUCHER, DEJA BON =====
 function loadDettes(){document.getElementById('content').innerHTML='<h3>📒 Dettes Payé</h3><input id="dNom" placeholder="Nom"><input id="dMont" type="number" placeholder="Montant"><button class="btn btn-blue" onclick="saveDette()">Enregistrer</button><div id="dList"></div>'; db.ref('dettes_paye').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Client</th><th>Montant</th><th>Date</th><th>X</th></tr>'; for(let k in d)h+=`<tr><td>${d[k].nom}</td><td>${d[k].montant}</td><td>${d[k].date}</td><td><button onclick="deleteDette(\'${k}\')" style="background:#e74c3c;color:white;border:none;padding:6px 10px;border-radius:6px;font-weight:bold;cursor:pointer">X</button></td></tr>`; document.getElementById('dList').innerHTML=h+'</table>';});}
 function saveDette(){let n=document.getElementById('dNom').value,m=document.getElementById('dMont').value; if(!n||!m)return; db.ref('dettes_paye').push({nom:n,montant:m,date:new Date().toLocaleString()});}
 function deleteDette(k){ if(confirm('Tu veux vraiment supprimer cette dette ?')){ db.ref('dettes_paye/'+k).remove(); } }
-// ===== FIN DE LA MODIFICATION DETTES =====
 
 function loadSuivi(){document.getElementById('content').innerHTML='<h3>📈 SUIVI LIVE</h3><div id="box"></div>'; db.ref('consultations').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Date</th><th>Patient</th><th>Médicaments</th></tr>'; for(let k in d){ let txt=''; if(d[k].meds) d[k].meds.forEach(m=>txt+=m.nom+':'+m.qte+' '); else txt=d[k].med; h+=`<tr><td>${d[k].date}</td><td>${d[k].patient}</td><td>${txt}</td></tr>`;} document.getElementById('box').innerHTML=h+'</table>';});}
 function loadPrimes(){document.getElementById('content').innerHTML='<h3>🏆 Primes</h3><input id="pNom" placeholder="Nom"><input id="pMont" type="number" placeholder="Montant"><button class="btn btn-blue" onclick="savePrime()">Enregistrer</button><div id="pList"></div>'; db.ref('primes').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Nom</th><th>Montant</th></tr>'; for(let k in d)h+=`<tr><td>${d[k].nom}</td><td>${d[k].montant}</td></tr>`; document.getElementById('pList').innerHTML=h+'</table>';});}
@@ -161,4 +183,4 @@ function savePres(){let n=document.getElementById('prNom').value,s=document.getE
 loadMedicaments();
 </script>
 </body>
-</html> 
+</html>
