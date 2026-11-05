@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-512.png">
+<meta name="theme-color" content="#1877f2">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Filanidialakoro</title>
@@ -9,6 +12,7 @@
 <style>
 body{font-family:Arial;background:#f0f2f5;margin:0;padding:10px}
 .header{background:#1877f2;color:white;padding:12px;text-align:center;border-radius:10px;font-weight:bold}
+.header img{width:70px;height:70px;border-radius:50%;object-fit:cover;border:3px solid white;display:block;margin:0 auto 6px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
 .card{background:white;padding:16px;border-radius:10px;text-align:center;box-shadow:0 2px 4px rgba(0,0,0,.1);cursor:pointer;font-weight:bold}
 #content{background:white;margin-top:12px;padding:12px;border-radius:10px}
@@ -43,7 +47,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const role = new URLSearchParams(location.search).get('role')||'patron';
 const isPatron = role==='patron';
-document.getElementById('header').innerHTML = isPatron ? '👑 PATRON - Accès complet' : '👤 SUPPLÉANT - 2 modules';
+document.getElementById('header').innerHTML = isPatron ? '<img src="icon-512.png" onerror="this.style.display=\'none\'"><div>👑 PATRON - Accès complet</div><div style="font-size:13px;font-weight:normal">Filanidialakoro - Poste Santé</div>' : '👤 SUPPLÉANT - 2 modules';
 
 let gridHTML=`<div class="card" onclick="openModule('medicaments')">💊 Médicaments</div><div class="card" onclick="openModule('dettes')">📒 Dettes Payé</div>`;
 if(isPatron){ gridHTML+=`<div class="card" onclick="openModule('suivi')">📈 SUIVI LIVE</div><div class="card" onclick="openModule('primes')">🏆 Primes</div><div class="card" onclick="openModule('observation')">📝 Observation</div><div class="card" onclick="openModule('presence')">✅ Présence 600k</div>`; }
