@@ -21,6 +21,8 @@ table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px} th,td{b
 .med-row select{flex:2} .med-row input{flex:1}
 .total-box{background:#e3f2fd;padding:10px;border-radius:8px;text-align:center;font-weight:bold;margin-top:8px}
 .somme-box{background:#e8f5e9;padding:6px;border-radius:6px;text-align:center;font-weight:bold;color:#2e7d32}
+.jour-box{background:#fff3cd;padding:10px;border-radius:8px;text-align:center;font-weight:bold;margin-top:8px;border:1px solid #ffca28}
+.jour-box2{background:#d4edda;padding:10px;border-radius:8px;text-align:center;font-weight:bold;margin-top:8px;border:1px solid #28a745}
 </style>
 </head>
 <body>
@@ -59,6 +61,7 @@ let h=`
 <button class="btn btn-green" onclick="addMedicament()">AUGMENTER LA LISTE</button>
 <div id="medTable">Chargement...</div>
 <div id="totalStockBox"></div>
+<div id="totalJourBox"></div>
 </div>
 
 <div class="section" style="background:#e3f2fd">
@@ -97,7 +100,6 @@ function loadStock(){
   document.getElementById('medTable').innerHTML=t;
   document.getElementById('totalStockBox').innerHTML=`<div class="total-box">💰 TOTAL STOCK : ${grandTotal.toLocaleString()} GNF</div>`;
   updateAllSelects();
-  // Re-afficher historique avec les nouveaux prix pour corriger les anciens 0
   if(document.getElementById('consultTable')) renderConsultations(allCons);
  });
 }
@@ -156,17 +158,18 @@ function saveConsultation(){
 let allCons={};
 function loadConsultations(){ db.ref('consultations').on('value',snap=>{ allCons=snap.val()||{}; renderConsultations(allCons); });}
 
-// ===== HISTORIQUE AMELIORE : DATE - PATIENT - PRIX - SOMME TOTALE =====
 function renderConsultations(data){
  let h='<table><tr><th>Date</th><th>Patient</th><th>Médicaments + Prix</th><th>Somme Totale</th>'+(isPatron?'<th>X</th>':'')+'</tr>';
  let keys=Object.keys(data).reverse();
+ let totalJour = 0;
+ let qteJour = 0;
+ let aujourdhui = new Date().toLocaleDateString();
  for(let k of keys){
   let c=data[k];
   let medsTxt='';
   let sommeTotale=0;
   if(c.meds){
     c.meds.forEach(m=>{
-      // Si ancien patient a prix 0, on prend le prix actuel du stock
       let prixReel = (m.prix && m.prix>0) ? m.prix : (postesData[m.key]?.prix||0);
       let pt = prixReel * m.qte;
       sommeTotale += pt;
@@ -174,10 +177,19 @@ function renderConsultations(data){
     });
   }
   else { medsTxt=c.med||''; }
+  if(c.date && c.date.startsWith(aujourdhui)){
+    totalJour += sommeTotale;
+    if(c.meds){ c.meds.forEach(m=>{ qteJour += m.qte; }); }
+  }
   h+=`<tr><td>${c.date}</td><td><b>${c.patient}</b></td><td>${medsTxt}</td><td><div class="somme-box">${sommeTotale.toLocaleString()} GNF</div></td>${isPatron?`<td><button onclick="db.ref('consultations/${k}').remove()">X</button></td>`:''}</tr>`;
  }
  h+='</table>';
  if(document.getElementById('consultTable')) document.getElementById('consultTable').innerHTML = keys.length? h : 'Aucun patient encore';
+ if(document.getElementById('totalJourBox')){
+   document.getElementById('totalJourBox').innerHTML = `
+   <div class="jour-box">💊 TOTAL MÉDICAMENTS VENDUS AUJOURD'HUI : ${qteJour} médicaments</div>
+   <div class="jour-box2">💰 SOMME TOTALE JOURNALIÈRE : ${totalJour.toLocaleString()} GNF</div>`;
+ }
 }
 function filterPatients(){ let q=document.getElementById('searchPatient').value.toLowerCase(); let filtered={}; for(let k in allCons){ if(allCons[k].patient.toLowerCase().includes(q)) filtered[k]=allCons[k]; } renderConsultations(filtered); }
 
