@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -195,18 +195,4 @@ function savePres(){let n=document.getElementById('prNom').value,s=document.getE
 loadMedicaments();
 </script>
 </body>
-</html>let totalJour = 0;
-let qteJour = 0;
-let aujourdhui = new Date().toLocaleDateString();
-for(let k of keys){
-  let c = data[k];
-  if(c.date && c.date.startsWith(aujourdhui)){
-    if(c.meds){ c.meds.forEach(m=>{ 
-      totalJour += (m.prix||0)*m.qte; 
-      qteJour += m.qte;
-    }); }
-  }
-}
-document.getElementById('totalJourBox').innerHTML = `
-<div class="total-box" style="background:#fff3cd">💊 TOTAL MÉDICAMENTS VENDUS AUJOURD'HUI : ${qteJour} médicaments</div>
-<div class="total-box" style="background:#d4edda">💰 SOMME TOTALE JOURNALIÈRE : ${totalJour.toLocaleString()} GNF</div>`;
+</html> 
