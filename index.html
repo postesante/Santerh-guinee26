@@ -21,8 +21,6 @@ table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px} th,td{b
 .med-row select{flex:2} .med-row input{flex:1}
 .total-box{background:#e3f2fd;padding:10px;border-radius:8px;text-align:center;font-weight:bold;margin-top:8px}
 .somme-box{background:#e8f5e9;padding:6px;border-radius:6px;text-align:center;font-weight:bold;color:#2e7d32}
-.jour-box{background:#fff3cd;padding:10px;border-radius:8px;text-align:center;font-weight:bold;margin-top:8px;border:1px solid #ffca28}
-.jour-box2{background:#d4edda;padding:10px;border-radius:8px;text-align:center;font-weight:bold;margin-top:8px;border:1px solid #28a745}
 </style>
 </head>
 <body>
@@ -61,7 +59,6 @@ let h=`
 <button class="btn btn-green" onclick="addMedicament()">AUGMENTER LA LISTE</button>
 <div id="medTable">Chargement...</div>
 <div id="totalStockBox"></div>
-<div id="totalJourBox"></div>
 </div>
 
 <div class="section" style="background:#e3f2fd">
@@ -100,6 +97,7 @@ function loadStock(){
   document.getElementById('medTable').innerHTML=t;
   document.getElementById('totalStockBox').innerHTML=`<div class="total-box">💰 TOTAL STOCK : ${grandTotal.toLocaleString()} GNF</div>`;
   updateAllSelects();
+  // Re-afficher historique avec les nouveaux prix pour corriger les anciens 0
   if(document.getElementById('consultTable')) renderConsultations(allCons);
  });
 }
@@ -158,19 +156,17 @@ function saveConsultation(){
 let allCons={};
 function loadConsultations(){ db.ref('consultations').on('value',snap=>{ allCons=snap.val()||{}; renderConsultations(allCons); });}
 
-// ===== HISTORIQUE AMELIORE : DATE - PATIENT - PRIX - SOMME TOTALE + TOTAUX JOUR =====
+// ===== HISTORIQUE AMELIORE : DATE - PATIENT - PRIX - SOMME TOTALE =====
 function renderConsultations(data){
  let h='<table><tr><th>Date</th><th>Patient</th><th>Médicaments + Prix</th><th>Somme Totale</th>'+(isPatron?'<th>X</th>':'')+'</tr>';
  let keys=Object.keys(data).reverse();
- let totalJour = 0;
- let qteJour = 0;
- let aujourdhui = new Date().toLocaleDateString();
  for(let k of keys){
   let c=data[k];
   let medsTxt='';
   let sommeTotale=0;
   if(c.meds){
     c.meds.forEach(m=>{
+      // Si ancien patient a prix 0, on prend le prix actuel du stock
       let prixReel = (m.prix && m.prix>0) ? m.prix : (postesData[m.key]?.prix||0);
       let pt = prixReel * m.qte;
       sommeTotale += pt;
@@ -178,21 +174,10 @@ function renderConsultations(data){
     });
   }
   else { medsTxt=c.med||''; }
-  // Si c'est aujourd'hui, on ajoute aux totaux du jour
-  if(c.date && c.date.startsWith(aujourdhui)){
-    totalJour += sommeTotale;
-    if(c.meds){ c.meds.forEach(m=>{ qteJour += m.qte; }); }
-  }
   h+=`<tr><td>${c.date}</td><td><b>${c.patient}</b></td><td>${medsTxt}</td><td><div class="somme-box">${sommeTotale.toLocaleString()} GNF</div></td>${isPatron?`<td><button onclick="db.ref('consultations/${k}').remove()">X</button></td>`:''}</tr>`;
  }
  h+='</table>';
  if(document.getElementById('consultTable')) document.getElementById('consultTable').innerHTML = keys.length? h : 'Aucun patient encore';
- // Affichage des 2 totaux du jour en haut
- if(document.getElementById('totalJourBox')){
-   document.getElementById('totalJourBox').innerHTML = `
-   <div class="jour-box">💊 TOTAL MÉDICAMENTS VENDUS AUJOURD'HUI : ${qteJour} médicaments</div>
-   <div class="jour-box2">💰 SOMME TOTALE JOURNALIÈRE : ${totalJour.toLocaleString()} GNF</div>`;
- }
 }
 function filterPatients(){ let q=document.getElementById('searchPatient').value.toLowerCase(); let filtered={}; for(let k in allCons){ if(allCons[k].patient.toLowerCase().includes(q)) filtered[k]=allCons[k]; } renderConsultations(filtered); }
 
@@ -200,4 +185,28 @@ function loadDettes(){document.getElementById('content').innerHTML='<h3>📒 Det
 function saveDette(){let n=document.getElementById('dNom').value,m=document.getElementById('dMont').value; if(!n||!m)return; db.ref('dettes_paye').push({nom:n,montant:m,date:new Date().toLocaleString()});}
 function deleteDette(k){ if(confirm('Tu veux vraiment supprimer cette dette ?')){ db.ref('dettes_paye/'+k).remove(); } }
 
-function loadSuivi(){document.getElementById('content').innerHTML='<h3>📈 SUIVI LIVE</h3><div id="box"></div>'; db.ref('consultations').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Date</th><th>Patient</th><th>Médicaments</th><th>Somme Totale</th></tr>'; for(let k in d){ let txt=''; let somme=0; if(d[k].meds) d[k].meds.forEach(m=>{ let pr=(m.prix&&m.prix>0)?m.prix:(postesData[m.key]?.prix||0); let pt=pr*m.qte; somme+=pt; txt
+function loadSuivi(){document.getElementById('content').innerHTML='<h3>📈 SUIVI LIVE</h3><div id="box"></div>'; db.ref('consultations').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Date</th><th>Patient</th><th>Médicaments</th><th>Somme Totale</th></tr>'; for(let k in d){ let txt=''; let somme=0; if(d[k].meds) d[k].meds.forEach(m=>{ let pr=(m.prix&&m.prix>0)?m.prix:(postesData[m.key]?.prix||0); let pt=pr*m.qte; somme+=pt; txt+=m.nom+':'+m.qte+' x '+pr+'='+pt+' '; }); else txt=d[k].med; h+=`<tr><td>${d[k].date}</td><td>${d[k].patient}</td><td>${txt}</td><td><b>${somme.toLocaleString()} GNF</b></td></tr>`;} document.getElementById('box').innerHTML=h+'</table>';});}
+function loadPrimes(){document.getElementById('content').innerHTML='<h3>🏆 Primes</h3><input id="pNom" placeholder="Nom"><input id="pMont" type="number" placeholder="Montant"><button class="btn btn-blue" onclick="savePrime()">Enregistrer</button><div id="pList"></div>'; db.ref('primes').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Nom</th><th>Montant</th></tr>'; for(let k in d)h+=`<tr><td>${d[k].nom}</td><td>${d[k].montant}</td></tr>`; document.getElementById('pList').innerHTML=h+'</table>';});}
+function savePrime(){let n=document.getElementById('pNom').value,m=document.getElementById('pMont').value; db.ref('primes').push({nom:n,montant:m,date:new Date().toLocaleString()});}
+function loadObservation(){document.getElementById('content').innerHTML='<h3>📝 Observation</h3><textarea id="oTxt" rows="3"></textarea><button class="btn btn-blue" onclick="saveObs()">Enregistrer</button><div id="oList"></div>'; db.ref('observations').on('value',s=>{let d=s.val()||{},h=''; for(let k in d)h+=`<div style="padding:6px;border-bottom:1px solid #eee"><b>${d[k].date}</b> ${d[k].texte}</div>`; document.getElementById('oList').innerHTML=h;});}
+function saveObs(){let t=document.getElementById('oTxt').value; if(!t)return; db.ref('observations').push({texte:t,date:new Date().toLocaleString()});}
+function loadPresence(){document.getElementById('content').innerHTML='<h3>✅ Présence 600k</h3><input id="prNom" placeholder="Nom"><select id="prSt"><option>Présent</option><option>Absent</option></select><button class="btn btn-blue" onclick="savePres()">Valider</button><div id="prList"></div>'; db.ref('presence_600k').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Nom</th><th>Statut</th><th>Date</th></tr>'; for(let k in d)h+=`<tr><td>${d[k].nom}</td><td>${d[k].statut}</td><td>${d[k].date}</td></tr>`; document.getElementById('prList').innerHTML=h+'</table>';});}
+function savePres(){let n=document.getElementById('prNom').value,s=document.getElementById('prSt').value; db.ref('presence_600k').push({nom:n,statut:s,date:new Date().toLocaleString()});}
+loadMedicaments();
+</script>
+</body>
+</html>let totalJour = 0;
+let qteJour = 0;
+let aujourdhui = new Date().toLocaleDateString();
+for(let k of keys){
+  let c = data[k];
+  if(c.date && c.date.startsWith(aujourdhui)){
+    if(c.meds){ c.meds.forEach(m=>{ 
+      totalJour += (m.prix||0)*m.qte; 
+      qteJour += m.qte;
+    }); }
+  }
+}
+document.getElementById('totalJourBox').innerHTML = `
+<div class="total-box" style="background:#fff3cd">💊 TOTAL MÉDICAMENTS VENDUS AUJOURD'HUI : ${qteJour} médicaments</div>
+<div class="total-box" style="background:#d4edda">💰 SOMME TOTALE JOURNALIÈRE : ${totalJour.toLocaleString()} GNF</div>`;
