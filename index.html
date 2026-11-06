@@ -1,15 +1,13 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pharmacie - Filanidialakoro</title>
+<title>Pharmacie</title>
 <style>
 body{font-family:Arial;background:#f2f2f2;margin:0;padding:10px}
-h2{text-align:center}
 button{padding:10px;margin:3px;border:none;border-radius:8px;font-weight:bold}
-.tab{background:#ddd}
-.tab.active{background:#007bff;color:white}
+.tab{background:#ddd}.tab.active{background:#007bff;color:white}
 .box{background:white;padding:12px;border-radius:10px;margin-top:10px}
 input,select{width:100%;padding:10px;margin:5px 0;border:1px solid #ccc;border-radius:8px;box-sizing:border-box}
 table{width:100%;border-collapse:collapse;background:white}
@@ -19,9 +17,7 @@ td,th{border:1px solid #ddd;padding:8px;text-align:center}
 </style>
 </head>
 <body>
-
-<h2 id="titreRole"></h2>
-
+<h2 id="titreRole" style="text-align:center"></h2>
 <div>
 <button class="tab active" onclick="show('stock',this)">💊 STOCK</button>
 <button class="tab" onclick="show('patient',this)">👤 PATIENT</button>
@@ -29,128 +25,107 @@ td,th{border:1px solid #ddd;padding:8px;text-align:center}
 <button class="tab patronOnly" onclick="show('archives',this)">📦 ARCHIVES DU MOIS</button>
 </div>
 
-<!-- STOCK -->
 <div id="stock" class="box">
-<h3>💊 Stock</h3>
-<table><tr><th>Médicament</th><th>Stock</th><th>Prix</th><th>Total</th></tr><tbody id="stockBody"></tbody></table>
+<h3>💊 Stock - Reste des médicaments</h3>
+<table><tr><th>Médicament</th><th>Stock</th><th>Prix</th><th>Total</th><th>X</th></tr><tbody id="stockBody"></tbody></table>
 <div class="vert" id="totalStock"></div>
+<div id="ajoutBox" style="margin-top:15px;border-top:2px dashed #007bff;padding-top:10px">
+<h4>➕ Ajouter un médicament qui manque :</h4>
+<input id="newNom" placeholder="Nom du médicament ex: Amoxicilline">
+<input id="newQte" type="number" placeholder="Stock restant ex: 80">
+<input id="newPrix" type="number" placeholder="Prix ex: 5000">
+<button style="background:#007bff;color:white;width:100%" onclick="ajouterMed()">➕ AJOUTER AU STOCK</button>
+<p style="font-size:12px;color:gray">Tu fais ça pour chaque médicament qui manque, ça reste enregistré pour toujours.</p>
+</div>
 </div>
 
-<!-- PATIENT -->
 <div id="patient" class="box" style="display:none">
 <h3>👤 Nouveau Patient</h3>
 <input id="nomPatient" placeholder="Prénom et Nom du patient">
 <select id="medSelect"></select>
 <input id="qte" type="number" value="1" min="1">
 <button style="background:#28a745;color:white;width:100%" onclick="enregistrer()">✅ ENREGISTRER + DIMINUER STOCK</button>
-<p style="font-size:13px;color:gray">Le suppléant ne voit pas l'argent. Ça part direct dans la Caisse du Patron.</p>
 </div>
 
-<!-- CAISSE - PATRON SEUL -->
 <div id="caisse" class="box patronOnly" style="display:none">
 <h3>💰 Caisse du Jour - <span id="dateJour"></span></h3>
 <div class="jaune" id="totalMedsJour"></div>
 <div class="vert" id="totalSommeJour"></div>
-<p>À 00h00, ça revient à 0 et ça part tout seul dans Archives.</p>
 </div>
 
-<!-- ARCHIVES - PATRON SEUL -->
 <div id="archives" class="box patronOnly" style="display:none">
-<h3>📦 Archives du Mois - Pour compter fin du mois</h3>
+<h3>📦 Archives du Mois</h3>
 <div id="listeArchives"></div>
 <div class="vert" id="totalMois"></div>
 </div>
 
 <script>
-// --- ROLE ---
-let params = new URLSearchParams(location.search);
-let role = params.get('role');
-if(role){ localStorage.setItem('role', role); }
-else{ role = localStorage.getItem('role') || 'patron'; }
-document.getElementById('titreRole').innerText = role==='suppleant' ? '👤 SUPPLÉANT - 2 modules' : '👑 PATRON - Accès complet';
-if(role==='suppleant'){
-  document.querySelectorAll('.patronOnly').forEach(e=>e.style.display='none');
-}
+let params=new URLSearchParams(location.search);
+let role=params.get('role');
+if(role){localStorage.setItem('role',role);}else{role=localStorage.getItem('role')||'patron';}
+document.getElementById('titreRole').innerText=role==='suppleant'?'👤 SUPPLÉANT - 2 modules':'👑 PATRON - Accès complet';
+if(role==='suppleant'){document.querySelectorAll('.patronOnly').forEach(e=>e.style.display='none');document.getElementById('ajoutBox').style.display='none';}
 
-// --- DONNEES ---
-let stock = JSON.parse(localStorage.getItem('stock') || '[{"nom":"Paracetamol","qte":145,"prix":500},{"nom":"Sérum glucosé","qte":13,"prix":90000},{"nom":"Seringue 5cc","qte":51,"prix":2000},{"nom":"Vitamine B6","qte":42,"prix":3000}]');
-let caisse = JSON.parse(localStorage.getItem('caisse') || '{"date":"","nb":0,"somme":0}');
-let archives = JSON.parse(localStorage.getItem('archives') || '[]');
-
-function aujourdhui(){ return new Date().toISOString().slice(0,10); }
-
-// --- ARCHIVAGE AUTO A MINUIT / NOUVEAU JOUR ---
+// NE PLUS ÉCRASER : si stock existe, on le garde. Si pas de stock, on met vide.
+let stockStr=localStorage.getItem('stock');
+let stock=stockStr?JSON.parse(stockStr):[{"nom":"Paracetamol","qte":145,"prix":500},{"nom":"Sérum glucosé","qte":13,"prix":90000},{"nom":"Seringue 5cc","qte":51,"prix":2000},{"nom":"Vitamine B6","qte":42,"prix":3000}];
+let caisse=JSON.parse(localStorage.getItem('caisse')||'{"date":"","nb":0,"somme":0}');
+let archives=JSON.parse(localStorage.getItem('archives')||'[]');
+function aujourdhui(){return new Date().toISOString().slice(0,10);}
 function verifierNouveauJour(){
-  let today = aujourdhui();
-  if(caisse.date && caisse.date !== today){
-    // On archive hier, même si le suppléant a effacé, c'est déjà sauvé
-    if(caisse.nb>0 || caisse.somme>0){
-      archives.push({date: caisse.date, nb: caisse.nb, somme: caisse.somme});
-      localStorage.setItem('archives', JSON.stringify(archives));
-    }
-    caisse = {date: today, nb:0, somme:0};
-    localStorage.setItem('caisse', JSON.stringify(caisse));
-  }
-  if(!caisse.date){ caisse.date = today; localStorage.setItem('caisse', JSON.stringify(caisse)); }
+let today=aujourdhui();
+if(caisse.date&&caisse.date!==today){
+if(caisse.nb>0||caisse.somme>0){archives.push({date:caisse.date,nb:caisse.nb,somme:caisse.somme});localStorage.setItem('archives',JSON.stringify(archives));}
+caisse={date:today,nb:0,somme:0};localStorage.setItem('caisse',JSON.stringify(caisse));
 }
-verifierNouveauJour();
-setInterval(verifierNouveauJour, 60000); // vérifie chaque minute
-
-function show(id, btn){
-  ['stock','patient','caisse','archives'].forEach(x=>document.getElementById(x).style.display='none');
-  document.getElementById(id).style.display='block';
-  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
-  if(btn) btn.classList.add('active');
-  afficher();
+if(!caisse.date){caisse.date=today;localStorage.setItem('caisse',JSON.stringify(caisse));}
 }
-
+verifierNouveauJour();setInterval(verifierNouveauJour,60000);
+function show(id,btn){['stock','patient','caisse','archives'].forEach(x=>document.getElementById(x).style.display='none');document.getElementById(id).style.display='block';document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');afficher();}
 function afficher(){
-  let html='', totalStock=0;
-  let sel='';
-  stock.forEach((m,i)=>{
-    let tot = m.qte*m.prix; totalStock+=tot;
-    // Si suppleant : stock et prix en texte noir, pas modifiable
-    let qteCell = role==='suppleant' ? `<b>${m.qte}</b>` : `<input type="number" value="${m.qte}" onchange="changerQte(${i},this.value)">`;
-    let prixCell = role==='suppleant' ? `<b>${m.prix}</b>` : `<input type="number" value="${m.prix}" onchange="changerPrix(${i},this.value)">`;
-    html+=`<tr><td>${m.nom}</td><td>${qteCell}</td><td>${prixCell}</td><td>${tot.toLocaleString()} GNF</td></tr>`;
-    sel+=`<option value="${i}">${m.nom} - ${m.prix} GNF</option>`;
-  });
-  document.getElementById('stockBody').innerHTML=html;
-  document.getElementById('medSelect').innerHTML=sel;
-  document.getElementById('totalStock').innerText='TOTAL STOCK : '+totalStock.toLocaleString()+' GNF';
-  document.getElementById('dateJour').innerText=caisse.date;
-  document.getElementById('totalMedsJour').innerText='TOTAL MÉDICAMENTS VENDUS AUJOURD\'HUI : '+caisse.nb+' médicaments';
-  document.getElementById('totalSommeJour').innerText='SOMME TOTALE JOURNALIÈRE : '+caisse.somme.toLocaleString()+' GNF';
-  // Archives
-  let archHtml='', totNb=0, totSomme=0;
-  archives.slice().reverse().forEach(a=>{
-    archHtml+=`<div style="border-bottom:1px solid #ddd;padding:8px">${a.date} : ${a.nb} médicaments - ${a.somme.toLocaleString()} GNF</div>`;
-    totNb+=a.nb; totSomme+=a.somme;
-  });
-  // + aujourd'hui pour le total du mois
-  totNb+=caisse.nb; totSomme+=caisse.somme;
-  document.getElementById('listeArchives').innerHTML = archHtml || 'Pas encore d\'archives. Attends demain 00h00.';
-  document.getElementById('totalMois').innerText='TOTAL DU MOIS : '+totNb+' médicaments - '+totSomme.toLocaleString()+' GNF';
+let html='',totalStock=0,sel='';
+stock.forEach((m,i)=>{
+let tot=m.qte*m.prix;totalStock+=tot;
+let qteCell=role==='suppleant'?`<b>${m.qte}</b>`:`<input type="number" value="${m.qte}" onchange="changerQte(${i},this.value)">`;
+let prixCell=role==='suppleant'?`<b>${m.prix}</b>`:`<input type="number" value="${m.prix}" onchange="changerPrix(${i},this.value)">`;
+let del=role==='suppleant'?'':`<button onclick="supprimer(${i})">❌</button>`;
+html+=`<tr><td>${m.nom}</td><td>${qteCell}</td><td>${prixCell}</td><td>${tot.toLocaleString()} GNF</td><td>${del}</td></tr>`;
+sel+=`<option value="${i}">${m.nom} - ${m.prix} GNF (reste ${m.qte})</option>`;
+});
+document.getElementById('stockBody').innerHTML=html;
+document.getElementById('medSelect').innerHTML=sel;
+document.getElementById('totalStock').innerText='TOTAL STOCK : '+totalStock.toLocaleString()+' GNF';
+document.getElementById('dateJour').innerText=caisse.date;
+document.getElementById('totalMedsJour').innerText='TOTAL MÉDICAMENTS VENDUS AUJOURD\'HUI : '+caisse.nb;
+document.getElementById('totalSommeJour').innerText='SOMME TOTALE JOURNALIÈRE : '+caisse.somme.toLocaleString()+' GNF';
+let archHtml='',totNb=0,totSomme=0;
+archives.slice().reverse().forEach(a=>{archHtml+=`<div style="border-bottom:1px solid #ddd;padding:8px">${a.date} : ${a.nb} médicaments - ${a.somme.toLocaleString()} GNF</div>`;totNb+=a.nb;totSomme+=a.somme;});
+totNb+=caisse.nb;totSomme+=caisse.somme;
+document.getElementById('listeArchives').innerHTML=archHtml||'Pas encore d\'archives.';
+document.getElementById('totalMois').innerText='TOTAL DU MOIS : '+totNb+' médicaments - '+totSomme.toLocaleString()+' GNF';
 }
-
-function changerQte(i,v){ if(role!=='patron') return; stock[i].qte=parseInt(v)||0; localStorage.setItem('stock',JSON.stringify(stock)); afficher(); }
-function changerPrix(i,v){ if(role!=='patron') return; stock[i].prix=parseInt(v)||0; localStorage.setItem('stock',JSON.stringify(stock)); afficher(); }
-
+function changerQte(i,v){if(role!=='patron')return;stock[i].qte=parseInt(v)||0;localStorage.setItem('stock',JSON.stringify(stock));afficher();}
+function changerPrix(i,v){if(role!=='patron')return;stock[i].prix=parseInt(v)||0;localStorage.setItem('stock',JSON.stringify(stock));afficher();}
+function ajouterMed(){
+let nom=document.getElementById('newNom').value.trim();
+let q=parseInt(document.getElementById('newQte').value)||0;
+let p=parseInt(document.getElementById('newPrix').value)||0;
+if(!nom){alert('Mets le nom');return;}
+stock.push({nom:nom,qte:q,prix:p});
+localStorage.setItem('stock',JSON.stringify(stock));
+document.getElementById('newNom').value='';document.getElementById('newQte').value='';document.getElementById('newPrix').value='';
+afficher();alert(nom+' ajouté !');
+}
+function supprimer(i){if(confirm('Supprimer '+stock[i].nom+' ?')){stock.splice(i,1);localStorage.setItem('stock',JSON.stringify(stock));afficher();}}
 function enregistrer(){
-  let idx=document.getElementById('medSelect').value;
-  let q=parseInt(document.getElementById('qte').value)||1;
-  let nom=document.getElementById('nomPatient').value;
-  if(!nom){ alert('Mets le nom du patient'); return; }
-  if(stock[idx].qte < q){ alert('Stock insuffisant'); return; }
-  stock[idx].qte -= q;
-  caisse.nb += q;
-  caisse.somme += q * stock[idx].prix;
-  caisse.date = aujourdhui();
-  localStorage.setItem('stock',JSON.stringify(stock));
-  localStorage.setItem('caisse',JSON.stringify(caisse));
-  document.getElementById('nomPatient').value='';
-  alert('Enregistré ! Stock diminué. Caisse mise à jour (Patron seul voit).');
-  afficher();
+let idx=document.getElementById('medSelect').value;
+let q=parseInt(document.getElementById('qte').value)||1;
+let nom=document.getElementById('nomPatient').value;
+if(!nom){alert('Mets le nom du patient');return;}
+if(stock[idx].qte<q){alert('Stock insuffisant');return;}
+stock[idx].qte-=q;caisse.nb+=q;caisse.somme+=q*stock[idx].prix;caisse.date=aujourdhui();
+localStorage.setItem('stock',JSON.stringify(stock));localStorage.setItem('caisse',JSON.stringify(caisse));
+document.getElementById('nomPatient').value='';alert('Enregistré !');afficher();
 }
 afficher();
 </script>
