@@ -2,178 +2,166 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Pharmacie</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pharmacie - PATRON</title>
 <style>
-body{font-family:Arial;background:#f2f2f2;margin:0;padding:10px}
-h2{text-align:center}
-button{padding:10px 14px;border:none;border-radius:8px;background:#007bff;color:#fff;font-size:15px;margin:3px}
-button.vert{background:#28a745}
-button.gris{background:#6c757d}
-input,select{padding:9px;width:100%;box-sizing:border-box;margin:4px 0;border:1px solid #ccc;border-radius:6px}
-table{width:100%;background:#fff;border-collapse:collapse;margin-top:10px}
-th,td{border:1px solid #ddd;padding:8px;text-align:center;font-size:14px}
-th{background:#eee}
-.card{background:#fff;padding:12px;border-radius:10px;margin-top:10px}
-.total{background:#d4edda;padding:10px;text-align:center;font-weight:bold;border-radius:8px;margin-top:10px}
-.cache{color:red;cursor:pointer}
+body{font-family:Arial,sans-serif;background:#f2f2f2;margin:0;padding:10px}
+h1{text-align:center;font-size:22px}
+button{border:none;padding:10px 14px;border-radius:10px;margin:4px;font-weight:bold;cursor:pointer;color:white}
+.bleu{background:#2196F3}.vert{background:#4CAF50}.orange{background:#FF9800}.gris{background:#777}.rouge{background:#e53935}
+.carte{background:white;padding:12px;border-radius:12px;margin-top:10px}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th,td{border:1px solid #ddd;padding:6px;text-align:center;font-size:14px}
+input,select{width:100%;padding:8px;margin:4px 0;border:1px solid #ccc;border-radius:8px;box-sizing:border-box}
+.cache{display:none}
 </style>
 </head>
 <body>
 
-<div id="login" style="text-align:center;padding:40px 10px">
-<h2>🔒 Pharmacie</h2>
-<p>Qui est là ?</p>
-<input id="code" type="password" placeholder="Tape ton code" style="text-align:center;font-size:18px">
-<br><br>
-<button onclick="entrer()">Entrer</button>
-<p id="erreur" style="color:red"></p>
-<p style="font-size:12px;color:#666">Patron : 1989 - Suppléant : 1111</p>
+<div id="login" style="text-align:center;margin-top:80px">
+<h1>💊 PHARMACIE</h1>
+<p>Entrez votre code</p>
+<input id="codeInput" type="password" placeholder="Code" style="max-width:250px">
+<br>
+<button class="bleu" onclick="login()">ENTRER</button>
+<p id="msg" style="color:red"></p>
 </div>
 
-<div id="appli" style="display:none">
-<h2 id="titreRole">PATRON</h2>
+<div id="app" class="cache">
+<h1 id="titre">👤 PATRON - Accès complet</h1>
 <div style="text-align:center">
-<button onclick="show('stock')">💊 STOCK</button>
-<button onclick="show('patient')">👤 PATIENT</button>
-<button class="cache-suppleant" onclick="show('caisse')">💰 CAISSE DU JOUR</button>
-<button class="cache-suppleant" onclick="show('archives')">📁 ARCHIVES</button>
-<button class="gris" onclick="location.reload()">🔓 Sortir</button>
+<button class="bleu" onclick="show('stockDiv')">💊 STOCK</button>
+<button class="bleu" onclick="show('patientDiv')">👤 PATIENT</button><br>
+<button class="orange" onclick="show('caisseDiv')">💰 CAISSE DU JOUR</button>
+<button class="orange" onclick="show('archivesDiv')">📁 ARCHIVES</button><br>
+<button class="gris" onclick="logout()">🔒 Sortir</button>
 </div>
 
-<div id="page-stock" class="card">
+<!-- STOCK -->
+<div id="stockDiv" class="carte">
 <h3>💊 Stock - Reste des médicaments</h3>
+<div id="formStock">
+<input id="nomMed" placeholder="Nom du médicament">
+<input id="qteMed" type="number" placeholder="Stock / Quantité">
+<input id="prixMed" type="number" placeholder="Prix en GNF">
+<button class="vert" onclick="ajouterMed()">+ Ajouter</button>
+</div>
 <table>
-<tr><th>Médicament</th><th>Stock</th><th class="cache-suppleant">Prix</th><th class="cache-suppleant">Total</th><th class="cache-suppleant">X</th></tr>
-<tbody id="tbody"></tbody>
+<thead><tr><th>Médicament</th><th>Stock</th><th class="colPrix">Prix</th><th class="colPrix">Total</th><th>X</th></tr></thead>
+<tbody id="tbodyStock"></tbody>
 </table>
-<div class="cache-suppleant total" id="totalStock"></div>
-
-<h3>➕ Ajouter un nouveau médicament</h3>
-<input id="nNom" placeholder="Nom du médicament ex: Paracétamol">
-<input id="nStock" type="number" placeholder="Quantité ex: 50">
-<input id="nPrix" class="cache-suppleant" type="number" placeholder="Prix en GNF ex: 5000">
-<button class="vert" onclick="ajouterMed()">Ajouter</button>
-<p id="msgAjout" style="color:green"></p>
+<p><b id="totalStock">Total Stock : 0 GNF</b></p>
 </div>
 
-<div id="page-patient" class="card" style="display:none">
-<h3>👤 Nouveau Patient</h3>
-<input id="pNom" placeholder="Nom du patient">
-<select id="pMed"></select>
-<input id="pQte" type="number" value="1" placeholder="Quantité">
-<button class="vert" onclick="vendre()">Enregistrer vente</button>
+<!-- PATIENT -->
+<div id="patientDiv" class="carte cache">
+<h3>👤 Patient - Vente</h3>
+<input id="nomPatient" placeholder="Nom du patient">
+<select id="selectMed"></select>
+<input id="qteVente" type="number" placeholder="Quantité vendue" value="1">
+<button class="vert" onclick="vendre()">Vendre</button>
 <p id="msgVente"></p>
-<h3>Patients du jour</h3>
-<div id="listePatients"></div>
 </div>
 
-<div id="page-caisse" class="card cache-suppleant" style="display:none">
-<h3>💰 Caisse du Jour</h3>
-<div id="caisseJour">0 GNF</div>
-<div id="detailCaisse"></div>
-<button onclick="cloturer()">Clôturer la journée -> Archives</button>
+<!-- CAISSE -->
+<div id="caisseDiv" class="carte cache">
+<h3>💰 Caisse du jour</h3>
+<p id="caisseJour">0 GNF</p>
+<div id="listeVentes"></div>
+<button class="rouge" onclick="cloturer()">Clôturer la journée -> Archives</button>
 </div>
 
-<div id="page-archives" class="card cache-suppleant" style="display:none">
+<!-- ARCHIVES -->
+<div id="archivesDiv" class="carte cache">
 <h3>📁 Archives</h3>
 <div id="listeArchives"></div>
 </div>
+
 </div>
 
 <script>
-let stock = JSON.parse(localStorage.getItem("stock")) || [
-{n:"Paracetamol", s:145, p:500},
-{n:"Sérum glucosé", s:13, p:90000},
-{n:"Seringue 5cc", s:51, p:2000},
-{n:"Vitamine B6", s:42, p:3000}
-];
+let role = "";
+let stock = JSON.parse(localStorage.getItem("stock")) || [];
+// CORRECTION ancien code : évite undefined et NaN
+stock = stock.map(m => ({
+  medicament: m.medicament || m.nom || m.name || "",
+  stock: Number(m.stock || m.quantite || m.qte || 0),
+  prix: Number(m.prix || m.price || 0)
+})).filter(m => m.medicament !== "");
 let ventes = JSON.parse(localStorage.getItem("ventes")) || [];
 let archives = JSON.parse(localStorage.getItem("archives")) || [];
-let role = "";
 
 function save(){ localStorage.setItem("stock", JSON.stringify(stock)); localStorage.setItem("ventes", JSON.stringify(ventes)); localStorage.setItem("archives", JSON.stringify(archives)); }
-function entrer(){
-  let c = document.getElementById("code").value;
-  if(c=="1989"){ role="patron"; document.getElementById("titreRole").innerText="👤 PATRON - Accès complet"; }
-  else if(c=="1111"){ role="suppleant"; document.getElementById("titreRole").innerText="👤 SUPPLÉANT - 2 modules"; }
-  else { document.getElementById("erreur").innerText="Mauvais code"; return; }
-  document.getElementById("login").style.display="none";
-  document.getElementById("appli").style.display="block";
-  if(role=="suppleant"){
-    document.querySelectorAll(".cache-suppleant").forEach(e=>e.style.display="none");
-  }
-  afficher();
+
+function login(){
+  let c = document.getElementById("codeInput").value;
+  if(c==="1989"){ role="patron"; document.getElementById("titre").innerText="👤 PATRON - Accès complet"; }
+  else if(c==="1111"){ role="suppleant"; document.getElementById("titre").innerText="👤 SUPPLÉANT - Stock seulement"; }
+  else { document.getElementById("msg").innerText="Code incorrect"; return; }
+  document.getElementById("login").classList.add("cache");
+  document.getElementById("app").classList.remove("cache");
+  appliquerRole(); afficher();
 }
-function show(page){
-  ["stock","patient","caisse","archives"].forEach(p=>{
-    document.getElementById("page-"+p).style.display = (p==page ? "block" : "none");
-  });
-  if(role=="suppleant" && (page=="caisse" || page=="archives")) return;
+function logout(){ location.reload(); }
+function appliquerRole(){
+  let isSup = role==="suppleant";
+  document.querySelectorAll(".colPrix").forEach(e=> e.style.display = isSup ? "none" : "");
+  document.getElementById("formStock").style.display = isSup ? "none" : "block";
+  document.getElementById("totalStock").style.display = isSup ? "none" : "block";
+  if(isSup){ show('stockDiv'); }
+}
+function show(id){
+  if(role==="suppleant" && id!=="stockDiv"){ alert("Accès refusé"); return; }
+  ["stockDiv","patientDiv","caisseDiv","archivesDiv"].forEach(x=> document.getElementById(x).classList.add("cache"));
+  document.getElementById(id).classList.remove("cache");
   afficher();
 }
 function afficher(){
-  let tbody = document.getElementById("tbody");
-  tbody.innerHTML = "";
-  let total = 0;
-  let sel = document.getElementById("pMed");
-  sel.innerHTML = "";
+  let tbody=document.getElementById("tbodyStock"); tbody.innerHTML="";
+  let total=0;
   stock.forEach((m,i)=>{
-    total += m.s * m.p;
-    let tr = document.createElement("tr");
-    if(role=="patron"){
-      tr.innerHTML = `<td>${m.n}</td>
-      <td><input type="number" value="${m.s}" onchange="changeStock(${i},this.value)"></td>
-      <td class="cache-suppleant"><input type="number" value="${m.p}" onchange="changePrix(${i},this.value)"></td>
-      <td class="cache-suppleant">${(m.s*m.p).toLocaleString()} GNF</td>
-      <td class="cache-suppleant"><span class="cache" onclick="supprimer(${i})">X</span></td>`;
-    } else {
-      tr.innerHTML = `<td>${m.n}</td><td>${m.s}</td>`;
-    }
-    tbody.appendChild(tr);
-    let opt = document.createElement("option");
-    opt.value = i; opt.text = m.n + " - Stock: " + m.s;
-    sel.appendChild(opt);
+    let tot = m.stock * m.prix; total+=tot;
+    tbody.innerHTML+=`<tr><td>${m.medicament}</td><td><input type="number" value="${m.stock}" onchange="modif(${i},'stock',this.value)"></td><td class="colPrix" style="display:${role==='suppleant'?'none':''}"><input type="number" value="${m.prix}" onchange="modif(${i},'prix',this.value)"></td><td class="colPrix" style="display:${role==='suppleant'?'none':''}">${tot.toLocaleString()} GNF</td><td><span style="color:red;cursor:pointer" onclick="supprimer(${i})">X</span></td></tr>`;
   });
-  document.getElementById("totalStock").innerText = "TOTAL STOCK : " + total.toLocaleString() + " GNF";
-  let caisse = ventes.reduce((a,b)=>a+b.total,0);
-  document.getElementById("caisseJour").innerHTML = "<h2>"+caisse.toLocaleString()+" GNF</h2>";
-  document.getElementById("detailCaisse").innerHTML = ventes.map(v=>v.patient+" - "+v.med+" x"+v.qte+" = "+v.total.toLocaleString()+" GNF").join("<br>");
-  document.getElementById("listePatients").innerHTML = ventes.map(v=>v.patient+" - "+v.med+" x"+v.qte).join("<br>") || "Aucun patient pour le moment";
-  document.getElementById("listeArchives").innerHTML = archives.map(a=>a.date+" : "+a.total.toLocaleString()+" GNF - "+a.nb+" ventes").join("<br>") || "Aucune archive";
+  document.getElementById("totalStock").innerText="Total Stock : "+total.toLocaleString()+" GNF";
+  let sel=document.getElementById("selectMed"); sel.innerHTML="";
+  stock.forEach((m,i)=>{ sel.innerHTML+=`<option value="${i}">${m.medicament} - Stock: ${m.stock}</option>`; });
+  let caisse=ventes.reduce((a,v)=>a+v.total,0);
+  document.getElementById("caisseJour").innerText=caisse.toLocaleString()+" GNF";
+  document.getElementById("listeVentes").innerHTML=ventes.map(v=>`<p>${v.patient} - ${v.medicament} x${v.qte} = ${v.total.toLocaleString()} GNF</p>`).join("") || "<p>Aucune vente</p>";
+  document.getElementById("listeArchives").innerHTML=archives.map(a=>`<p><b>${a.date}</b> : ${a.total.toLocaleString()} GNF - ${a.nb} ventes</p>`).join("") || "<p>Aucune archive</p>";
+  appliquerRole();
 }
-function changeStock(i,val){ if(role!="patron") return; stock[i].s = parseInt(val)||0; save(); afficher(); }
-function changePrix(i,val){ if(role!="patron") return; stock[i].p = parseInt(val)||0; save(); afficher(); }
-function supprimer(i){ if(role!="patron") return; if(confirm("Supprimer "+stock[i].n+" ?")){ stock.splice(i,1); save(); afficher(); } }
+function modif(i,champ,val){ stock[i][champ]=Number(val)||0; save(); afficher(); }
 function ajouterMed(){
-  let nom = document.getElementById("nNom").value.trim();
-  let s = parseInt(document.getElementById("nStock").value)||0;
-  let p = parseInt(document.getElementById("nPrix").value)||0;
-  if(!nom){ alert("Écris le nom"); return; }
-  if(role=="suppleant"){ p = 0; }
-  stock.push({n:nom, s:s, p:p});
+  let nom=document.getElementById("nomMed").value.trim();
+  let qte=Number(document.getElementById("qteMed").value)||0;
+  let prix=Number(document.getElementById("prixMed").value)||0;
+  if(!nom){ alert("Mets le nom"); return; }
+  stock.push({medicament:nom, stock:qte, prix:prix});
+  document.getElementById("nomMed").value=""; document.getElementById("qteMed").value=""; document.getElementById("prixMed").value="";
   save(); afficher();
-  document.getElementById("msgAjout").innerText = nom + " ajouté. Patron complétera le prix plus tard.";
-  document.getElementById("nNom").value=""; document.getElementById("nStock").value=""; document.getElementById("nPrix").value="";
 }
+function supprimer(i){ if(confirm("Supprimer ?")){ stock.splice(i,1); save(); afficher(); } }
 function vendre(){
-  let nom = document.getElementById("pNom").value.trim() || "Patient";
-  let idx = document.getElementById("pMed").value;
-  let qte = parseInt(document.getElementById("pQte").value)||1;
-  if(stock[idx].s < qte){ alert("Stock insuffisant. Il reste "+stock[idx].s); return; }
-  stock[idx].s -= qte;
-  let total = qte * stock[idx].p;
-  ventes.push({patient:nom, med:stock[idx].n, qte:qte, total:total});
+  let nom=document.getElementById("nomPatient").value.trim() || "Anonyme";
+  let idx=document.getElementById("selectMed").value;
+  let qte=Number(document.getElementById("qteVente").value)||1;
+  if(stock[idx]==undefined){ alert("Pas de médicament"); return; }
+  if(stock[idx].stock < qte){ alert("Stock insuffisant"); return; }
+  stock[idx].stock-=qte;
+  let total=qte*stock[idx].prix;
+  ventes.push({patient:nom, medicament:stock[idx].medicament, qte:qte, total:total});
   save(); afficher();
-  document.getElementById("msgVente").innerText = "Vente enregistrée : "+nom+" - "+stock[idx].n;
-  document.getElementById("pNom").value="";
+  document.getElementById("msgVente").innerText="Vendu : "+total.toLocaleString()+" GNF";
 }
 function cloturer(){
-  if(ventes.length==0){ alert("Caisse vide"); return; }
-  let total = ventes.reduce((a,b)=>a+b.total,0);
-  archives.push({date:new Date().toLocaleDateString()+" "+new Date().toLocaleTimeString(), total:total, nb:ventes.length});
-  ventes = []; save(); afficher(); alert("Journée clôturée : "+total.toLocaleString()+" GNF");
+  if(ventes.length===0){ alert("Caisse vide"); return; }
+  let total=ventes.reduce((a,v)=>a+v.total,0);
+  archives.push({date:new Date().toLocaleString(), total:total, nb:ventes.length});
+  ventes=[];
+  save(); afficher(); alert("Journée clôturée");
 }
 </script>
 </body>
- </html>
+  </html>
