@@ -1,133 +1,179 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pharmacie</title>
 <style>
 body{font-family:Arial;background:#f2f2f2;margin:0;padding:10px}
-button{padding:10px;margin:3px;border:none;border-radius:8px;font-weight:bold}
-.tab{background:#ddd}.tab.active{background:#007bff;color:white}
-.box{background:white;padding:12px;border-radius:10px;margin-top:10px}
-input,select{width:100%;padding:10px;margin:5px 0;border:1px solid #ccc;border-radius:8px;box-sizing:border-box}
-table{width:100%;border-collapse:collapse;background:white}
-td,th{border:1px solid #ddd;padding:8px;text-align:center}
-.vert{background:#d4edda;padding:12px;border-radius:10px;text-align:center;font-weight:bold;margin-top:10px}
-.jaune{background:#fff3cd;padding:12px;border-radius:10px;text-align:center;font-weight:bold;margin-top:10px}
+h2{text-align:center}
+button{padding:10px 14px;border:none;border-radius:8px;background:#007bff;color:#fff;font-size:15px;margin:3px}
+button.vert{background:#28a745}
+button.gris{background:#6c757d}
+input,select{padding:9px;width:100%;box-sizing:border-box;margin:4px 0;border:1px solid #ccc;border-radius:6px}
+table{width:100%;background:#fff;border-collapse:collapse;margin-top:10px}
+th,td{border:1px solid #ddd;padding:8px;text-align:center;font-size:14px}
+th{background:#eee}
+.card{background:#fff;padding:12px;border-radius:10px;margin-top:10px}
+.total{background:#d4edda;padding:10px;text-align:center;font-weight:bold;border-radius:8px;margin-top:10px}
+.cache{color:red;cursor:pointer}
 </style>
 </head>
 <body>
-<h2 id="titreRole" style="text-align:center"></h2>
-<div>
-<button class="tab active" onclick="show('stock',this)">💊 STOCK</button>
-<button class="tab" onclick="show('patient',this)">👤 PATIENT</button>
-<button class="tab patronOnly" onclick="show('caisse',this)">💰 CAISSE DU JOUR</button>
-<button class="tab patronOnly" onclick="show('archives',this)">📦 ARCHIVES DU MOIS</button>
+
+<div id="login" style="text-align:center;padding:40px 10px">
+<h2>🔒 Pharmacie</h2>
+<p>Qui est là ?</p>
+<input id="code" type="password" placeholder="Tape ton code" style="text-align:center;font-size:18px">
+<br><br>
+<button onclick="entrer()">Entrer</button>
+<p id="erreur" style="color:red"></p>
+<p style="font-size:12px;color:#666">Patron : 1989 - Suppléant : 1111</p>
 </div>
 
-<div id="stock" class="box">
+<div id="appli" style="display:none">
+<h2 id="titreRole">PATRON</h2>
+<div style="text-align:center">
+<button onclick="show('stock')">💊 STOCK</button>
+<button onclick="show('patient')">👤 PATIENT</button>
+<button class="cache-suppleant" onclick="show('caisse')">💰 CAISSE DU JOUR</button>
+<button class="cache-suppleant" onclick="show('archives')">📁 ARCHIVES</button>
+<button class="gris" onclick="location.reload()">🔓 Sortir</button>
+</div>
+
+<div id="page-stock" class="card">
 <h3>💊 Stock - Reste des médicaments</h3>
-<table><tr><th>Médicament</th><th>Stock</th><th>Prix</th><th>Total</th><th>X</th></tr><tbody id="stockBody"></tbody></table>
-<div class="vert" id="totalStock"></div>
-<div id="ajoutBox" style="margin-top:15px;border-top:2px dashed #007bff;padding-top:10px">
-<h4>➕ Ajouter un médicament qui manque :</h4>
-<input id="newNom" placeholder="Nom du médicament ex: Amoxicilline">
-<input id="newQte" type="number" placeholder="Stock restant ex: 80">
-<input id="newPrix" type="number" placeholder="Prix ex: 5000">
-<button style="background:#007bff;color:white;width:100%" onclick="ajouterMed()">➕ AJOUTER AU STOCK</button>
-<p style="font-size:12px;color:gray">Tu fais ça pour chaque médicament qui manque, ça reste enregistré pour toujours.</p>
-</div>
+<table>
+<tr><th>Médicament</th><th>Stock</th><th class="cache-suppleant">Prix</th><th class="cache-suppleant">Total</th><th class="cache-suppleant">X</th></tr>
+<tbody id="tbody"></tbody>
+</table>
+<div class="cache-suppleant total" id="totalStock"></div>
+
+<h3>➕ Ajouter un nouveau médicament</h3>
+<input id="nNom" placeholder="Nom du médicament ex: Paracétamol">
+<input id="nStock" type="number" placeholder="Quantité ex: 50">
+<input id="nPrix" class="cache-suppleant" type="number" placeholder="Prix en GNF ex: 5000">
+<button class="vert" onclick="ajouterMed()">Ajouter</button>
+<p id="msgAjout" style="color:green"></p>
 </div>
 
-<div id="patient" class="box" style="display:none">
+<div id="page-patient" class="card" style="display:none">
 <h3>👤 Nouveau Patient</h3>
-<input id="nomPatient" placeholder="Prénom et Nom du patient">
-<select id="medSelect"></select>
-<input id="qte" type="number" value="1" min="1">
-<button style="background:#28a745;color:white;width:100%" onclick="enregistrer()">✅ ENREGISTRER + DIMINUER STOCK</button>
+<input id="pNom" placeholder="Nom du patient">
+<select id="pMed"></select>
+<input id="pQte" type="number" value="1" placeholder="Quantité">
+<button class="vert" onclick="vendre()">Enregistrer vente</button>
+<p id="msgVente"></p>
+<h3>Patients du jour</h3>
+<div id="listePatients"></div>
 </div>
 
-<div id="caisse" class="box patronOnly" style="display:none">
-<h3>💰 Caisse du Jour - <span id="dateJour"></span></h3>
-<div class="jaune" id="totalMedsJour"></div>
-<div class="vert" id="totalSommeJour"></div>
+<div id="page-caisse" class="card cache-suppleant" style="display:none">
+<h3>💰 Caisse du Jour</h3>
+<div id="caisseJour">0 GNF</div>
+<div id="detailCaisse"></div>
+<button onclick="cloturer()">Clôturer la journée -> Archives</button>
 </div>
 
-<div id="archives" class="box patronOnly" style="display:none">
-<h3>📦 Archives du Mois</h3>
+<div id="page-archives" class="card cache-suppleant" style="display:none">
+<h3>📁 Archives</h3>
 <div id="listeArchives"></div>
-<div class="vert" id="totalMois"></div>
+</div>
 </div>
 
 <script>
-let params=new URLSearchParams(location.search);
-let role=params.get('role');
-if(role){localStorage.setItem('role',role);}else{role=localStorage.getItem('role')||'patron';}
-document.getElementById('titreRole').innerText=role==='suppleant'?'👤 SUPPLÉANT - 2 modules':'👑 PATRON - Accès complet';
-if(role==='suppleant'){document.querySelectorAll('.patronOnly').forEach(e=>e.style.display='none');document.getElementById('ajoutBox').style.display='none';}
+let stock = JSON.parse(localStorage.getItem("stock")) || [
+{n:"Paracetamol", s:145, p:500},
+{n:"Sérum glucosé", s:13, p:90000},
+{n:"Seringue 5cc", s:51, p:2000},
+{n:"Vitamine B6", s:42, p:3000}
+];
+let ventes = JSON.parse(localStorage.getItem("ventes")) || [];
+let archives = JSON.parse(localStorage.getItem("archives")) || [];
+let role = "";
 
-// NE PLUS ÉCRASER : si stock existe, on le garde. Si pas de stock, on met vide.
-let stockStr=localStorage.getItem('stock');
-let stock=stockStr?JSON.parse(stockStr):[{"nom":"Paracetamol","qte":145,"prix":500},{"nom":"Sérum glucosé","qte":13,"prix":90000},{"nom":"Seringue 5cc","qte":51,"prix":2000},{"nom":"Vitamine B6","qte":42,"prix":3000}];
-let caisse=JSON.parse(localStorage.getItem('caisse')||'{"date":"","nb":0,"somme":0}');
-let archives=JSON.parse(localStorage.getItem('archives')||'[]');
-function aujourdhui(){return new Date().toISOString().slice(0,10);}
-function verifierNouveauJour(){
-let today=aujourdhui();
-if(caisse.date&&caisse.date!==today){
-if(caisse.nb>0||caisse.somme>0){archives.push({date:caisse.date,nb:caisse.nb,somme:caisse.somme});localStorage.setItem('archives',JSON.stringify(archives));}
-caisse={date:today,nb:0,somme:0};localStorage.setItem('caisse',JSON.stringify(caisse));
+function save(){ localStorage.setItem("stock", JSON.stringify(stock)); localStorage.setItem("ventes", JSON.stringify(ventes)); localStorage.setItem("archives", JSON.stringify(archives)); }
+function entrer(){
+  let c = document.getElementById("code").value;
+  if(c=="1989"){ role="patron"; document.getElementById("titreRole").innerText="👤 PATRON - Accès complet"; }
+  else if(c=="1111"){ role="suppleant"; document.getElementById("titreRole").innerText="👤 SUPPLÉANT - 2 modules"; }
+  else { document.getElementById("erreur").innerText="Mauvais code"; return; }
+  document.getElementById("login").style.display="none";
+  document.getElementById("appli").style.display="block";
+  if(role=="suppleant"){
+    document.querySelectorAll(".cache-suppleant").forEach(e=>e.style.display="none");
+  }
+  afficher();
 }
-if(!caisse.date){caisse.date=today;localStorage.setItem('caisse',JSON.stringify(caisse));}
+function show(page){
+  ["stock","patient","caisse","archives"].forEach(p=>{
+    document.getElementById("page-"+p).style.display = (p==page ? "block" : "none");
+  });
+  if(role=="suppleant" && (page=="caisse" || page=="archives")) return;
+  afficher();
 }
-verifierNouveauJour();setInterval(verifierNouveauJour,60000);
-function show(id,btn){['stock','patient','caisse','archives'].forEach(x=>document.getElementById(x).style.display='none');document.getElementById(id).style.display='block';document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');afficher();}
 function afficher(){
-let html='',totalStock=0,sel='';
-stock.forEach((m,i)=>{
-let tot=m.qte*m.prix;totalStock+=tot;
-let qteCell=role==='suppleant'?`<b>${m.qte}</b>`:`<input type="number" value="${m.qte}" onchange="changerQte(${i},this.value)">`;
-let prixCell=role==='suppleant'?`<b>${m.prix}</b>`:`<input type="number" value="${m.prix}" onchange="changerPrix(${i},this.value)">`;
-let del=role==='suppleant'?'':`<button onclick="supprimer(${i})">❌</button>`;
-html+=`<tr><td>${m.nom}</td><td>${qteCell}</td><td>${prixCell}</td><td>${tot.toLocaleString()} GNF</td><td>${del}</td></tr>`;
-sel+=`<option value="${i}">${m.nom} - ${m.prix} GNF (reste ${m.qte})</option>`;
-});
-document.getElementById('stockBody').innerHTML=html;
-document.getElementById('medSelect').innerHTML=sel;
-document.getElementById('totalStock').innerText='TOTAL STOCK : '+totalStock.toLocaleString()+' GNF';
-document.getElementById('dateJour').innerText=caisse.date;
-document.getElementById('totalMedsJour').innerText='TOTAL MÉDICAMENTS VENDUS AUJOURD\'HUI : '+caisse.nb;
-document.getElementById('totalSommeJour').innerText='SOMME TOTALE JOURNALIÈRE : '+caisse.somme.toLocaleString()+' GNF';
-let archHtml='',totNb=0,totSomme=0;
-archives.slice().reverse().forEach(a=>{archHtml+=`<div style="border-bottom:1px solid #ddd;padding:8px">${a.date} : ${a.nb} médicaments - ${a.somme.toLocaleString()} GNF</div>`;totNb+=a.nb;totSomme+=a.somme;});
-totNb+=caisse.nb;totSomme+=caisse.somme;
-document.getElementById('listeArchives').innerHTML=archHtml||'Pas encore d\'archives.';
-document.getElementById('totalMois').innerText='TOTAL DU MOIS : '+totNb+' médicaments - '+totSomme.toLocaleString()+' GNF';
+  let tbody = document.getElementById("tbody");
+  tbody.innerHTML = "";
+  let total = 0;
+  let sel = document.getElementById("pMed");
+  sel.innerHTML = "";
+  stock.forEach((m,i)=>{
+    total += m.s * m.p;
+    let tr = document.createElement("tr");
+    if(role=="patron"){
+      tr.innerHTML = `<td>${m.n}</td>
+      <td><input type="number" value="${m.s}" onchange="changeStock(${i},this.value)"></td>
+      <td class="cache-suppleant"><input type="number" value="${m.p}" onchange="changePrix(${i},this.value)"></td>
+      <td class="cache-suppleant">${(m.s*m.p).toLocaleString()} GNF</td>
+      <td class="cache-suppleant"><span class="cache" onclick="supprimer(${i})">X</span></td>`;
+    } else {
+      tr.innerHTML = `<td>${m.n}</td><td>${m.s}</td>`;
+    }
+    tbody.appendChild(tr);
+    let opt = document.createElement("option");
+    opt.value = i; opt.text = m.n + " - Stock: " + m.s;
+    sel.appendChild(opt);
+  });
+  document.getElementById("totalStock").innerText = "TOTAL STOCK : " + total.toLocaleString() + " GNF";
+  let caisse = ventes.reduce((a,b)=>a+b.total,0);
+  document.getElementById("caisseJour").innerHTML = "<h2>"+caisse.toLocaleString()+" GNF</h2>";
+  document.getElementById("detailCaisse").innerHTML = ventes.map(v=>v.patient+" - "+v.med+" x"+v.qte+" = "+v.total.toLocaleString()+" GNF").join("<br>");
+  document.getElementById("listePatients").innerHTML = ventes.map(v=>v.patient+" - "+v.med+" x"+v.qte).join("<br>") || "Aucun patient pour le moment";
+  document.getElementById("listeArchives").innerHTML = archives.map(a=>a.date+" : "+a.total.toLocaleString()+" GNF - "+a.nb+" ventes").join("<br>") || "Aucune archive";
 }
-function changerQte(i,v){if(role!=='patron')return;stock[i].qte=parseInt(v)||0;localStorage.setItem('stock',JSON.stringify(stock));afficher();}
-function changerPrix(i,v){if(role!=='patron')return;stock[i].prix=parseInt(v)||0;localStorage.setItem('stock',JSON.stringify(stock));afficher();}
+function changeStock(i,val){ if(role!="patron") return; stock[i].s = parseInt(val)||0; save(); afficher(); }
+function changePrix(i,val){ if(role!="patron") return; stock[i].p = parseInt(val)||0; save(); afficher(); }
+function supprimer(i){ if(role!="patron") return; if(confirm("Supprimer "+stock[i].n+" ?")){ stock.splice(i,1); save(); afficher(); } }
 function ajouterMed(){
-let nom=document.getElementById('newNom').value.trim();
-let q=parseInt(document.getElementById('newQte').value)||0;
-let p=parseInt(document.getElementById('newPrix').value)||0;
-if(!nom){alert('Mets le nom');return;}
-stock.push({nom:nom,qte:q,prix:p});
-localStorage.setItem('stock',JSON.stringify(stock));
-document.getElementById('newNom').value='';document.getElementById('newQte').value='';document.getElementById('newPrix').value='';
-afficher();alert(nom+' ajouté !');
+  let nom = document.getElementById("nNom").value.trim();
+  let s = parseInt(document.getElementById("nStock").value)||0;
+  let p = parseInt(document.getElementById("nPrix").value)||0;
+  if(!nom){ alert("Écris le nom"); return; }
+  if(role=="suppleant"){ p = 0; }
+  stock.push({n:nom, s:s, p:p});
+  save(); afficher();
+  document.getElementById("msgAjout").innerText = nom + " ajouté. Patron complétera le prix plus tard.";
+  document.getElementById("nNom").value=""; document.getElementById("nStock").value=""; document.getElementById("nPrix").value="";
 }
-function supprimer(i){if(confirm('Supprimer '+stock[i].nom+' ?')){stock.splice(i,1);localStorage.setItem('stock',JSON.stringify(stock));afficher();}}
-function enregistrer(){
-let idx=document.getElementById('medSelect').value;
-let q=parseInt(document.getElementById('qte').value)||1;
-let nom=document.getElementById('nomPatient').value;
-if(!nom){alert('Mets le nom du patient');return;}
-if(stock[idx].qte<q){alert('Stock insuffisant');return;}
-stock[idx].qte-=q;caisse.nb+=q;caisse.somme+=q*stock[idx].prix;caisse.date=aujourdhui();
-localStorage.setItem('stock',JSON.stringify(stock));localStorage.setItem('caisse',JSON.stringify(caisse));
-document.getElementById('nomPatient').value='';alert('Enregistré !');afficher();
+function vendre(){
+  let nom = document.getElementById("pNom").value.trim() || "Patient";
+  let idx = document.getElementById("pMed").value;
+  let qte = parseInt(document.getElementById("pQte").value)||1;
+  if(stock[idx].s < qte){ alert("Stock insuffisant. Il reste "+stock[idx].s); return; }
+  stock[idx].s -= qte;
+  let total = qte * stock[idx].p;
+  ventes.push({patient:nom, med:stock[idx].n, qte:qte, total:total});
+  save(); afficher();
+  document.getElementById("msgVente").innerText = "Vente enregistrée : "+nom+" - "+stock[idx].n;
+  document.getElementById("pNom").value="";
 }
-afficher();
+function cloturer(){
+  if(ventes.length==0){ alert("Caisse vide"); return; }
+  let total = ventes.reduce((a,b)=>a+b.total,0);
+  archives.push({date:new Date().toLocaleDateString()+" "+new Date().toLocaleTimeString(), total:total, nb:ventes.length});
+  ventes = []; save(); afficher(); alert("Journée clôturée : "+total.toLocaleString()+" GNF");
+}
 </script>
 </body>
-  </html>
+ </html>
