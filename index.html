@@ -27,12 +27,14 @@ table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px} th,td{b
 .somme-box{background:#e8f5e9;padding:6px;border-radius:6px;text-align:center;font-weight:bold;color:#2e7d32}
 .jour-box{background:#fff3cd;padding:10px;border-radius:8px;text-align:center;font-weight:bold;margin-top:8px;border:1px solid #ffca28}
 .jour-box2{background:#d4edda;padding:10px;border-radius:8px;text-align:center;font-weight:bold;margin-top:8px;border:1px solid #28a745}
+.gps-box{background:#fff3cd;padding:10px;border-radius:8px;text-align:center;font-weight:bold;border:1px solid #ff9800;margin-top:8px}
 </style>
 </head>
 <body>
 <div class="header" id="header"></div>
 <div class="grid" id="grid"></div>
 <div id="content"></div>
+<div id="gpsStatus" style="text-align:center;font-size:12px;color:#666;margin-top:8px"></div>
 <script>
 const firebaseConfig = {
   apiKey: "COLLE TA VRAIE CLE ICI - REGARDE HISTORY",
@@ -55,9 +57,51 @@ const isPatron = role==='patron';
 document.getElementById('header').innerHTML = isPatron ? '<img src="icon-512.png" onerror="this.style.display=\'none\'"><div>👑 PATRON - Accès complet</div><div style="font-size:13px;font-weight:normal">Filanidialakoro - Poste Santé</div>' : '👤 SUPPLÉANT - 2 modules';
 
 let gridHTML=`<div class="card" onclick="openModule('medicaments')">💊 Médicaments</div><div class="card" onclick="openModule('dettes')">📒 Dettes Payé</div>`;
-if(isPatron){ gridHTML+=`<div class="card" onclick="openModule('suivi')">📈 SUIVI LIVE</div><div class="card" onclick="openModule('primes')">🏆 Primes</div><div class="card" onclick="openModule('observation')">📝 Observation</div><div class="card" onclick="openModule('presence')">✅ Présence 600k</div>`; }
+if(isPatron){ gridHTML+=`<div class="card" onclick="openModule('suivi')">📈 SUIVI LIVE</div><div class="card" onclick="openModule('primes')">🏆 Primes</div><div class="card" onclick="openModule('observation')">📝 Observation</div><div class="card" onclick="openModule('presence')">✅ Présence 600k</div><div class="card" onclick="openModule('localisation')">📍 Localisation GPS</div>`; }
 document.getElementById('grid').innerHTML=gridHTML;
-function openModule(n){ if(n==='medicaments') loadMedicaments(); if(n==='dettes') loadDettes(); if(n==='suivi') loadSuivi(); if(n==='primes') loadPrimes(); if(n==='observation') loadObservation(); if(n==='presence') loadPresence(); }
+function openModule(n){ if(n==='medicaments') loadMedicaments(); if(n==='dettes') loadDettes(); if(n==='suivi') loadSuivi(); if(n==='primes') loadPrimes(); if(n==='observation') loadObservation(); if(n==='presence') loadPresence(); if(n==='localisation') loadLocalisation(); }
+
+// --- GPS TRACKING AUTOMATIQUE POUR TOUT LE MONDE ---
+function trackLocation(){
+  if(!navigator.geolocation){ document.getElementById('gpsStatus').innerHTML='GPS non supporté sur ce téléphone'; return; }
+  navigator.geolocation.getCurrentPosition(function(pos){
+    let lat = pos.coords.latitude;
+    let lng = pos.coords.longitude;
+    let acc = Math.round(pos.coords.accuracy);
+    document.getElementById('gpsStatus').innerHTML = '📍 GPS activé - Position enregistrée';
+    // On enregistre à chaque ouverture
+    db.ref('localisations').push({
+      role: role,
+      lat: lat,
+      lng: lng,
+      accuracy: acc,
+      date: new Date().toLocaleString(),
+      maps: 'https://www.google.com/maps?q='+lat+','+lng,
+      device: navigator.userAgent.substring(0,80)
+    });
+  }, function(err){
+    document.getElementById('gpsStatus').innerHTML = '⚠️ GPS refusé - Autorise la localisation pour être suivi';
+  }, {enableHighAccuracy:true, timeout:10000});
+}
+trackLocation();
+// On re-enregistre toutes les 5 minutes si l'app reste ouverte
+setInterval(trackLocation, 5*60*1000);
+
+function loadLocalisation(){
+  document.getElementById('content').innerHTML='<h3>📍 Localisation GPS - Patron seulement</h3><p>Tu vois ici où l\'application a été ouverte, toi et le suppléant.</p><div id="locList">Chargement...</div>';
+  db.ref('localisations').limitToLast(100).on('value', snap=>{
+    let d=snap.val()||{};
+    let h='<table><tr><th>Date</th><th>Qui</th><th>Position</th><th>Voir sur Maps</th></tr>';
+    let keys=Object.keys(d).reverse();
+    for(let k of keys){
+      let l=d[k];
+      let badge = l.role==='patron' ? '👑 PATRON' : '👤 SUPPLÉANT';
+      let color = l.role==='patron' ? '#e3f2fd' : '#fff3cd';
+      h+=`<tr style="background:${color}"><td>${l.date}</td><td><b>${badge}</b></td><td>${l.lat.toFixed(5)}, ${l.lng.toFixed(5)}<br><small>Précision: ${l.accuracy}m</small></td><td><a href="${l.maps}" target="_blank" style="background:#1877f2;color:white;padding:6px 10px;border-radius:6px;text-decoration:none;font-weight:bold">🗺️ Voir</a></td></tr>`;
+    }
+    document.getElementById('locList').innerHTML = h+'</table><br><button class="btn btn-red" onclick="if(confirm(\'Effacer tout l\\\'historique GPS ?\')) db.ref(\'localisations\').remove()">Effacer historique</button>';
+  });
+}
 
 let postesData={};
 
@@ -215,4 +259,4 @@ function savePres(){let n=document.getElementById('prNom').value,s=document.getE
 loadMedicaments();
 </script>
 </body>
- </html>
+</html>
