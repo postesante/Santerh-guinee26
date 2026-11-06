@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
 <link rel="manifest" href="manifest.json">
@@ -46,7 +46,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// --- CORRECTION ROLE SUPPLEANT : on mémorise le rôle ---
+// --- ROLE MEMORISE ---
 let role = new URLSearchParams(location.search).get('role');
 if(role){ localStorage.setItem('mon_role', role); }
 else { role = localStorage.getItem('mon_role') || 'patron'; }
@@ -65,9 +65,7 @@ function loadMedicaments(){
 let h=`
 <div class="section">
 <b>STOCK PERMANENT</b>
-<input id="newMedName" placeholder="Nom nouveau médicament">
-<input id="newMedPrix" type="number" placeholder="Prix unitaire ex: 500">
-<button class="btn btn-green" onclick="addMedicament()">AUGMENTER LA LISTE</button>
+${isPatron?`<input id="newMedName" placeholder="Nom nouveau médicament"><input id="newMedPrix" type="number" placeholder="Prix unitaire ex: 500"><button class="btn btn-green" onclick="addMedicament()">AUGMENTER LA LISTE</button>`:''}
 <div id="medTable">Chargement...</div>
 <div id="totalStockBox"></div>
 <div id="totalJourBox"></div>
@@ -103,7 +101,7 @@ function loadStock(){
     let p = postesData[k].prix||0;
     let total = q * p;
     grandTotal += total;
-    t+=`<tr><td>${postesData[k].nom||k}</td><td><input id="q_${k}" type="number" value="${q}" onchange="updateQ('${k}')" style="padding:4px"></td><td><input id="p_${k}" type="number" value="${p}" onchange="updatePrix('${k}')" placeholder="0" style="padding:4px"></td><td><b>${total.toLocaleString()} GNF</b></td>${isPatron?`<td><button onclick="deleteMed('${k}')">X</button></td>`:''}</tr>`;
+    t+=`<tr><td>${postesData[k].nom||k}</td><td><input id="q_${k}" type="number" value="${q}" onchange="updateQ('${k}')" style="padding:4px"></td><td>${isPatron?`<input id="p_${k}" type="number" value="${p}" onchange="updatePrix('${k}')" placeholder="0" style="padding:4px">`:`<b>${p.toLocaleString()} GNF</b>`}</td><td><b>${total.toLocaleString()} GNF</b></td>${isPatron?`<td><button onclick="deleteMed('${k}')">X</button></td>`:''}</tr>`;
   }
   t+='</table>';
   document.getElementById('medTable').innerHTML=t;
@@ -129,6 +127,7 @@ function updateAllSelects(){
  document.querySelectorAll('.medSelect').forEach(sel=>{ let val=sel.value; sel.innerHTML=selHTML; sel.value=val; });
 }
 function addMedicament(){
+  if(!isPatron) return alert('Seul le Patron peut ajouter un médicament avec prix');
   let nom=document.getElementById('newMedName').value.trim();
   let prix=parseInt(document.getElementById('newMedPrix').value)||0;
   if(!nom)return;
@@ -139,7 +138,7 @@ function addMedicament(){
   });
 }
 function updateQ(k){let q=document.getElementById('q_'+k).value; db.ref('postes/'+k+'/quantite').set(parseInt(q)||0);}
-function updatePrix(k){let p=document.getElementById('p_'+k).value; db.ref('postes/'+k+'/prix').set(parseInt(p)||0);}
+function updatePrix(k){ if(!isPatron) return alert('Seul le Patron peut changer le prix'); let p=document.getElementById('p_'+k).value; db.ref('postes/'+k+'/prix').set(parseInt(p)||0);}
 function deleteMed(k){if(confirm('Supprimer?')) db.ref('postes/'+k).remove();}
 
 function saveConsultation(){
@@ -216,4 +215,4 @@ function savePres(){let n=document.getElementById('prNom').value,s=document.getE
 loadMedicaments();
 </script>
 </body>
-</html>
+ </html>
