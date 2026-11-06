@@ -1,4 +1,4 @@
-{
+ {
   "name": "Filanidialakoro",
   "short_name": "Filanidialakoro",
   "start_url": "./index.html",
@@ -7,14 +7,14 @@
   "theme_color": "#1877f2",
   "icons": [
     {
-      "src": "icon.png.jpg",
+      "src": "icon-512.png.jpg",
       "sizes": "192x192",
-      "type": "image/jpeg",
+      "type": "image/jpeg"
     },
     {
-      "src": "icon.png.jpg",
+      "src": "icon-512.png.jpg",
       "sizes": "512x512",
       "type": "image/jpeg"
     }
   ]
-}
+ }
