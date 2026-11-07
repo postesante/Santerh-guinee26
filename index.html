@@ -1,158 +1,152 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-512.png">
+<meta name="theme-color" content="#1877f2">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pharmacie - Filanidialakoro</title>
+<title>Filanidialakoro</title>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 <style>
-body{font-family:Arial;background:#f2f2f2;margin:0;padding:10px}
-h2{text-align:center}
-button{padding:10px;margin:3px;border:none;border-radius:8px;font-weight:bold}
-.tab{background:#ddd}
-.tab.active{background:#007bff;color:white}
-.box{background:white;padding:12px;border-radius:10px;margin-top:10px}
+body{font-family:Arial;background:#f0f2f5;margin:0;padding:10px}
+.header{background:#1877f2;color:white;padding:12px;text-align:center;border-radius:10px;font-weight:bold}
+.header img{width:70px;height:70px;border-radius:50%;object-fit:cover;border:3px solid white;display:block;margin:0 auto 6px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.card{background:white;padding:16px;border-radius:10px;text-align:center;box-shadow:0 2px 4px rgba(0,0,0,.1);cursor:pointer;font-weight:bold}
+#content{background:white;margin-top:12px;padding:12px;border-radius:10px}
 input,select{width:100%;padding:10px;margin:5px 0;border:1px solid #ccc;border-radius:8px;box-sizing:border-box}
-table{width:100%;border-collapse:collapse;background:white}
-td,th{border:1px solid #ddd;padding:8px;text-align:center}
-.vert{background:#d4edda;padding:12px;border-radius:10px;text-align:center;font-weight:bold;margin-top:10px}
-.jaune{background:#fff3cd;padding:12px;border-radius:10px;text-align:center;font-weight:bold;margin-top:10px}
+.btn{border:none;padding:11px;border-radius:8px;width:100%;font-weight:bold;color:white;cursor:pointer;margin-top:5px}
+.btn-blue{background:#1877f2} .btn-green{background:#42b72a} .btn-orange{background:#ff9800} .btn-red{background:#e74c3c}
+table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px} th,td{border:1px solid #ddd;padding:6px}
+.section{background:#f8f9fa;padding:10px;border-radius:8px;margin-top:10px;border:1px solid #e0e0e0}
+.med-row{display:flex;gap:5px;align-items:center;margin-bottom:6px}
+.med-row select{flex:2} .med-row input{flex:1}
+.total-box{background:#e3f2fd;padding:10px;border-radius:8px;text-align:center;font-weight:bold;margin-top:8px}
+.somme-box{background:#e8f5e9;padding:6px;border-radius:6px;text-align:center;font-weight:bold;color:#2e7d32}
+.jour-box{background:#fff3cd;padding:10px;border-radius:8px;text-align:center;font-weight:bold;margin-top:8px;border:1px solid #ffca28}
+.jour-box2{background:#d4edda;padding:10px;border-radius:8px;text-align:center;font-weight:bold;margin-top:8px;border:1px solid #28a745}
 </style>
 </head>
 <body>
-
-<h2 id="titreRole"></h2>
-
-<div>
-<button class="tab active" onclick="show('stock',this)">💊 STOCK</button>
-<button class="tab" onclick="show('patient',this)">👤 PATIENT</button>
-<button class="tab patronOnly" onclick="show('caisse',this)">💰 CAISSE DU JOUR</button>
-<button class="tab patronOnly" onclick="show('archives',this)">📦 ARCHIVES DU MOIS</button>
-</div>
-
-<!-- STOCK -->
-<div id="stock" class="box">
-<h3>💊 Stock</h3>
-<table><tr><th>Médicament</th><th>Stock</th><th>Prix</th><th>Total</th></tr><tbody id="stockBody"></tbody></table>
-<div class="vert" id="totalStock"></div>
-</div>
-
-<!-- PATIENT -->
-<div id="patient" class="box" style="display:none">
-<h3>👤 Nouveau Patient</h3>
-<input id="nomPatient" placeholder="Prénom et Nom du patient">
-<select id="medSelect"></select>
-<input id="qte" type="number" value="1" min="1">
-<button style="background:#28a745;color:white;width:100%" onclick="enregistrer()">✅ ENREGISTRER + DIMINUER STOCK</button>
-<p style="font-size:13px;color:gray">Le suppléant ne voit pas l'argent. Ça part direct dans la Caisse du Patron.</p>
-</div>
-
-<!-- CAISSE - PATRON SEUL -->
-<div id="caisse" class="box patronOnly" style="display:none">
-<h3>💰 Caisse du Jour - <span id="dateJour"></span></h3>
-<div class="jaune" id="totalMedsJour"></div>
-<div class="vert" id="totalSommeJour"></div>
-<p>À 00h00, ça revient à 0 et ça part tout seul dans Archives.</p>
-</div>
-
-<!-- ARCHIVES - PATRON SEUL -->
-<div id="archives" class="box patronOnly" style="display:none">
-<h3>📦 Archives du Mois - Pour compter fin du mois</h3>
-<div id="listeArchives"></div>
-<div class="vert" id="totalMois"></div>
-</div>
-
+<div class="header" id="header"></div>
+<div class="grid" id="grid"></div>
+<div id="content"></div>
+<div id="gpsStatus" style="text-align:center;font-size:12px;color:#666;margin-top:8px"></div>
 <script>
-// --- ROLE ---
-let params = new URLSearchParams(location.search);
-let role = params.get('role');
-if(role){ localStorage.setItem('role', role); }
-else{ role = localStorage.getItem('role') || 'patron'; }
-document.getElementById('titreRole').innerText = role==='suppleant' ? '👤 SUPPLÉANT - 2 modules' : '👑 PATRON - Accès complet';
-if(role==='suppleant'){
-  document.querySelectorAll('.patronOnly').forEach(e=>e.style.display='none');
+const firebaseConfig = {
+  apiKey: "COLLE TA VRAIE CLE ICI - REGARDE HISTORY",
+  authDomain: "filanidialakoro.firebaseapp.com",
+  databaseURL: "https://filanidialakoro-default-rtdb.firebaseio.com",
+  projectId: "filanidialakoro",
+  storageBucket: "filanidialakoro.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "1:123456789:web:abcd"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+let role = new URLSearchParams(location.search).get('role');
+if(role){ localStorage.setItem('mon_role', role); }
+else { role = localStorage.getItem('mon_role') || 'patron'; }
+const isPatron = role==='patron';
+document.getElementById('header').innerHTML = isPatron ? '<img src="icon-512.png" onerror="this.style.display=\'none\'"><div>👑 PATRON - Accès complet</div><div style="font-size:13px;font-weight:normal">Filanidialakoro - Poste Santé</div>' : '👤 SUPPLÉANT - 2 modules';
+let gridHTML=`<div class="card" onclick="openModule('medicaments')">💊 Médicaments</div><div class="card" onclick="openModule('dettes')">📒 Dettes Payé</div>`;
+if(isPatron){ gridHTML+=`<div class="card" onclick="openModule('suivi')">📈 SUIVI LIVE</div><div class="card" onclick="openModule('primes')">🏆 Primes</div><div class="card" onclick="openModule('observation')">📝 Observation</div><div class="card" onclick="openModule('presence')">✅ Présence 600k</div><div class="card" onclick="openModule('localisation')">📍 Localisation GPS</div>`; }
+document.getElementById('grid').innerHTML=gridHTML;
+function openModule(n){ if(n==='medicaments') loadMedicaments(); if(n==='dettes') loadDettes(); if(n==='suivi') loadSuivi(); if(n==='primes') loadPrimes(); if(n==='observation') loadObservation(); if(n==='presence') loadPresence(); if(n==='localisation') loadLocalisation(); }
+function trackLocation(){
+  if(!navigator.geolocation){ document.getElementById('gpsStatus').innerHTML='GPS non supporté'; return; }
+  navigator.geolocation.getCurrentPosition(function(pos){
+    let lat = pos.coords.latitude; let lng = pos.coords.longitude; let acc = Math.round(pos.coords.accuracy);
+    document.getElementById('gpsStatus').innerHTML = '📍 GPS activé - Position enregistrée';
+    db.ref('localisations').push({ role: role, lat: lat, lng: lng, accuracy: acc, date: new Date().toLocaleString(), maps: 'https://www.google.com/maps?q='+lat+','+lng, device: navigator.userAgent.substring(0,80) });
+  }, function(err){ document.getElementById('gpsStatus').innerHTML = '⚠️ GPS refusé - Autorise la localisation pour être suivi'; }, {enableHighAccuracy:true, timeout:10000});
 }
-
-// --- DONNEES ---
-let stock = JSON.parse(localStorage.getItem('stock') || '[{"nom":"Paracetamol","qte":145,"prix":500},{"nom":"Sérum glucosé","qte":13,"prix":90000},{"nom":"Seringue 5cc","qte":51,"prix":2000},{"nom":"Vitamine B6","qte":42,"prix":3000}]');
-let caisse = JSON.parse(localStorage.getItem('caisse') || '{"date":"","nb":0,"somme":0}');
-let archives = JSON.parse(localStorage.getItem('archives') || '[]');
-
-function aujourdhui(){ return new Date().toISOString().slice(0,10); }
-
-// --- ARCHIVAGE AUTO A MINUIT / NOUVEAU JOUR ---
-function verifierNouveauJour(){
-  let today = aujourdhui();
-  if(caisse.date && caisse.date !== today){
-    // On archive hier, même si le suppléant a effacé, c'est déjà sauvé
-    if(caisse.nb>0 || caisse.somme>0){
-      archives.push({date: caisse.date, nb: caisse.nb, somme: caisse.somme});
-      localStorage.setItem('archives', JSON.stringify(archives));
-    }
-    caisse = {date: today, nb:0, somme:0};
-    localStorage.setItem('caisse', JSON.stringify(caisse));
+trackLocation();
+setInterval(trackLocation, 5*60*1000);
+function loadLocalisation(){
+  document.getElementById('content').innerHTML='<h3>📍 Localisation GPS - Patron seulement</h3><div id="locList">Chargement...</div>';
+  db.ref('localisations').limitToLast(100).on('value', snap=>{
+    let d=snap.val()||{}; let h='<table><tr><th>Date</th><th>Qui</th><th>Position</th><th>Voir</th></tr>'; let keys=Object.keys(d).reverse();
+    for(let k of keys){ let l=d[k]; let badge = l.role==='patron' ? '👑 PATRON' : '👤 SUPPLÉANT'; let color = l.role==='patron' ? '#e3f2fd' : '#fff3cd'; h+=`<tr style="background:${color}"><td>${l.date}</td><td><b>${badge}</b></td><td>${l.lat.toFixed(5)}, ${l.lng.toFixed(5)}<br><small>Précision: ${l.accuracy}m</small></td><td><a href="${l.maps}" target="_blank" style="background:#1877f2;color:white;padding:6px 10px;border-radius:6px;text-decoration:none;font-weight:bold">🗺️ Voir</a></td></tr>`; }
+    document.getElementById('locList').innerHTML = h+'</table><br><button class="btn btn-red" onclick="if(confirm(\'Effacer ?\')) db.ref(\'localisations\').remove()">Effacer historique</button>';
+  });
+}
+let postesData={};
+function loadMedicaments(){
+let h=`
+<div class="section">
+<b>STOCK PERMANENT</b>
+${isPatron?`<input id="newMedName" placeholder="Nom nouveau médicament"><input id="newMedPrix" type="number" placeholder="Prix unitaire ex: 500"><button class="btn btn-green" onclick="addMedicament()">AUGMENTER LA LISTE</button>`:''}
+<div id="medTable">Chargement...</div>
+<div id="totalStockBox"></div>
+<div id="totalJourBox"></div>
+</div>
+<div class="section" style="background:#e3f2fd">
+<b>👤 NOUVEAU PATIENT - Plusieurs médicaments</b>
+<input id="patientName" placeholder="Prénom et Nom du patient">
+<div id="medRows"></div>
+<button class="btn btn-blue" onclick="addMedRow()">+ AJOUTER UN AUTRE MÉDICAMENT</button>
+<button class="btn btn-orange" onclick="saveConsultation()">✅ ENREGISTRER PATIENT + DIMINUER STOCK</button>
+</div>
+<div class="section">
+<b>📋 HISTORIQUE PAR PATIENT</b>
+<input id="searchPatient" placeholder="Rechercher patient..." oninput="filterPatients()">
+<div id="consultTable">Chargement...</div>
+</div>`;
+document.getElementById('content').innerHTML=h;
+loadStock(); loadConsultations(); addMedRow();
+}
+function loadStock(){
+ db.ref('postes').on('value',snap=>{
+  postesData=snap.val()||{};
+  let t='<table><tr><th>Nom</th><th>Stock</th><th>Prix unitaire</th><th>Total de prix</th>'+(isPatron?'<th>X</th>':'')+'</tr>';
+  let grandTotal=0;
+  for(let k in postesData){
+    let q = postesData[k].quantite||0; let p = postesData[k].prix||0; let total = q * p; grandTotal += total;
+    t+=`<tr><td>${postesData[k].nom||k}</td><td>${isPatron?`<input id="q_${k}" type="number" value="${q}" onchange="updateQ('${k}')" style="padding:4px">`:`<b style="font-size:16px">${q}</b>`}</td><td>${isPatron?`<input id="p_${k}" type="number" value="${p}" onchange="updatePrix('${k}')" placeholder="0" style="padding:4px">`:`<b>${p.toLocaleString()} GNF</b>`}</td><td><b>${total.toLocaleString()} GNF</b></td>${isPatron?`<td><button onclick="deleteMed('${k}')">X</button></td>`:''}</tr>`;
   }
-  if(!caisse.date){ caisse.date = today; localStorage.setItem('caisse', JSON.stringify(caisse)); }
+  t+='</table>';
+  document.getElementById('medTable').innerHTML=t;
+  document.getElementById('totalStockBox').innerHTML=`<div class="total-box">💰 TOTAL STOCK : ${grandTotal.toLocaleString()} GNF</div>`;
+  updateAllSelects(); if(document.getElementById('consultTable')) renderConsultations(allCons);
+ });
 }
-verifierNouveauJour();
-setInterval(verifierNouveauJour, 60000); // vérifie chaque minute
-
-function show(id, btn){
-  ['stock','patient','caisse','archives'].forEach(x=>document.getElementById(x).style.display='none');
-  document.getElementById(id).style.display='block';
-  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
-  if(btn) btn.classList.add('active');
-  afficher();
+function getSelectHTML(){ let html='<option value="">Choisir médicament</option>'; for(let k in postesData){ html+=`<option value="${k}">${postesData[k].nom||k} (stock:${postesData[k].quantite||0} - prix:${postesData[k].prix||0})</option>`; } return html; }
+function addMedRow(){ let div=document.createElement('div'); div.className='med-row'; div.innerHTML=`<select class="medSelect">${getSelectHTML()}</select><input type="number" class="medQte" placeholder="Qté" value="1" style="width:70px"><button class="btn btn-red" style="width:40px;padding:6px" onclick="this.parentElement.remove()">X</button>`; document.getElementById('medRows').appendChild(div); }
+function updateAllSelects(){ let selHTML=getSelectHTML(); document.querySelectorAll('.medSelect').forEach(sel=>{ let val=sel.value; sel.innerHTML=selHTML; sel.value=val; }); }
+function addMedicament(){ if(!isPatron) return alert('Seul le Patron'); let nom=document.getElementById('newMedName').value.trim(); let prix=parseInt(document.getElementById('newMedPrix').value)||0; if(!nom)return; let key=nom.replace(/[^a-zA-Z0-9]/g,'_')+'_'+Date.now(); db.ref('postes/'+key).set({nom:nom,quantite:0,prix:prix}).then(()=>{ document.getElementById('newMedName').value=''; document.getElementById('newMedPrix').value=''; }); }
+function updateQ(k){ if(!isPatron) return alert('Seul le Patron peut changer le stock'); let q=document.getElementById('q_'+k).value; db.ref('postes/'+k+'/quantite').set(parseInt(q)||0); }
+function updatePrix(k){ if(!isPatron) return alert('Seul le Patron peut changer le prix'); let p=document.getElementById('p_'+k).value; db.ref('postes/'+k+'/prix').set(parseInt(p)||0); }
+function deleteMed(k){if(confirm('Supprimer?')) db.ref('postes/'+k).remove();}
+function saveConsultation(){
+ let patient=document.getElementById('patientName').value.trim(); if(!patient) return alert('Mets nom du patient'); let rows=document.querySelectorAll('.med-row'); let meds=[];
+ for(let r of rows){ let key=r.querySelector('.medSelect').value; let qte=parseInt(r.querySelector('.medQte').value)||0; if(key && qte>0){ meds.push({key:key, nom:postesData[key]?.nom||key, qte:qte, prix:postesData[key]?.prix||0}); } }
+ if(meds.length===0) return alert('Ajoute au moins 1 médicament');
+ meds.forEach(m=>{ let cur=postesData[m.key]?.quantite||0; db.ref('postes/'+m.key+'/quantite').set(cur - m.qte); });
+ db.ref('consultations').push({patient:patient, meds:meds, date:new Date().toLocaleString(), role:role});
+ document.getElementById('patientName').value=''; document.getElementById('medRows').innerHTML=''; addMedRow(); addMedRow(); alert('✅ '+patient+' enregistré avec '+meds.length+' médicaments');
 }
-
-function afficher(){
-  let html='', totalStock=0;
-  let sel='';
-  stock.forEach((m,i)=>{
-    let tot = m.qte*m.prix; totalStock+=tot;
-    // Si suppleant : stock et prix en texte noir, pas modifiable
-    let qteCell = role==='suppleant' ? `<b>${m.qte}</b>` : `<input type="number" value="${m.qte}" onchange="changerQte(${i},this.value)">`;
-    let prixCell = role==='suppleant' ? `<b>${m.prix}</b>` : `<input type="number" value="${m.prix}" onchange="changerPrix(${i},this.value)">`;
-    html+=`<tr><td>${m.nom}</td><td>${qteCell}</td><td>${prixCell}</td><td>${tot.toLocaleString()} GNF</td></tr>`;
-    sel+=`<option value="${i}">${m.nom} - ${m.prix} GNF</option>`;
-  });
-  document.getElementById('stockBody').innerHTML=html;
-  document.getElementById('medSelect').innerHTML=sel;
-  document.getElementById('totalStock').innerText='TOTAL STOCK : '+totalStock.toLocaleString()+' GNF';
-  document.getElementById('dateJour').innerText=caisse.date;
-  document.getElementById('totalMedsJour').innerText='TOTAL MÉDICAMENTS VENDUS AUJOURD\'HUI : '+caisse.nb+' médicaments';
-  document.getElementById('totalSommeJour').innerText='SOMME TOTALE JOURNALIÈRE : '+caisse.somme.toLocaleString()+' GNF';
-  // Archives
-  let archHtml='', totNb=0, totSomme=0;
-  archives.slice().reverse().forEach(a=>{
-    archHtml+=`<div style="border-bottom:1px solid #ddd;padding:8px">${a.date} : ${a.nb} médicaments - ${a.somme.toLocaleString()} GNF</div>`;
-    totNb+=a.nb; totSomme+=a.somme;
-  });
-  // + aujourd'hui pour le total du mois
-  totNb+=caisse.nb; totSomme+=caisse.somme;
-  document.getElementById('listeArchives').innerHTML = archHtml || 'Pas encore d\'archives. Attends demain 00h00.';
-  document.getElementById('totalMois').innerText='TOTAL DU MOIS : '+totNb+' médicaments - '+totSomme.toLocaleString()+' GNF';
+let allCons={};
+function loadConsultations(){ db.ref('consultations').on('value',snap=>{ allCons=snap.val()||{}; renderConsultations(allCons); });}
+function renderConsultations(data){
+ let h='<table><tr><th>Date</th><th>Patient</th><th>Médicaments + Prix</th><th>Somme Totale</th>'+(isPatron?'<th>X</th>':'')+'</tr>'; let keys=Object.keys(data).reverse(); let totalJour = 0; let qteJour = 0; let aujourdhui = new Date().toLocaleDateString();
+ for(let k of keys){ let c=data[k]; let medsTxt=''; let sommeTotale=0; if(c.meds){ c.meds.forEach(m=>{ let prixReel = (m.prix && m.prix>0) ? m.prix : (postesData[m.key]?.prix||0); let pt = prixReel * m.qte; sommeTotale += pt; medsTxt+=`<div>• ${m.nom} : <b>${m.qte}</b> x ${prixReel.toLocaleString()} = ${pt.toLocaleString()} GNF</div>`; }); } else { medsTxt=c.med||''; } if(c.date && c.date.startsWith(aujourdhui)){ totalJour += sommeTotale; if(c.meds){ c.meds.forEach(m=>{ qteJour += m.qte; }); } } h+=`<tr><td>${c.date}</td><td><b>${c.patient}</b></td><td>${medsTxt}</td><td><div class="somme-box">${sommeTotale.toLocaleString()} GNF</div></td>${isPatron?`<td><button onclick="db.ref('consultations/${k}').remove()">X</button></td>`:''}</tr>`; }
+ h+='</table>'; if(document.getElementById('consultTable')) document.getElementById('consultTable').innerHTML = keys.length? h : 'Aucun patient encore'; if(document.getElementById('totalJourBox')){ document.getElementById('totalJourBox').innerHTML = `<div class="jour-box">💊 TOTAL MÉDICAMENTS VENDUS AUJOURD'HUI : ${qteJour} médicaments</div><div class="jour-box2">💰 SOMME TOTALE JOURNALIÈRE : ${totalJour.toLocaleString()} GNF</div>`; }
 }
-
-function changerQte(i,v){ if(role!=='patron') return; stock[i].qte=parseInt(v)||0; localStorage.setItem('stock',JSON.stringify(stock)); afficher(); }
-function changerPrix(i,v){ if(role!=='patron') return; stock[i].prix=parseInt(v)||0; localStorage.setItem('stock',JSON.stringify(stock)); afficher(); }
-
-function enregistrer(){
-  let idx=document.getElementById('medSelect').value;
-  let q=parseInt(document.getElementById('qte').value)||1;
-  let nom=document.getElementById('nomPatient').value;
-  if(!nom){ alert('Mets le nom du patient'); return; }
-  if(stock[idx].qte < q){ alert('Stock insuffisant'); return; }
-  stock[idx].qte -= q;
-  caisse.nb += q;
-  caisse.somme += q * stock[idx].prix;
-  caisse.date = aujourdhui();
-  localStorage.setItem('stock',JSON.stringify(stock));
-  localStorage.setItem('caisse',JSON.stringify(caisse));
-  document.getElementById('nomPatient').value='';
-  alert('Enregistré ! Stock diminué. Caisse mise à jour (Patron seul voit).');
-  afficher();
-}
-afficher();
+function filterPatients(){ let q=document.getElementById('searchPatient').value.toLowerCase(); let filtered={}; for(let k in allCons){ if(allCons[k].patient.toLowerCase().includes(q)) filtered[k]=allCons[k]; } renderConsultations(filtered); }
+function loadDettes(){document.getElementById('content').innerHTML='<h3>📒 Dettes Payé</h3><input id="dNom" placeholder="Nom"><input id="dMont" type="number" placeholder="Montant"><button class="btn btn-blue" onclick="saveDette()">Enregistrer</button><div id="dList"></div>'; db.ref('dettes_paye').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Client</th><th>Montant</th><th>Date</th>'+(isPatron?'<th>X</th>':'')+'</tr>'; for(let k in d)h+=`<tr><td>${d[k].nom}</td><td>${d[k].montant}</td><td>${d[k].date}</td>${isPatron?`<td><button onclick="deleteDette('${k}')" style="background:#e74c3c;color:white;border:none;padding:6px 10px;border-radius:6px;font-weight:bold;cursor:pointer">X</button></td>`:''}</tr>`; document.getElementById('dList').innerHTML=h+'</table>';});}
+function saveDette(){let n=document.getElementById('dNom').value,m=document.getElementById('dMont').value; if(!n||!m)return; db.ref('dettes_paye').push({nom:n,montant:m,date:new Date().toLocaleString()});}
+function deleteDette(k){ if(confirm('Tu veux vraiment supprimer cette dette ?')){ db.ref('dettes_paye/'+k).remove(); } }
+function loadSuivi(){document.getElementById('content').innerHTML='<h3>📈 SUIVI LIVE</h3><div id="box"></div>'; db.ref('consultations').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Date</th><th>Patient</th><th>Médicaments</th><th>Somme Totale</th></tr>'; for(let k in d){ let txt=''; let somme=0; if(d[k].meds) d[k].meds.forEach(m=>{ let pr=(m.prix&&m.prix>0)?m.prix:(postesData[m.key]?.prix||0); let pt=pr*m.qte; somme+=pt; txt+=m.nom+':'+m.qte+' x '+pr+'='+pt+' '; }); else txt=d[k].med; h+=`<tr><td>${d[k].date}</td><td>${d[k].patient}</td><td>${txt}</td><td><b>${somme.toLocaleString()} GNF</b></td></tr>`;} document.getElementById('box').innerHTML=h+'</table>';});}
+function loadPrimes(){document.getElementById('content').innerHTML='<h3>🏆 Primes</h3><input id="pNom" placeholder="Nom"><input id="pMont" type="number" placeholder="Montant"><button class="btn btn-blue" onclick="savePrime()">Enregistrer</button><div id="pList"></div>'; db.ref('primes').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Nom</th><th>Montant</th></tr>'; for(let k in d)h+=`<tr><td>${d[k].nom}</td><td>${d[k].montant}</td></tr>`; document.getElementById('pList').innerHTML=h+'</table>';});}
+function savePrime(){let n=document.getElementById('pNom').value,m=document.getElementById('pMont').value; db.ref('primes').push({nom:n,montant:m,date:new Date().toLocaleString()});}
+function loadObservation(){document.getElementById('content').innerHTML='<h3>📝 Observation</h3><textarea id="oTxt" rows="3"></textarea><button class="btn btn-blue" onclick="saveObs()">Enregistrer</button><div id="oList"></div>'; db.ref('observations').on('value',s=>{let d=s.val()||{},h=''; for(let k in d)h+=`<div style="padding:6px;border-bottom:1px solid #eee"><b>${d[k].date}</b> ${d[k].texte}</div>`; document.getElementById('oList').innerHTML=h;});}
+function saveObs(){let t=document.getElementById('oTxt').value; if(!t)return; db.ref('observations').push({texte:t,date:new Date().toLocaleString()});}
+function loadPresence(){document.getElementById('content').innerHTML='<h3>✅ Présence 600k</h3><input id="prNom" placeholder="Nom"><select id="prSt"><option>Présent</option><option>Absent</option></select><button class="btn btn-blue" onclick="savePres()">Valider</button><div id="prList"></div>'; db.ref('presence_600k').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Nom</th><th>Statut</th><th>Date</th></tr>'; for(let k in d)h+=`<tr><td>${d[k].nom}</td><td>${d[k].statut}</td><td>${d[k].date}</td></tr>`; document.getElementById('prList').innerHTML=h+'</table>';});}
+function savePres(){let n=document.getElementById('prNom').value,s=document.getElementById('prSt').value; db.ref('presence_600k').push({nom:n,statut:s,date:new Date().toLocaleString()});}
+loadMedicaments();
 </script>
 </body>
 </html>
