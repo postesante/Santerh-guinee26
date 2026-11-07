@@ -82,7 +82,6 @@ input,select{width:100%;padding:8px;margin:4px 0;border:1px solid #ccc;border-ra
 <script>
 let role = "";
 let stock = JSON.parse(localStorage.getItem("stock")) || [];
-// CORRECTION ancien code : évite undefined et NaN
 stock = stock.map(m => ({
   medicament: m.medicament || m.nom || m.name || "",
   stock: Number(m.stock || m.quantite || m.qte || 0),
@@ -96,7 +95,7 @@ function save(){ localStorage.setItem("stock", JSON.stringify(stock)); localStor
 function login(){
   let c = document.getElementById("codeInput").value;
   if(c==="1989"){ role="patron"; document.getElementById("titre").innerText="👤 PATRON - Accès complet"; }
-  else if(c==="1111"){ role="suppleant"; document.getElementById("titre").innerText="👤 SUPPLÉANT - Stock seulement"; }
+  else if(c==="1111"){ role="suppleant"; document.getElementById("titre").innerText="👤 SUPPLÉANT - Stock + Patient"; }
   else { document.getElementById("msg").innerText="Code incorrect"; return; }
   document.getElementById("login").classList.add("cache");
   document.getElementById("app").classList.remove("cache");
@@ -111,7 +110,8 @@ function appliquerRole(){
   if(isSup){ show('stockDiv'); }
 }
 function show(id){
-  if(role==="suppleant" && id!=="stockDiv"){ alert("Accès refusé"); return; }
+  // CORRIGÉ : Suppléant peut aller sur STOCK + PATIENT
+  if(role==="suppleant" && id!=="stockDiv" && id!=="patientDiv"){ alert("Accès refusé - Patron seulement"); return; }
   ["stockDiv","patientDiv","caisseDiv","archivesDiv"].forEach(x=> document.getElementById(x).classList.add("cache"));
   document.getElementById(id).classList.remove("cache");
   afficher();
@@ -164,4 +164,4 @@ function cloturer(){
 }
 </script>
 </body>
-  </html>
+</html>
