@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -8,13 +8,12 @@
 body{font-family:Arial,sans-serif;background:#f2f2f2;margin:0;padding:10px}
 h1{text-align:center;font-size:22px}
 button{border:none;padding:10px 14px;border-radius:10px;margin:4px;font-weight:bold;cursor:pointer;color:white}
-.bleu{background:#2196F3}.vert{background:#4CAF50}.orange{background:#FF9800}.gris{background:#777}.rouge{background:#e53935}.violet{background:#9C27B0}
+.bleu{background:#2196F3}.vert{background:#4CAF50}.orange{background:#FF9800}.gris{background:#777}.rouge{background:#e53935}
 .carte{background:white;padding:12px;border-radius:12px;margin-top:10px}
 table{width:100%;border-collapse:collapse;margin-top:10px}
 th,td{border:1px solid #ddd;padding:6px;text-align:center;font-size:14px}
-input,select,textarea{width:100%;padding:8px;margin:4px 0;border:1px solid #ccc;border-radius:8px;box-sizing:border-box}
+input,select{width:100%;padding:8px;margin:4px 0;border:1px solid #ccc;border-radius:8px;box-sizing:border-box}
 .cache{display:none}
-textarea{height:90px;font-size:12px}
 </style>
 </head>
 <body>
@@ -35,7 +34,6 @@ textarea{height:90px;font-size:12px}
 <button class="bleu" onclick="show('patientDiv')">👤 PATIENT</button><br>
 <button class="orange" onclick="show('caisseDiv')">💰 CAISSE DU JOUR</button>
 <button class="orange" onclick="show('archivesDiv')">📁 ARCHIVES</button><br>
-<button class="violet" onclick="show('transfertDiv')">🔄 ENVOYER / RECEVOIR STOCK</button><br>
 <button class="gris" onclick="logout()">🔒 Sortir</button>
 </div>
 
@@ -74,23 +72,11 @@ textarea{height:90px;font-size:12px}
 <h3>📁 Archives</h3>
 <div id="listeArchives"></div>
 </div>
-
-<div id="transfertDiv" class="carte cache">
-<h3>🔄 Envoyer / Recevoir par WhatsApp</h3>
-<p><b>1. Pour ENVOYER ton stock :</b><br>Clique sur Exporter, ça copie tout. Après tu vas sur WhatsApp et tu colles.</p>
-<button class="vert" onclick="exporter()">📤 EXPORTER MON STOCK - Copier</button>
-<p id="msgExport" style="color:green"></p>
-<textarea id="zoneExport" readonly placeholder="Ton stock va apparaître ici après Exporter..."></textarea>
-<p><b>2. Pour RECEVOIR le stock de l'autre :</b><br>Colle ici le message qu'il t'a envoyé sur WhatsApp, puis clique Importer.</p>
-<textarea id="zoneImport" placeholder="Colle ici le code reçu sur WhatsApp..."></textarea>
-<button class="bleu" onclick="importer()">📥 IMPORTER LE STOCK REÇU</button>
-<p id="msgImport" style="color:green"></p>
-</div>
 </div>
 
 <script>
 let role = "";
-let stock = JSON.parse(localStorage.getItem("stock")||"[]").map(m=>({medicament:m.medicament||m.nom||"", stock:Number(m.stock||0), prix:Number(m.prix||0)})).filter(m=>m.medicament!=="");
+let stock = JSON.parse(localStorage.getItem("stock")||"[]");
 let ventes = JSON.parse(localStorage.getItem("ventes")||"[]");
 let archives = JSON.parse(localStorage.getItem("archives")||"[]");
 
@@ -117,8 +103,8 @@ function appliquerRole(){
   document.getElementById("totalStock").style.display = isSup ? "none" : "block";
 }
 function show(id){
-  if(role==="suppleant" && id!=="stockDiv" && id!=="patientDiv" && id!=="transfertDiv"){ alert("Accès refusé - Patron seulement"); return; }
-  ["stockDiv","patientDiv","caisseDiv","archivesDiv","transfertDiv"].forEach(x=> document.getElementById(x).classList.add("cache"));
+  if(role==="suppleant" && id!=="stockDiv" && id!=="patientDiv"){ alert("Accès refusé - Patron seulement"); return; }
+  ["stockDiv","patientDiv","caisseDiv","archivesDiv"].forEach(x=> document.getElementById(x).classList.add("cache"));
   document.getElementById(id).classList.remove("cache");
   afficher();
 }
@@ -168,37 +154,6 @@ function cloturer(){
   ventes=[];
   save(); afficher(); alert("Journée clôturée");
 }
-// --- TRANSFERT WHATSAPP ---
-function exporter(){
-  let code = "STOCK:" + btoa(unescape(encodeURIComponent(JSON.stringify({stock:stock, ventes:ventes, archives:archives}))));
-  document.getElementById("zoneExport").value = code;
-  // Essaie de copier automatiquement
-  try{
-    document.getElementById("zoneExport").select();
-    document.execCommand("copy");
-    document.getElementById("msgExport").innerText = "✅ Copié ! Va sur WhatsApp, colle et envoie.";
-  }catch(e){
-    document.getElementById("msgExport").innerText = "✅ Copie le texte ci-dessus manuellement, envoie-le sur WhatsApp.";
-  }
-}
-function importer(){
-  let txt = document.getElementById("zoneImport").value.trim();
-  if(!txt){ alert("Colle d'abord le code reçu"); return; }
-  // On enlève STOCK: si présent, et les espaces
-  txt = txt.replace("STOCK:","").trim();
-  try{
-    let data = JSON.parse(decodeURIComponent(escape(atob(txt))));
-    if(!data.stock) throw new Error("pas stock");
-    if(confirm("Remplacer ton stock actuel par celui reçu ? ("+data.stock.length+" médicaments)")){
-      stock = data.stock; ventes = data.ventes||[]; archives = data.archives||[];
-      save(); afficher();
-      document.getElementById("msgImport").innerText = "✅ Stock reçu ! "+stock.length+" médicaments affichés.";
-      show('stockDiv');
-    }
-  }catch(e){
-    alert("Code invalide, colle tout le message complet, sans couper.");
-  }
-}
 </script>
 </body>
-</html>
+ </html>
