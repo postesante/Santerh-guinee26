@@ -78,7 +78,6 @@ input,select{width:100%;padding:8px;margin:4px 0;border:1px solid #ccc;border-ra
 </div>
 
 <script>
-// NOUVEAU COFFRE - Ne pas laisser le suppléant ouvrir avant le patron
 const PANTRY_ID = "pharmacie-conakry-1989-partage-77b2-NEW";
 const BASKET = "pharmacie";
 const CLOUD_URL = "https://getpantry.cloud/apiv1/pantry/" + PANTRY_ID + "/basket/" + BASKET;
@@ -94,14 +93,11 @@ async function chargerCloud(){
   let localStock = JSON.parse(localStorage.getItem("stock")||"[]");
   let localVentes = JSON.parse(localStorage.getItem("ventes")||"[]");
   let localArchives = JSON.parse(localStorage.getItem("archives")||"[]");
-  // Normalise l'ancien format si besoin
   localStock = localStock.map(m=>({medicament:m.medicament||m.nom||"", stock:Number(m.stock||0), prix:Number(m.prix||0)})).filter(m=>m.medicament!=="");
-
   try{
     let r = await fetch(CLOUD_URL);
     if(r.ok){
       let data = await r.json();
-      // Si le cloud est vide mais ton téléphone a du stock, on garde ton stock et on le pousse
       if(data && data.stock && data.stock.length>0){
         stock = data.stock; ventes = data.ventes || []; archives = data.archives || [];
         document.getElementById("sync").innerText = "✅ Stock partagé - à jour ("+stock.length+" médicaments)";
@@ -110,18 +106,15 @@ async function chargerCloud(){
       if(localStock.length>0){
         stock = localStock; ventes = localVentes; archives = localArchives;
         await sauverCloud(true);
-        document.getElementById("sync").innerText = "✅ Ton stock a été envoyé au partagé ("+stock.length+" médicaments)";
         afficher(); return;
       }
       document.getElementById("sync").innerText = "✅ Stock partagé - vide, ajoute tes médicaments";
       stock=[]; ventes=[]; archives=[];
       afficher(); return;
     }
-    // Pantry pas encore créé : on le crée avec ton stock local
     if(localStock.length>0){
       stock = localStock; ventes = localVentes; archives = localArchives;
       await sauverCloud(true);
-      document.getElementById("sync").innerText = "✅ Nouveau coffre créé avec ton stock ("+stock.length+")";
     } else {
       document.getElementById("sync").innerText = "✅ Stock partagé - vide";
     }
@@ -132,6 +125,15 @@ async function chargerCloud(){
     afficher();
   }
 }
+// CORRIGÉ : Pantry veut PUT pour mettre à jour, POST pour créer. On essaie les 2.
+async function envoyerCloud(){
+  let payload = JSON.stringify({stock:stock, ventes:ventes, archives:archives});
+  let r = await fetch(CLOUD_URL, {method:"PUT", headers:{"Content-Type":"application/json"}, body: payload});
+  if(!r.ok){
+    r = await fetch(CLOUD_URL, {method:"POST", headers:{"Content-Type":"application/json"}, body: payload});
+  }
+  if(!r.ok) throw new Error("cloud fail "+r.status);
+}
 async function sauverCloud(force){
   if(enTrainDeSauver && !force) return;
   enTrainDeSauver = true;
@@ -139,16 +141,24 @@ async function sauverCloud(force){
   localStorage.setItem("ventes", JSON.stringify(ventes));
   localStorage.setItem("archives", JSON.stringify(archives));
   try{
-    await fetch(CLOUD_URL, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({stock:stock, ventes:ventes, archives:archives})});
+    await envoyerCloud();
     document.getElementById("sync").innerText = "✅ Stock partagé - à jour à " + new Date().toLocaleTimeString() + " ("+stock.length+" médicaments)";
-  }catch(e){ document.getElementById("sync").innerText = "⚠️ Sauvegardé en local, pas internet"; }
+  }catch(e){
+    document.getElementById("sync").innerText = "⚠️ Sauvegardé en local, pas internet - Réessaie";
+    console.log(e);
+  }
   enTrainDeSauver = false;
 }
 function save(){ sauverCloud(false); }
 async function pousserStock(){
+  document.getElementById("sync").innerText = "🔄 Envoi en cours, attends...";
   lastSave = Date.now();
   await sauverCloud(true);
-  alert("Stock envoyé ! Maintenant le suppléant peut ouvrir.");
+  if(document.getElementById("sync").innerText.includes("✅")){
+    alert("Stock envoyé ! Maintenant le suppléant peut ouvrir.");
+  } else {
+    alert("Pas encore envoyé, vérifie ta connexion et réappuie une fois.");
+  }
 }
 setInterval(async ()=>{
   if(!role) return;
