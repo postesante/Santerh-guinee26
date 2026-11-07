@@ -78,9 +78,8 @@ input,select{width:100%;padding:8px;margin:4px 0;border:1px solid #ccc;border-ra
 </div>
 
 <script>
-const PANTRY_ID = "pharmacie-conakry-1989-partage-77b2-NEW";
-const BASKET = "pharmacie";
-const CLOUD_URL = "https://getpantry.cloud/apiv1/pantry/" + PANTRY_ID + "/basket/" + BASKET;
+// NOUVEAU SYSTEME - kvdb, pas besoin de créer un compte, le nom suffit
+const CLOUD_URL = "https://kvdb.io/pharmacie-conakry-1989-partage77/pharmacie";
 
 let role = "";
 let stock = [];
@@ -97,7 +96,9 @@ async function chargerCloud(){
   try{
     let r = await fetch(CLOUD_URL);
     if(r.ok){
-      let data = await r.json();
+      let txt = await r.text();
+      let data = null;
+      try{ data = JSON.parse(txt); }catch(e){}
       if(data && data.stock && data.stock.length>0){
         stock = data.stock; ventes = data.ventes || []; archives = data.archives || [];
         document.getElementById("sync").innerText = "✅ Stock partagé - à jour ("+stock.length+" médicaments)";
@@ -112,6 +113,7 @@ async function chargerCloud(){
       stock=[]; ventes=[]; archives=[];
       afficher(); return;
     }
+    // Pas encore de coffre, on le crée avec ton stock
     if(localStock.length>0){
       stock = localStock; ventes = localVentes; archives = localArchives;
       await sauverCloud(true);
@@ -120,18 +122,14 @@ async function chargerCloud(){
     }
     afficher();
   }catch(e){
-    document.getElementById("sync").innerText = "⚠️ Hors ligne - mode local";
+    document.getElementById("sync").innerText = "⚠️ Hors ligne - mode local, vérifie internet";
     stock = localStock; ventes = localVentes; archives = localArchives;
     afficher();
   }
 }
-// CORRIGÉ : Pantry veut PUT pour mettre à jour, POST pour créer. On essaie les 2.
 async function envoyerCloud(){
   let payload = JSON.stringify({stock:stock, ventes:ventes, archives:archives});
-  let r = await fetch(CLOUD_URL, {method:"PUT", headers:{"Content-Type":"application/json"}, body: payload});
-  if(!r.ok){
-    r = await fetch(CLOUD_URL, {method:"POST", headers:{"Content-Type":"application/json"}, body: payload});
-  }
+  let r = await fetch(CLOUD_URL, {method:"POST", headers:{"Content-Type":"text/plain"}, body: payload});
   if(!r.ok) throw new Error("cloud fail "+r.status);
 }
 async function sauverCloud(force){
@@ -145,7 +143,6 @@ async function sauverCloud(force){
     document.getElementById("sync").innerText = "✅ Stock partagé - à jour à " + new Date().toLocaleTimeString() + " ("+stock.length+" médicaments)";
   }catch(e){
     document.getElementById("sync").innerText = "⚠️ Sauvegardé en local, pas internet - Réessaie";
-    console.log(e);
   }
   enTrainDeSauver = false;
 }
@@ -165,7 +162,8 @@ setInterval(async ()=>{
   try{
     let r = await fetch(CLOUD_URL);
     if(r.ok){
-      let data = await r.json();
+      let txt = await r.text();
+      let data = null; try{ data = JSON.parse(txt); }catch(e){}
       if(data && data.stock){
         let nouveau = JSON.stringify(data.stock) + JSON.stringify(data.ventes);
         let ancien = JSON.stringify(stock) + JSON.stringify(ventes);
@@ -251,4 +249,4 @@ function cloturer(){
 }
 </script>
 </body>
-</html>
+  </html>
