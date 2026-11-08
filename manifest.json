@@ -1,19 +1,19 @@
 {
-  "name": "Filanidialakoro",
-  "short_name": "Filanidialakoro",
+  "name": "SantéRH",
+  "short_name": "SantéRH",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#1877f2",
+  "background_color": "#0a7a3a",
+  "theme_color": "#0a7a3a",
   "icons": [
     {
-      "src": "icon-512.png.jpg",
+      "src": "IMG-20261108-WA0165.jpg",
       "sizes": "512x512",
       "type": "image/jpeg",
       "purpose": "any"
     },
     {
-      "src": "icon-512.png.jpg",
+      "src": "IMG-20261108-WA0165.jpg",
       "sizes": "512x512",
       "type": "image/jpeg",
       "purpose": "maskable"
