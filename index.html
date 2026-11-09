@@ -16,7 +16,7 @@ body{font-family:Arial;background:#f0f2f5;margin:0;padding:10px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
 .card{background:white;padding:16px;border-radius:10px;text-align:center;box-shadow:0 2px 4px rgba(0,0,0,.1);cursor:pointer;font-weight:bold}
 #content{background:white;margin-top:12px;padding:12px;border-radius:10px}
-input,select{width:100%;padding:10px;margin:5px 0;border:1px solid #ccc;border-radius:8px;box-sizing:border-box}
+input,select,textarea{width:100%;padding:10px;margin:5px 0;border:1px solid #ccc;border-radius:8px;box-sizing:border-box}
 .btn{border:none;padding:11px;border-radius:8px;width:100%;font-weight:bold;color:white;cursor:pointer;margin-top:5px}
 .btn-blue{background:#1877f2} .btn-green{background:#42b72a} .btn-orange{background:#ff9800} .btn-red{background:#e74c3c}
 table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px} th,td{border:1px solid #ddd;padding:6px}
@@ -84,15 +84,23 @@ ${isPatron?`<input id="newMedName" placeholder="Nom nouveau médicament"><input 
 <div id="totalJourBox"></div>
 </div>
 <div class="section" style="background:#e3f2fd">
-<b>👤 NOUVEAU PATIENT - Plusieurs médicaments</b>
-<input id="patientName" placeholder="Prénom et Nom du patient">
+<b>👤 NOUVEAU PATIENT - Dossier Complet</b>
+<input id="patientName" placeholder="Nom et Prénom du patient">
+<div style="display:flex;gap:6px">
+<select id="patientSexe" style="flex:1"><option value="">Sexe</option><option value="Homme">👨 Homme</option><option value="Femme">👩 Femme</option></select>
+<input id="patientAge" type="number" placeholder="Âge" style="flex:1">
+</div>
+<textarea id="patientPlainte" rows="2" placeholder="📝 Plainte - ex: Fièvre, maux de tête depuis 3 jours..."></textarea>
+<textarea id="patientExamen" rows="2" placeholder="🔬 Examen Paraclinique - ex: TDR Palu, Glycémie, Tension..."></textarea>
+<input id="patientDiag" placeholder="🩺 Diagnostic - ex: Paludisme simple">
+<b style="font-size:13px">💊 Traitement / Médicaments</b>
 <div id="medRows"></div>
 <button class="btn btn-blue" onclick="addMedRow()">+ AJOUTER UN AUTRE MÉDICAMENT</button>
 <button class="btn btn-orange" onclick="saveConsultation()">✅ ENREGISTRER PATIENT + DIMINUER STOCK</button>
 </div>
 <div class="section">
 <b>📋 HISTORIQUE PAR PATIENT</b>
-<input id="searchPatient" placeholder="Rechercher patient..." oninput="filterPatients()">
+<input id="searchPatient" placeholder="Rechercher patient, diagnostic..." oninput="filterPatients()">
 <div id="consultTable">Chargement...</div>
 </div>`;
 document.getElementById('content').innerHTML=h;
@@ -121,25 +129,31 @@ function updateQ(k){ if(!isPatron) return alert('Seul le Patron peut changer le 
 function updatePrix(k){ if(!isPatron) return alert('Seul le Patron peut changer le prix'); let p=document.getElementById('p_'+k).value; db.ref('postes/'+k+'/prix').set(parseInt(p)||0); }
 function deleteMed(k){if(confirm('Supprimer?')) db.ref('postes/'+k).remove();}
 function saveConsultation(){
- let patient=document.getElementById('patientName').value.trim(); if(!patient) return alert('Mets nom du patient'); let rows=document.querySelectorAll('.med-row'); let meds=[];
+ let patient=document.getElementById('patientName').value.trim(); if(!patient) return alert('Mets nom du patient');
+ let sexe=document.getElementById('patientSexe').value||'';
+ let age=document.getElementById('patientAge').value||'';
+ let plainte=document.getElementById('patientPlainte').value||'';
+ let examen=document.getElementById('patientExamen').value||'';
+ let diagnostic=document.getElementById('patientDiag').value||'';
+ let rows=document.querySelectorAll('.med-row'); let meds=[];
  for(let r of rows){ let key=r.querySelector('.medSelect').value; let qte=parseInt(r.querySelector('.medQte').value)||0; if(key && qte>0){ meds.push({key:key, nom:postesData[key]?.nom||key, qte:qte, prix:postesData[key]?.prix||0}); } }
  if(meds.length===0) return alert('Ajoute au moins 1 médicament');
  meds.forEach(m=>{ let cur=postesData[m.key]?.quantite||0; db.ref('postes/'+m.key+'/quantite').set(cur - m.qte); });
- db.ref('consultations').push({patient:patient, meds:meds, date:new Date().toLocaleString(), role:role});
- document.getElementById('patientName').value=''; document.getElementById('medRows').innerHTML=''; addMedRow(); addMedRow(); alert('✅ '+patient+' enregistré avec '+meds.length+' médicaments');
+ db.ref('consultations').push({patient:patient, sexe:sexe, age:age, plainte:plainte, examen:examen, diagnostic:diagnostic, meds:meds, date:new Date().toLocaleString(), role:role});
+ document.getElementById('patientName').value=''; document.getElementById('patientSexe').value=''; document.getElementById('patientAge').value=''; document.getElementById('patientPlainte').value=''; document.getElementById('patientExamen').value=''; document.getElementById('patientDiag').value=''; document.getElementById('medRows').innerHTML=''; addMedRow(); addMedRow(); alert('✅ '+patient+' enregistré avec '+meds.length+' médicaments');
 }
 let allCons={};
 function loadConsultations(){ db.ref('consultations').on('value',snap=>{ allCons=snap.val()||{}; renderConsultations(allCons); });}
 function renderConsultations(data){
- let h='<table><tr><th>Date</th><th>Patient</th><th>Médicaments + Prix</th><th>Somme Totale</th>'+(isPatron?'<th>X</th>':'')+'</tr>'; let keys=Object.keys(data).reverse(); let totalJour = 0; let qteJour = 0; let aujourdhui = new Date().toLocaleDateString();
- for(let k of keys){ let c=data[k]; let medsTxt=''; let sommeTotale=0; if(c.meds){ c.meds.forEach(m=>{ let prixReel = (m.prix && m.prix>0) ? m.prix : (postesData[m.key]?.prix||0); let pt = prixReel * m.qte; sommeTotale += pt; medsTxt+=`<div>• ${m.nom} : <b>${m.qte}</b> x ${prixReel.toLocaleString()} = ${pt.toLocaleString()} GNF</div>`; }); } else { medsTxt=c.med||''; } if(c.date && c.date.startsWith(aujourdhui)){ totalJour += sommeTotale; if(c.meds){ c.meds.forEach(m=>{ qteJour += m.qte; }); } } h+=`<tr><td>${c.date}</td><td><b>${c.patient}</b></td><td>${medsTxt}</td><td><div class="somme-box">${sommeTotale.toLocaleString()} GNF</div></td>${isPatron?`<td><button onclick="db.ref('consultations/${k}').remove()">X</button></td>`:''}</tr>`; }
+ let h='<table><tr><th>Date</th><th>Patient<br><small>Sexe / Âge</small></th><th>📝 Plainte</th><th>🔬 Examen Para</th><th>🩺 Diagnostic</th><th>💊 Traitement + Prix</th><th>Somme Totale</th>'+(isPatron?'<th>X</th>':'')+'</tr>'; let keys=Object.keys(data).reverse(); let totalJour = 0; let qteJour = 0; let aujourdhui = new Date().toLocaleDateString();
+ for(let k of keys){ let c=data[k]; let medsTxt=''; let sommeTotale=0; if(c.meds){ c.meds.forEach(m=>{ let prixReel = (m.prix && m.prix>0) ? m.prix : (postesData[m.key]?.prix||0); let pt = prixReel * m.qte; sommeTotale += pt; medsTxt+=`<div>• ${m.nom} : <b>${m.qte}</b> x ${prixReel.toLocaleString()} = ${pt.toLocaleString()} GNF</div>`; }); } else { medsTxt=c.med||''; } if(c.date && c.date.startsWith(aujourdhui)){ totalJour += sommeTotale; if(c.meds){ c.meds.forEach(m=>{ qteJour += m.qte; }); } } h+=`<tr><td>${c.date}</td><td><b>${c.patient}</b><br><small>${c.sexe||''} ${c.age?c.age+' ans':''}</small></td><td>${c.plainte||'-'}</td><td>${c.examen||'-'}</td><td><b>${c.diagnostic||'-'}</b></td><td>${medsTxt}</td><td><div class="somme-box">${sommeTotale.toLocaleString()} GNF</div></td>${isPatron?`<td><button onclick="db.ref('consultations/${k}').remove()">X</button></td>`:''}</tr>`; }
  h+='</table>'; if(document.getElementById('consultTable')) document.getElementById('consultTable').innerHTML = keys.length? h : 'Aucun patient encore'; if(document.getElementById('totalJourBox')){ document.getElementById('totalJourBox').innerHTML = `<div class="jour-box">💊 TOTAL MÉDICAMENTS VENDUS AUJOURD'HUI : ${qteJour} médicaments</div><div class="jour-box2">💰 SOMME TOTALE JOURNALIÈRE : ${totalJour.toLocaleString()} GNF</div>`; }
 }
-function filterPatients(){ let q=document.getElementById('searchPatient').value.toLowerCase(); let filtered={}; for(let k in allCons){ if(allCons[k].patient.toLowerCase().includes(q)) filtered[k]=allCons[k]; } renderConsultations(filtered); }
+function filterPatients(){ let q=document.getElementById('searchPatient').value.toLowerCase(); let filtered={}; for(let k in allCons){ let txt=((allCons[k].patient||'')+' '+(allCons[k].diagnostic||'')+' '+(allCons[k].plainte||'')).toLowerCase(); if(txt.includes(q)) filtered[k]=allCons[k]; } renderConsultations(filtered); }
 function loadDettes(){document.getElementById('content').innerHTML='<h3>📒 Dettes Payé</h3><input id="dNom" placeholder="Nom"><input id="dMont" type="number" placeholder="Montant"><button class="btn btn-blue" onclick="saveDette()">Enregistrer</button><div id="dList"></div>'; db.ref('dettes_paye').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Client</th><th>Montant</th><th>Date</th>'+(isPatron?'<th>X</th>':'')+'</tr>'; for(let k in d)h+=`<tr><td>${d[k].nom}</td><td>${d[k].montant}</td><td>${d[k].date}</td>${isPatron?`<td><button onclick="deleteDette('${k}')" style="background:#e74c3c;color:white;border:none;padding:6px 10px;border-radius:6px;font-weight:bold;cursor:pointer">X</button></td>`:''}</tr>`; document.getElementById('dList').innerHTML=h+'</table>';});}
 function saveDette(){let n=document.getElementById('dNom').value,m=document.getElementById('dMont').value; if(!n||!m)return; db.ref('dettes_paye').push({nom:n,montant:m,date:new Date().toLocaleString()});}
 function deleteDette(k){ if(confirm('Tu veux vraiment supprimer cette dette ?')){ db.ref('dettes_paye/'+k).remove(); } }
-function loadSuivi(){document.getElementById('content').innerHTML='<h3>📈 SUIVI LIVE</h3><div id="box"></div>'; db.ref('consultations').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Date</th><th>Patient</th><th>Médicaments</th><th>Somme Totale</th></tr>'; for(let k in d){ let txt=''; let somme=0; if(d[k].meds) d[k].meds.forEach(m=>{ let pr=(m.prix&&m.prix>0)?m.prix:(postesData[m.key]?.prix||0); let pt=pr*m.qte; somme+=pt; txt+=m.nom+':'+m.qte+' x '+pr+'='+pt+' '; }); else txt=d[k].med; h+=`<tr><td>${d[k].date}</td><td>${d[k].patient}</td><td>${txt}</td><td><b>${somme.toLocaleString()} GNF</b></td></tr>`;} document.getElementById('box').innerHTML=h+'</table>';});}
+function loadSuivi(){document.getElementById('content').innerHTML='<h3>📈 SUIVI LIVE</h3><div id="box"></div>'; db.ref('consultations').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Date</th><th>Patient</th><th>Plainte / Examen / Diagnostic</th><th>Médicaments</th><th>Somme Totale</th></tr>'; for(let k in d){ let txt=''; let somme=0; if(d[k].meds) d[k].meds.forEach(m=>{ let pr=(m.prix&&m.prix>0)?m.prix:(postesData[m.key]?.prix||0); let pt=pr*m.qte; somme+=pt; txt+=m.nom+':'+m.qte+' x '+pr+'='+pt+' '; }); else txt=d[k].med; h+=`<tr><td>${d[k].date}</td><td>${d[k].patient}<br><small>${d[k].sexe||''} ${d[k].age?d[k].age+' ans':''}</small></td><td>Plainte: ${d[k].plainte||'-'}<br>Examen: ${d[k].examen||'-'}<br><b>Diag: ${d[k].diagnostic||'-'}</b></td><td>${txt}</td><td><b>${somme.toLocaleString()} GNF</b></td></tr>`;} document.getElementById('box').innerHTML=h+'</table>';});}
 function loadPrimes(){document.getElementById('content').innerHTML='<h3>🏆 Primes</h3><input id="pNom" placeholder="Nom"><input id="pMont" type="number" placeholder="Montant"><button class="btn btn-blue" onclick="savePrime()">Enregistrer</button><div id="pList"></div>'; db.ref('primes').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Nom</th><th>Montant</th></tr>'; for(let k in d)h+=`<tr><td>${d[k].nom}</td><td>${d[k].montant}</td></tr>`; document.getElementById('pList').innerHTML=h+'</table>';});}
 function savePrime(){let n=document.getElementById('pNom').value,m=document.getElementById('pMont').value; db.ref('primes').push({nom:n,montant:m,date:new Date().toLocaleString()});}
 function loadObservation(){document.getElementById('content').innerHTML='<h3>📝 Observation</h3><textarea id="oTxt" rows="3"></textarea><button class="btn btn-blue" onclick="saveObs()">Enregistrer</button><div id="oList"></div>'; db.ref('observations').on('value',s=>{let d=s.val()||{},h=''; for(let k in d)h+=`<div style="padding:6px;border-bottom:1px solid #eee"><b>${d[k].date}</b> ${d[k].texte}</div>`; document.getElementById('oList').innerHTML=h;});}
