@@ -1,166 +1,145 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-512.png">
-<meta name="theme-color" content="#1877f2">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Filanidialakoro</title>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 <style>
+*{box-sizing:border-box}
 body{font-family:Arial;background:#f0f2f5;margin:0;padding:10px}
-.header{background:#1877f2;color:white;padding:12px;text-align:center;border-radius:10px;font-weight:bold}
-.header img{width:70px;height:70px;border-radius:50%;object-fit:cover;border:3px solid white;display:block;margin:0 auto 6px}
+.header{background:#1877f2;color:white;padding:16px;text-align:center;border-radius:10px;font-weight:bold;font-size:20px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
-.card{background:white;padding:16px;border-radius:10px;text-align:center;box-shadow:0 2px 4px rgba(0,0,0,.1);cursor:pointer;font-weight:bold}
-#content{background:white;margin-top:12px;padding:12px;border-radius:10px}
-input,select,textarea{width:100%;padding:10px;margin:5px 0;border:1px solid #ccc;border-radius:8px;box-sizing:border-box}
-.btn{border:none;padding:11px;border-radius:8px;width:100%;font-weight:bold;color:white;cursor:pointer;margin-top:5px}
-.btn-blue{background:#1877f2} .btn-green{background:#42b72a} .btn-orange{background:#ff9800} .btn-red{background:#e74c3c}
-table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px} th,td{border:1px solid #ddd;padding:6px}
+.card{background:white;padding:18px;border-radius:10px;text-align:center;box-shadow:0 2px 4px rgba(0,0,0,.2);cursor:pointer;font-weight:bold;font-size:16px}
+#content{background:white;margin-top:12px;padding:12px;border-radius:10px;min-height:200px}
+input,select,textarea{width:100%;padding:13px;margin:6px 0;border:2px solid #1877f2;border-radius:8px;background:#fffde7;font-size:16px}
+.btn{border:none;padding:13px;border-radius:8px;width:100%;font-weight:bold;color:white;cursor:pointer;margin-top:6px;font-size:16px}
+.btn-blue{background:#1877f2}.btn-green{background:#42b72a}.btn-orange{background:#ff9800}.btn-red{background:#e74c3c}
+table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px}th,td{border:1px solid #ddd;padding:6px}
 .section{background:#f8f9fa;padding:10px;border-radius:8px;margin-top:10px;border:1px solid #e0e0e0}
-.med-row{display:flex;gap:5px;align-items:center;margin-bottom:6px}
-.med-row select{flex:2} .med-row input{flex:1}
-.total-box{background:#e3f2fd;padding:10px;border-radius:8px;text-align:center;font-weight:bold;margin-top:8px}
-.somme-box{background:#e8f5e9;padding:6px;border-radius:6px;text-align:center;font-weight:bold;color:#2e7d32}
-.jour-box{background:#fff3cd;padding:10px;border-radius:8px;text-align:center;font-weight:bold;margin-top:8px;border:1px solid #ffca28}
-.jour-box2{background:#d4edda;padding:10px;border-radius:8px;text-align:center;font-weight:bold;margin-top:8px;border:1px solid #28a745}
+.thermo-box{background:#fff3cd;border:3px solid #1877f2;padding:12px;border-radius:10px;margin:8px 0}
+.thermo-box input{background:white;font-size:18px;font-weight:bold}
+.thermo-result{padding:14px;border-radius:10px;text-align:center;font-weight:bold;margin-top:10px;border:2px solid #000;font-size:17px;background:#fff}
 </style>
 </head>
 <body>
-<div class="header" id="header"></div>
-<div class="grid" id="grid"></div>
+
+<div class="header">👑 PATRON<br><span style="font-size:13px;font-weight:normal">Filanidialakoro - Poste Santé</span></div>
+
+<div class="grid">
+<div class="card" onclick="show('med')">💊<br>Médicaments</div>
+<div class="card" onclick="show('dettes')">📒<br>Dettes Payé</div>
+<div class="card" onclick="show('thermo')" style="background:#fff3cd;border:3px solid #1877f2">🌡️<br>Thermomètre</div>
+<div class="card" onclick="show('suivi')">📈<br>SUIVI LIVE</div>
+<div class="card" onclick="show('primes')">🏆<br>Primes</div>
+<div class="card" onclick="show('obs')">📝<br>Observation</div>
+<div class="card" onclick="show('presence')">✅<br>Présence 600k</div>
+<div class="card" onclick="show('gps')">📍<br>Localisation GPS</div>
+</div>
+
 <div id="content"></div>
-<div id="gpsStatus" style="text-align:center;font-size:12px;color:#666;margin-top:8px"></div>
+
 <script>
-const firebaseConfig = {
-  apiKey: "COLLE TA VRAIE CLE ICI - REGARDE HISTORY",
-  authDomain: "filanidialakoro.firebaseapp.com",
-  databaseURL: "https://filanidialakoro-default-rtdb.firebaseio.com",
-  projectId: "filanidialakoro",
-  storageBucket: "filanidialakoro.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abcd"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-let role = new URLSearchParams(location.search).get('role');
-if(role){ localStorage.setItem('mon_role', role); }
-else { role = localStorage.getItem('mon_role') || 'patron'; }
-const isPatron = role==='patron';
-document.getElementById('header').innerHTML = isPatron ? '<img src="icon-512.png" onerror="this.style.display=\'none\'"><div>👑 PATRON - Accès complet</div><div style="font-size:13px;font-weight:normal">Filanidialakoro - Poste Santé</div>' : '👤 SUPPLÉANT - 2 modules';
-let gridHTML=`<div class="card" onclick="openModule('medicaments')">💊 Médicaments</div><div class="card" onclick="openModule('dettes')">📒 Dettes Payé</div>`;
-if(isPatron){ gridHTML+=`<div class="card" onclick="openModule('suivi')">📈 SUIVI LIVE</div><div class="card" onclick="openModule('primes')">🏆 Primes</div><div class="card" onclick="openModule('observation')">📝 Observation</div><div class="card" onclick="openModule('presence')">✅ Présence 600k</div><div class="card" onclick="openModule('localisation')">📍 Localisation GPS</div>`; }
-document.getElementById('grid').innerHTML=gridHTML;
-function openModule(n){ if(n==='medicaments') loadMedicaments(); if(n==='dettes') loadDettes(); if(n==='suivi') loadSuivi(); if(n==='primes') loadPrimes(); if(n==='observation') loadObservation(); if(n==='presence') loadPresence(); if(n==='localisation') loadLocalisation(); }
-function trackLocation(){
-  if(!navigator.geolocation){ document.getElementById('gpsStatus').innerHTML='GPS non supporté'; return; }
-  navigator.geolocation.getCurrentPosition(function(pos){
-    let lat = pos.coords.latitude; let lng = pos.coords.longitude; let acc = Math.round(pos.coords.accuracy);
-    document.getElementById('gpsStatus').innerHTML = '📍 GPS activé - Position enregistrée';
-    db.ref('localisations').push({ role: role, lat: lat, lng: lng, accuracy: acc, date: new Date().toLocaleString(), maps: 'https://www.google.com/maps?q='+lat+','+lng, device: navigator.userAgent.substring(0,80) });
-  }, function(err){ document.getElementById('gpsStatus').innerHTML = '⚠️ GPS refusé - Autorise la localisation pour être suivi'; }, {enableHighAccuracy:true, timeout:10000});
+// --- SAUVEGARDE LOCALE SIMPLE ---
+function get(k){ try{return JSON.parse(localStorage.getItem(k)||'[]')}catch(e){return []} }
+function save(k,v){ localStorage.setItem(k, JSON.stringify(v)) }
+
+// --- THERMOMETRE ---
+function thermoMsg(t){
+  if(t<36.5) return ['🔵 BASSE - Couvre-toi bien','#38bdf8','#000'];
+  if(t<=37.5) return ['🟢 NORMAL - Pas de fièvre','#4ade80','#000'];
+  if(t<=38.5) return ['🟡 FIÈVRE LÉGÈRE - Repos, bois beaucoup d’eau','#facc15','#000'];
+  return ['🔴 ALERTE ROUGE - FIÈVRE FORTE ! Hôpital vite !','#ef4444','#fff'];
 }
-trackLocation();
-setInterval(trackLocation, 5*60*1000);
-function loadLocalisation(){
-  document.getElementById('content').innerHTML='<h3>📍 Localisation GPS - Patron seulement</h3><div id="locList">Chargement...</div>';
-  db.ref('localisations').limitToLast(100).on('value', snap=>{
-    let d=snap.val()||{}; let h='<table><tr><th>Date</th><th>Qui</th><th>Position</th><th>Voir</th></tr>'; let keys=Object.keys(d).reverse();
-    for(let k of keys){ let l=d[k]; let badge = l.role==='patron' ? '👑 PATRON' : '👤 SUPPLÉANT'; let color = l.role==='patron' ? '#e3f2fd' : '#fff3cd'; h+=`<tr style="background:${color}"><td>${l.date}</td><td><b>${badge}</b></td><td>${l.lat.toFixed(5)}, ${l.lng.toFixed(5)}<br><small>Précision: ${l.accuracy}m</small></td><td><a href="${l.maps}" target="_blank" style="background:#1877f2;color:white;padding:6px 10px;border-radius:6px;text-decoration:none;font-weight:bold">🗺️ Voir</a></td></tr>`; }
-    document.getElementById('locList').innerHTML = h+'</table><br><button class="btn btn-red" onclick="if(confirm(\'Effacer ?\')) db.ref(\'localisations\').remove()">Effacer historique</button>';
-  });
+function checkThermo(){
+  let nom=document.getElementById('tNom').value||'Patient';
+  let t=parseFloat(document.getElementById('tTemp').value);
+  if(!t) return alert('Mets température Ex: 38.2');
+  let r=thermoMsg(t);
+  let el=document.getElementById('tRes');
+  el.innerHTML=nom+' : '+t+'°C<br>'+r[0];
+  el.style.background=r[1]; el.style.color=r[2];
 }
-let postesData={};
-function loadMedicaments(){
-let h=`
-<div class="section">
-<b>STOCK PERMANENT</b>
-${isPatron?`<input id="newMedName" placeholder="Nom nouveau médicament"><input id="newMedPrix" type="number" placeholder="Prix unitaire ex: 500"><button class="btn btn-green" onclick="addMedicament()">AUGMENTER LA LISTE</button>`:''}
-<div id="medTable">Chargement...</div>
-<div id="totalStockBox"></div>
-<div id="totalJourBox"></div>
-</div>
-<div class="section" style="background:#e3f2fd">
-<b>👤 NOUVEAU PATIENT - Dossier Complet</b>
-<input id="patientName" placeholder="Nom et Prénom du patient">
-<div style="display:flex;gap:6px">
-<select id="patientSexe" style="flex:1"><option value="">Sexe</option><option value="Homme">👨 Homme</option><option value="Femme">👩 Femme</option></select>
-<input id="patientAge" type="number" placeholder="Âge" style="flex:1">
-</div>
-<textarea id="patientPlainte" rows="2" placeholder="📝 Plainte - ex: Fièvre, maux de tête depuis 3 jours..."></textarea>
-<textarea id="patientExamen" rows="2" placeholder="🔬 Examen Paraclinique - ex: TDR Palu, Glycémie, Tension..."></textarea>
-<input id="patientDiag" placeholder="🩺 Diagnostic - ex: Paludisme simple">
-<b style="font-size:13px">💊 Traitement / Médicaments</b>
-<div id="medRows"></div>
-<button class="btn btn-blue" onclick="addMedRow()">+ AJOUTER UN AUTRE MÉDICAMENT</button>
-<button class="btn btn-orange" onclick="saveConsultation()">✅ ENREGISTRER PATIENT + DIMINUER STOCK</button>
-</div>
-<div class="section">
-<b>📋 HISTORIQUE PAR PATIENT</b>
-<input id="searchPatient" placeholder="Rechercher patient, diagnostic..." oninput="filterPatients()">
-<div id="consultTable">Chargement...</div>
-</div>`;
-document.getElementById('content').innerHTML=h;
-loadStock(); loadConsultations(); addMedRow();
+function checkThermo2(){
+  let t=parseFloat(document.getElementById('pTemp').value);
+  if(!t) return alert('Mets température Ex: 38.2');
+  let r=thermoMsg(t);
+  let el=document.getElementById('tRes2');
+  el.innerHTML=t+'°C - '+r[0]; el.style.background=r[1]; el.style.color=r[2];
 }
-function loadStock(){
- db.ref('postes').on('value',snap=>{
-  postesData=snap.val()||{};
-  let t='<table><tr><th>Nom</th><th>Stock</th><th>Prix unitaire</th><th>Total de prix</th>'+(isPatron?'<th>X</th>':'')+'</tr>';
-  let grandTotal=0;
-  for(let k in postesData){
-    let q = postesData[k].quantite||0; let p = postesData[k].prix||0; let total = q * p; grandTotal += total;
-    t+=`<tr><td>${postesData[k].nom||k}</td><td>${isPatron?`<input id="q_${k}" type="number" value="${q}" onchange="updateQ('${k}')" style="padding:4px">`:`<b style="font-size:16px">${q}</b>`}</td><td>${isPatron?`<input id="p_${k}" type="number" value="${p}" onchange="updatePrix('${k}')" placeholder="0" style="padding:4px">`:`<b>${p.toLocaleString()} GNF</b>`}</td><td><b>${total.toLocaleString()} GNF</b></td>${isPatron?`<td><button onclick="deleteMed('${k}')">X</button></td>`:''}</tr>`;
+
+function show(m){
+  let c=document.getElementById('content');
+  if(m=='thermo'){
+    c.innerHTML=`
+    <div class="thermo-box">
+    <h3 style="margin:0">🌡️ Thermomètre - Patient</h3>
+    <p>1. Mesure avec le thermomètre<br>2. Tape le chiffre<br>3. Clique VÉRIFIER</p>
+    <input id="tNom" placeholder="Nom du patient Ex: Mamadou">
+    <input id="tTemp" type="number" step="0.1" placeholder="Température Ex: 38.2">
+    <button class="btn btn-blue" onclick="checkThermo()">VÉRIFIER LA TEMPÉRATURE</button>
+    <div id="tRes" class="thermo-result">👆 Le résultat va s'afficher ici en couleur</div>
+    </div>
+    <div class="section"><b>Rappel :</b><br>36.5 à 37.5 = Normal 🟢<br>37.5 à 38.5 = Fièvre légère 🟡<br>38.5 et + = Hôpital vite 🔴</div>`;
   }
-  t+='</table>';
-  document.getElementById('medTable').innerHTML=t;
-  document.getElementById('totalStockBox').innerHTML=`<div class="total-box">💰 TOTAL STOCK : ${grandTotal.toLocaleString()} GNF</div>`;
-  updateAllSelects(); if(document.getElementById('consultTable')) renderConsultations(allCons);
- });
+  if(m=='med'){
+    let meds=get('meds');
+    let rows=meds.map((x,i)=>`<tr><td>${x.nom}</td><td>${x.qte}</td><td>${x.prix} GNF</td><td><button onclick="delMed(${i})">X</button></td></tr>`).join('');
+    let cons=get('cons');
+    let hCons=cons.slice().reverse().map(x=>`<tr><td>${x.date}</td><td><b>${x.patient}</b></td><td>${x.temp?x.temp+'°C - '+thermoMsg(parseFloat(x.temp))[0]:'-'}</td><td>${x.diag||''}</td><td>${x.medsTxt||''}</td></tr>`).join('');
+    c.innerHTML=`
+    <div class="section"><b>STOCK PERMANENT</b>
+    <input id="mNom" placeholder="Nom médicament">
+    <input id="mPrix" type="number" placeholder="Prix ex: 500">
+    <input id="mQte" type="number" placeholder="Quantité ex: 10">
+    <button class="btn btn-green" onclick="addMed()">AUGMENTER LA LISTE</button>
+    <table><tr><th>Nom</th><th>Stock</th><th>Prix</th><th>X</th></tr>${rows||'<tr><td colspan=4>Aucun médicament</td></tr>'}</table></div>
+    <div class="section" style="background:#e3f2fd"><b>👤 NOUVEAU PATIENT</b>
+    <input id="pNom" placeholder="Nom et Prénom du patient">
+    <input id="pAge" type="number" placeholder="Âge">
+    <div class="thermo-box"><b>🌡️ TEMPÉRATURE</b>
+    <input id="pTemp" type="number" step="0.1" placeholder="Température Ex: 38.2">
+    <button class="btn btn-blue" onclick="checkThermo2()">VÉRIFIER TEMPÉRATURE</button>
+    <div id="tRes2" class="thermo-result">Résultat ici</div></div>
+    <input id="pPlainte" placeholder="Plainte">
+    <input id="pDiag" placeholder="Diagnostic">
+    <input id="pMed" placeholder="Médicament donné ex: Paracétamol x2">
+    <button class="btn btn-orange" onclick="savePatient()">✅ ENREGISTRER PATIENT</button></div>
+    <div class="section"><b>📋 HISTORIQUE</b><table><tr><th>Date</th><th>Patient</th><th>Temp</th><th>Diag</th><th>Traitement</th></tr>${hCons||''}</table></div>`;
+  }
+  if(m=='dettes'){
+    let d=get('dettes'); let h=d.map((x,i)=>`<tr><td>${x.nom}</td><td>${x.montant}</td><td>${x.date}</td><td><button onclick="delDette(${i})">X</button></td></tr>`).join('');
+    c.innerHTML=`<h3>📒 Dettes Payé</h3><input id="dNom" placeholder="Nom"><input id="dMont" type="number" placeholder="Montant"><button class="btn btn-blue" onclick="saveDette()">Enregistrer</button><table><tr><th>Nom</th><th>Montant</th><th>Date</th><th>X</th></tr>${h}</table>`;
+  }
+  if(m=='suivi'){
+    let cons=get('cons'); let h=cons.slice().reverse().map(x=>`<tr><td>${x.date}</td><td>${x.patient}</td><td>${x.temp||''}°C</td><td>${x.diag||''}</td><td>${x.medsTxt||''}</td></tr>`).join('');
+    c.innerHTML=`<h3>📈 SUIVI LIVE</h3><table><tr><th>Date</th><th>Patient</th><th>Temp</th><th>Diag</th><th>Traitement</th></tr>${h}</table>`;
+  }
+  if(m=='primes'){
+    let p=get('primes'); let h=p.map(x=>`<tr><td>${x.nom}</td><td>${x.montant}</td></tr>`).join('');
+    c.innerHTML=`<h3>🏆 Primes</h3><input id="prNom" placeholder="Nom"><input id="prMont" type="number" placeholder="Montant"><button class="btn btn-blue" onclick="savePrime()">Enregistrer</button><table><tr><th>Nom</th><th>Montant</th></tr>${h}</table>`;
+  }
+  if(m=='obs'){
+    let o=get('obs'); let h=o.map(x=>`<div style="padding:6px;border-bottom:1px solid #eee"><b>${x.date}</b> ${x.txt}</div>`).join('');
+    c.innerHTML=`<h3>📝 Observation</h3><textarea id="oTxt" rows="3"></textarea><button class="btn btn-blue" onclick="saveObs()">Enregistrer</button><div>${h}</div>`;
+  }
+  if(m=='presence'){
+    let p=get('pres'); let h=p.map(x=>`<tr><td>${x.nom}</td><td>${x.statut}</td><td>${x.date}</td></tr>`).join('');
+    c.innerHTML=`<h3>✅ Présence 600k</h3><input id="preNom" placeholder="Nom"><select id="preSt"><option>Présent</option><option>Absent</option></select><button class="btn btn-blue" onclick="savePres()">Valider</button><table><tr><th>Nom</th><th>Statut</th><th>Date</th></tr>${h}</table>`;
+  }
+  if(m=='gps'){
+    c.innerHTML=`<h3>📍 Localisation GPS</h3><p>Clique pour enregistrer ta position</p><button class="btn btn-blue" onclick="getGPS()">📍 MA POSITION</button><div id="gpsRes"></div>`;
+  }
 }
-function getSelectHTML(){ let html='<option value="">Choisir médicament</option>'; for(let k in postesData){ html+=`<option value="${k}">${postesData[k].nom||k} (stock:${postesData[k].quantite||0} - prix:${postesData[k].prix||0})</option>`; } return html; }
-function addMedRow(){ let div=document.createElement('div'); div.className='med-row'; div.innerHTML=`<select class="medSelect">${getSelectHTML()}</select><input type="number" class="medQte" placeholder="Qté" value="1" style="width:70px"><button class="btn btn-red" style="width:40px;padding:6px" onclick="this.parentElement.remove()">X</button>`; document.getElementById('medRows').appendChild(div); }
-function updateAllSelects(){ let selHTML=getSelectHTML(); document.querySelectorAll('.medSelect').forEach(sel=>{ let val=sel.value; sel.innerHTML=selHTML; sel.value=val; }); }
-function addMedicament(){ if(!isPatron) return alert('Seul le Patron'); let nom=document.getElementById('newMedName').value.trim(); let prix=parseInt(document.getElementById('newMedPrix').value)||0; if(!nom)return; let key=nom.replace(/[^a-zA-Z0-9]/g,'_')+'_'+Date.now(); db.ref('postes/'+key).set({nom:nom,quantite:0,prix:prix}).then(()=>{ document.getElementById('newMedName').value=''; document.getElementById('newMedPrix').value=''; }); }
-function updateQ(k){ if(!isPatron) return alert('Seul le Patron peut changer le stock'); let q=document.getElementById('q_'+k).value; db.ref('postes/'+k+'/quantite').set(parseInt(q)||0); }
-function updatePrix(k){ if(!isPatron) return alert('Seul le Patron peut changer le prix'); let p=document.getElementById('p_'+k).value; db.ref('postes/'+k+'/prix').set(parseInt(p)||0); }
-function deleteMed(k){if(confirm('Supprimer?')) db.ref('postes/'+k).remove();}
-function saveConsultation(){
- let patient=document.getElementById('patientName').value.trim(); if(!patient) return alert('Mets nom du patient');
- let sexe=document.getElementById('patientSexe').value||'';
- let age=document.getElementById('patientAge').value||'';
- let plainte=document.getElementById('patientPlainte').value||'';
- let examen=document.getElementById('patientExamen').value||'';
- let diagnostic=document.getElementById('patientDiag').value||'';
- let rows=document.querySelectorAll('.med-row'); let meds=[];
- for(let r of rows){ let key=r.querySelector('.medSelect').value; let qte=parseInt(r.querySelector('.medQte').value)||0; if(key && qte>0){ meds.push({key:key, nom:postesData[key]?.nom||key, qte:qte, prix:postesData[key]?.prix||0}); } }
- if(meds.length===0) return alert('Ajoute au moins 1 médicament');
- meds.forEach(m=>{ let cur=postesData[m.key]?.quantite||0; db.ref('postes/'+m.key+'/quantite').set(cur - m.qte); });
- db.ref('consultations').push({patient:patient, sexe:sexe, age:age, plainte:plainte, examen:examen, diagnostic:diagnostic, meds:meds, date:new Date().toLocaleString(), role:role});
- document.getElementById('patientName').value=''; document.getElementById('patientSexe').value=''; document.getElementById('patientAge').value=''; document.getElementById('patientPlainte').value=''; document.getElementById('patientExamen').value=''; document.getElementById('patientDiag').value=''; document.getElementById('medRows').innerHTML=''; addMedRow(); addMedRow(); alert('✅ '+patient+' enregistré avec '+meds.length+' médicaments');
-}
-let allCons={};
-function loadConsultations(){ db.ref('consultations').on('value',snap=>{ allCons=snap.val()||{}; renderConsultations(allCons); });}
-function renderConsultations(data){
- let h='<table><tr><th>Date</th><th>Patient<br><small>Sexe / Âge</small></th><th>📝 Plainte</th><th>🔬 Examen Para</th><th>🩺 Diagnostic</th><th>💊 Traitement + Prix</th><th>Somme Totale</th>'+(isPatron?'<th>X</th>':'')+'</tr>'; let keys=Object.keys(data).reverse(); let totalJour = 0; let qteJour = 0; let aujourdhui = new Date().toLocaleDateString();
- for(let k of keys){ let c=data[k]; let medsTxt=''; let sommeTotale=0; if(c.meds){ c.meds.forEach(m=>{ let prixReel = (m.prix && m.prix>0) ? m.prix : (postesData[m.key]?.prix||0); let pt = prixReel * m.qte; sommeTotale += pt; medsTxt+=`<div>• ${m.nom} : <b>${m.qte}</b> x ${prixReel.toLocaleString()} = ${pt.toLocaleString()} GNF</div>`; }); } else { medsTxt=c.med||''; } if(c.date && c.date.startsWith(aujourdhui)){ totalJour += sommeTotale; if(c.meds){ c.meds.forEach(m=>{ qteJour += m.qte; }); } } h+=`<tr><td>${c.date}</td><td><b>${c.patient}</b><br><small>${c.sexe||''} ${c.age?c.age+' ans':''}</small></td><td>${c.plainte||'-'}</td><td>${c.examen||'-'}</td><td><b>${c.diagnostic||'-'}</b></td><td>${medsTxt}</td><td><div class="somme-box">${sommeTotale.toLocaleString()} GNF</div></td>${isPatron?`<td><button onclick="db.ref('consultations/${k}').remove()">X</button></td>`:''}</tr>`; }
- h+='</table>'; if(document.getElementById('consultTable')) document.getElementById('consultTable').innerHTML = keys.length? h : 'Aucun patient encore'; if(document.getElementById('totalJourBox')){ document.getElementById('totalJourBox').innerHTML = `<div class="jour-box">💊 TOTAL MÉDICAMENTS VENDUS AUJOURD'HUI : ${qteJour} médicaments</div><div class="jour-box2">💰 SOMME TOTALE JOURNALIÈRE : ${totalJour.toLocaleString()} GNF</div>`; }
-}
-function filterPatients(){ let q=document.getElementById('searchPatient').value.toLowerCase(); let filtered={}; for(let k in allCons){ let txt=((allCons[k].patient||'')+' '+(allCons[k].diagnostic||'')+' '+(allCons[k].plainte||'')).toLowerCase(); if(txt.includes(q)) filtered[k]=allCons[k]; } renderConsultations(filtered); }
-function loadDettes(){document.getElementById('content').innerHTML='<h3>📒 Dettes Payé</h3><input id="dNom" placeholder="Nom"><input id="dMont" type="number" placeholder="Montant"><button class="btn btn-blue" onclick="saveDette()">Enregistrer</button><div id="dList"></div>'; db.ref('dettes_paye').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Client</th><th>Montant</th><th>Date</th>'+(isPatron?'<th>X</th>':'')+'</tr>'; for(let k in d)h+=`<tr><td>${d[k].nom}</td><td>${d[k].montant}</td><td>${d[k].date}</td>${isPatron?`<td><button onclick="deleteDette('${k}')" style="background:#e74c3c;color:white;border:none;padding:6px 10px;border-radius:6px;font-weight:bold;cursor:pointer">X</button></td>`:''}</tr>`; document.getElementById('dList').innerHTML=h+'</table>';});}
-function saveDette(){let n=document.getElementById('dNom').value,m=document.getElementById('dMont').value; if(!n||!m)return; db.ref('dettes_paye').push({nom:n,montant:m,date:new Date().toLocaleString()});}
-function deleteDette(k){ if(confirm('Tu veux vraiment supprimer cette dette ?')){ db.ref('dettes_paye/'+k).remove(); } }
-function loadSuivi(){document.getElementById('content').innerHTML='<h3>📈 SUIVI LIVE</h3><div id="box"></div>'; db.ref('consultations').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Date</th><th>Patient</th><th>Plainte / Examen / Diagnostic</th><th>Médicaments</th><th>Somme Totale</th></tr>'; for(let k in d){ let txt=''; let somme=0; if(d[k].meds) d[k].meds.forEach(m=>{ let pr=(m.prix&&m.prix>0)?m.prix:(postesData[m.key]?.prix||0); let pt=pr*m.qte; somme+=pt; txt+=m.nom+':'+m.qte+' x '+pr+'='+pt+' '; }); else txt=d[k].med; h+=`<tr><td>${d[k].date}</td><td>${d[k].patient}<br><small>${d[k].sexe||''} ${d[k].age?d[k].age+' ans':''}</small></td><td>Plainte: ${d[k].plainte||'-'}<br>Examen: ${d[k].examen||'-'}<br><b>Diag: ${d[k].diagnostic||'-'}</b></td><td>${txt}</td><td><b>${somme.toLocaleString()} GNF</b></td></tr>`;} document.getElementById('box').innerHTML=h+'</table>';});}
-function loadPrimes(){document.getElementById('content').innerHTML='<h3>🏆 Primes</h3><input id="pNom" placeholder="Nom"><input id="pMont" type="number" placeholder="Montant"><button class="btn btn-blue" onclick="savePrime()">Enregistrer</button><div id="pList"></div>'; db.ref('primes').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Nom</th><th>Montant</th></tr>'; for(let k in d)h+=`<tr><td>${d[k].nom}</td><td>${d[k].montant}</td></tr>`; document.getElementById('pList').innerHTML=h+'</table>';});}
-function savePrime(){let n=document.getElementById('pNom').value,m=document.getElementById('pMont').value; db.ref('primes').push({nom:n,montant:m,date:new Date().toLocaleString()});}
-function loadObservation(){document.getElementById('content').innerHTML='<h3>📝 Observation</h3><textarea id="oTxt" rows="3"></textarea><button class="btn btn-blue" onclick="saveObs()">Enregistrer</button><div id="oList"></div>'; db.ref('observations').on('value',s=>{let d=s.val()||{},h=''; for(let k in d)h+=`<div style="padding:6px;border-bottom:1px solid #eee"><b>${d[k].date}</b> ${d[k].texte}</div>`; document.getElementById('oList').innerHTML=h;});}
-function saveObs(){let t=document.getElementById('oTxt').value; if(!t)return; db.ref('observations').push({texte:t,date:new Date().toLocaleString()});}
-function loadPresence(){document.getElementById('content').innerHTML='<h3>✅ Présence 600k</h3><input id="prNom" placeholder="Nom"><select id="prSt"><option>Présent</option><option>Absent</option></select><button class="btn btn-blue" onclick="savePres()">Valider</button><div id="prList"></div>'; db.ref('presence_600k').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Nom</th><th>Statut</th><th>Date</th></tr>'; for(let k in d)h+=`<tr><td>${d[k].nom}</td><td>${d[k].statut}</td><td>${d[k].date}</td></tr>`; document.getElementById('prList').innerHTML=h+'</table>';});}
-function savePres(){let n=document.getElementById('prNom').value,s=document.getElementById('prSt').value; db.ref('presence_600k').push({nom:n,statut:s,date:new Date().toLocaleString()});}
-loadMedicaments();
+function addMed(){ let n=document.getElementById('mNom').value; let p=document.getElementById('mPrix').value; let q=document.getElementById('mQte').value; if(!n) return alert('Mets nom'); let a=get('meds'); a.push({nom:n,prix:p,qte:q}); save('meds',a); show('med'); }
+function delMed(i){ let a=get('meds'); a.splice(i,1); save('meds',a); show('med'); }
+function savePatient(){ let nom=document.getElementById('pNom').value; if(!nom) return alert('Mets nom patient'); let a=get('cons'); a.push({patient:nom,age:document.getElementById('pAge').value,temp:document.getElementById('pTemp').value,plainte:document.getElementById('pPlainte').value,diag:document.getElementById('pDiag').value,medsTxt:document.getElementById('pMed').value,date:new Date().toLocaleString()}); save('cons',a); alert('✅ '+nom+' enregistré'); show('med'); }
+function saveDette(){ let n=document.getElementById('dNom').value; let m=document.getElementById('dMont').value; if(!n||!m) return; let a=get('dettes'); a.push({nom:n,montant:m,date:new Date().toLocaleString()}); save('dettes',a); show('dettes'); }
+function delDette(i){ let a=get('dettes'); a.splice(i,1); save('dettes',a); show('dettes'); }
+function savePrime(){ let n=document.getElementById('prNom').value; let m=document.getElementById('prMont').value; let a=get('primes'); a.push({nom:n,montant:m}); save('primes',a); show('primes'); }
+function saveObs(){ let t=document.getElementById('oTxt').value; if(!t) return; let a=get('obs'); a.push({txt:t,date:new Date().toLocaleString()}); save('obs',a); show('obs'); }
+function savePres(){ let n=document.getElementById('preNom').value; let s=document.getElementById('preSt').value; let a=get('pres'); a.push({nom:n,statut:s,date:new Date().toLocaleString()}); save('pres',a); show('presence'); }
+function getGPS(){ if(!navigator.geolocation) return alert('GPS non supporté'); navigator.geolocation.getCurrentPosition(p=>{ document.getElementById('gpsRes').innerHTML=`<p>📍 ${p.coords.latitude}, ${p.coords.longitude}</p><a href="https://www.google.com/maps?q=${p.coords.latitude},${p.coords.longitude}" target="_blank">🗺️ Voir sur Maps</a>`; }, ()=>alert('Autorise GPS')); }
+show('med');
 </script>
 </body>
 </html>
