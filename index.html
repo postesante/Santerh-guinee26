@@ -3,97 +3,80 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PATRON - Conakry</title>
+<title>PATRON</title>
 <style>
-body{font-family:sans-serif;background:#0f172a;color:white;margin:0;padding:15px}
-h1{color:#facc15;text-align:center;margin:5px}
-.card{background:#1e293b;padding:15px;border-radius:12px;margin:10px 0}
-button{width:100%;padding:12px;border:none;border-radius:10px;background:#facc15;font-weight:bold;margin:5px 0}
-input,textarea{width:100%;padding:10px;margin:5px 0;border-radius:8px;border:none;box-sizing:border-box}
-.alert{background:#ef4444;color:white;padding:12px;border-radius:10px;text-align:center;font-weight:bold;margin:10px 0;animation:clignote 1s infinite}
-@keyframes clignote{0%{opacity:1}50%{opacity:0.5}100%{opacity:1}}
-.stock-bas{background:#7f1d1d !important;border:2px solid #ef4444}
-.total-box{background:#facc15;color:black;text-align:center;padding:15px;border-radius:12px;margin:10px 0}
-.total-box b{font-size:26px}
+body{font-family:Arial;background:#f2f2f2;margin:0;padding:10px}
+h1{background:#ffcc00;text-align:center;padding:12px;border-radius:10px;margin:0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+button{padding:14px;border:none;border-radius:10px;font-weight:bold;font-size:15px;background:white;box-shadow:0 1px 3px #ccc}
+button:active{background:#ffcc00}
+.box{background:white;padding:10px;border-radius:10px}
+input{width:100%;padding:10px;font-size:16px;margin:8px 0;box-sizing:border-box}
+.table-wrap{overflow-x:auto;overflow-y:auto;max-height:300px;border:1px solid #ddd}
+table{width:100%;border-collapse:collapse;min-width:400px}
+th,td{border:1px solid #ddd;padding:8px;text-align:left;font-size:14px}
+th{background:#333;color:white;position:sticky;top:0}
+.rouge{background:#ffcccc;font-weight:bold}
+.total{background:#e6ffe6;padding:10px;font-weight:bold;text-align:center;border-radius:8px;margin:8px 0}
 </style>
 </head>
 <body>
-<h1>👑 PATRON</h1>
-<p style="text-align:center">Gestion - Conakry</p>
-<div id="alerteZone"></div>
-<div class="total-box"><div>TOTAL GÉNÉRAL</div><b id="totalGeneral">0 GNF</b><div id="detailTotal" style="font-size:13px">Ventes: 0 | Stock: 0</div></div>
 
-<div class="card">
-<h3>💾 Sauvegarde - Ne perds plus jamais ton stock</h3>
-<button onclick="sauvegarder()" style="background:#4ade80">1. COPIER MA SAUVEGARDE</button>
-<textarea id="zoneSauvegarde" rows="3" placeholder="Colle ici ta sauvegarde pour récupérer..."></textarea>
-<button onclick="restaurer()" style="background:#38bdf8">2. RESTAURER MON STOCK</button>
-<p style="font-size:12px">Astuce: Après COPIER, envoie-toi le texte sur WhatsApp. Tu pourras le recoller ici après.</p>
+<h1>⭐ PATRON ⭐</h1>
+
+<div class="grid">
+<button onclick="alert('Médicaments')">💊 Médicaments</button>
+<button onclick="alert('Dettes')">💰 Dettes Payé</button>
+<button onclick="alert('Suivi Live')">📈 SUIVI LIVE</button>
+<button onclick="alert('Primes')">🎁 Primes</button>
+<button onclick="alert('Observation')">📝 Observation</button>
+<button onclick="alert('Présence')">👥 Présence 600k</button>
+<button onclick="alert('GPS')">📍 Localisation GPS</button>
+<button onclick="sauvegarder()">💾 Sauvegarde</button>
 </div>
 
-<div class="card">
-<h3>📦 Ajouter Stock</h3>
-<input id="nomStock" placeholder="Ex: Chaussure Nike">
-<input id="qteStock" type="number" placeholder="Quantité Ex: 10">
-<input id="prixStock" type="number" placeholder="Prix vente Ex: 150000">
-<button onclick="ajouterStock()">AJOUTER AU STOCK</button>
+<div class="box">
+<h3>💊 STOCK PERMANENT</h3>
+<div class="total" id="total">Valeur totale : 0 GNF</div>
+<input id="recherche" placeholder="🔍 Chercher un médicament..." onkeyup="filtrer()">
+<div class="table-wrap">
+<table>
+<tr><th>Médicament</th><th>Stock</th><th>Prix</th><th>État</th></tr>
+<tbody id="liste">
+<tr><td>Amoxicilline</td><td>163</td><td>5000</td><td></td></tr>
+<tr><td>Artemether</td><td>15</td><td>8000</td><td></td></tr>
+<tr><td>Paracétamol</td><td>250</td><td>2000</td><td></td></tr>
+<tr><td>Vitamine C</td><td>8</td><td>3000</td><td></td></tr>
+</tbody>
+</table>
 </div>
-
-<div class="card"><h3>📦 Mon Stock</h3><div id="listeStock">Aucun stock</div></div>
-
-<div class="card">
-<h3>➕ Vendre</h3>
-<input id="nomVente" placeholder="Ex: Chaussure Nike">
-<input id="prixVente" type="number" placeholder="Prix en GNF">
-<button onclick="ajouterVente()">VENDRE</button>
+<p style="font-size:12px;color:#666">Si tu vois une ligne ROUGE = stock bas, il faut commander.</p>
 </div>
-
-<div class="card"><h3>📋 Ventes du Jour</h3><div id="listeVente">Aucune vente</div>
-<button onclick="effacer()" style="background:#ef4444;color:white">EFFACER VENTES</button></div>
 
 <script>
-let stocks = JSON.parse(localStorage.getItem('patron_stock')||'[]');
-let ventes = JSON.parse(localStorage.getItem('patron')||'[]');
-function afficher(){
-  let bas = stocks.filter(s=>s.qte <= 5);
-  let zone = document.getElementById('alerteZone');
-  if(bas.length>0){ zone.innerHTML = `<div class="alert">🚨 ALERTE ROUGE - STOCK BAS : ${bas.map(s=>s.nom+' ('+s.qte+')').join(', ')}</div>`; } else { zone.innerHTML=''; }
-  let htmlStock=''; let valeurStock=0;
-  stocks.forEach((s,i)=>{
-    valeurStock += s.qte * s.prix;
-    let classe = s.qte <=5 ? 'stock-bas' : '';
-    let badge = s.qte <=5 ? ' <span style="background:#ef4444;padding:2px 8px;border-radius:10px">⚠️ STOCK BAS</span>' : '';
-    htmlStock += `<div class="card ${classe}" style="margin:5px 0;padding:10px"><b>${s.nom}</b>${badge}<br>Qté: ${s.qte} | Prix: ${s.prix} GNF<br><button onclick="vendreStock(${i})" style="background:#4ade80">VENDRE 1</button><button onclick="supprimerStock(${i})" style="background:#64748b;color:white">SUPPRIMER</button></div>`;
+function calculer(){
+  let total=0;
+  let lignes=document.querySelectorAll("#liste tr");
+  lignes.forEach(l=>{
+    let stock=parseInt(l.cells[1].innerText);
+    let prix=parseInt(l.cells[2].innerText);
+    total+=stock*prix;
+    if(stock<20){ l.classList.add("rouge"); l.cells[3].innerText="À COMMANDER"; }
+    else{ l.classList.remove("rouge"); l.cells[3].innerText="OK"; }
   });
-  document.getElementById('listeStock').innerHTML = htmlStock || 'Aucun stock';
-  let totalVente=0; let htmlVente='';
-  ventes.forEach(v=>{ totalVente+=v.prix; htmlVente+=`<p>${v.nom} - ${v.prix} GNF</p>` });
-  document.getElementById('listeVente').innerHTML = htmlVente || 'Aucune vente';
-  let totalGeneral = totalVente + valeurStock;
-  document.getElementById('totalGeneral').innerText = totalGeneral + ' GNF';
-  document.getElementById('detailTotal').innerText = `Ventes: ${totalVente} GNF | Valeur Stock: ${valeurStock} GNF`;
+  document.getElementById("total").innerText="Valeur totale : "+total+" GNF";
 }
-function ajouterStock(){ let n=document.getElementById('nomStock').value; let q=parseInt(document.getElementById('qteStock').value); let p=parseInt(document.getElementById('prixStock').value); if(!n||!q||!p) return alert('Remplis nom, quantité et prix'); stocks.push({nom:n,qte:q,prix:p}); localStorage.setItem('patron_stock',JSON.stringify(stocks)); afficher(); document.getElementById('nomStock').value=''; document.getElementById('qteStock').value=''; document.getElementById('prixStock').value=''; }
-function vendreStock(i){ let s=stocks[i]; ventes.push({nom:s.nom,prix:s.prix}); s.qte--; if(s.qte<=0) stocks.splice(i,1); localStorage.setItem('patron_stock',JSON.stringify(stocks)); localStorage.setItem('patron',JSON.stringify(ventes)); afficher(); }
-function supprimerStock(i){ stocks.splice(i,1); localStorage.setItem('patron_stock',JSON.stringify(stocks)); afficher(); }
-function ajouterVente(){ let n=document.getElementById('nomVente').value; let p=parseInt(document.getElementById('prixVente').value); if(!n||!p) return alert('Mets nom et prix'); ventes.push({nom:n,prix:p}); localStorage.setItem('patron',JSON.stringify(ventes)); afficher(); document.getElementById('nomVente').value=''; document.getElementById('prixVente').value=''; }
-function effacer(){ if(confirm('Effacer les ventes ?')){ ventes=[]; localStorage.removeItem('patron'); afficher(); } }
+function filtrer(){
+  let mot=document.getElementById("recherche").value.toLowerCase();
+  document.querySelectorAll("#liste tr").forEach(l=>{
+    l.style.display=l.innerText.toLowerCase().includes(mot)?"":"none";
+  });
+}
 function sauvegarder(){
-  let data = JSON.stringify({stocks:stocks, ventes:ventes});
-  document.getElementById('zoneSauvegarde').value = data;
-  navigator.clipboard.writeText(data).then(()=>alert('✅ Copié ! Envoie-toi ce texte sur WhatsApp pour le garder'));
+  localStorage.setItem("stock_patron","ok");
+  alert("Sauvegarde réussie !");
 }
-function restaurer(){
-  try{
-    let txt = document.getElementById('zoneSauvegarde').value;
-    let data = JSON.parse(txt);
-    stocks = data.stocks || []; ventes = data.ventes || [];
-    localStorage.setItem('patron_stock',JSON.stringify(stocks));
-    localStorage.setItem('patron',JSON.stringify(ventes));
-    afficher(); alert('✅ Stock restauré !');
-  }catch(e){ alert('Colle d’abord ta sauvegarde dans la case'); }
-}
-afficher();
+calculer();
 </script>
 </body>
 </html>
