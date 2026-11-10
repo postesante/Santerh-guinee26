@@ -9,8 +9,7 @@ body{font-family:sans-serif;background:#0f172a;color:white;margin:0;padding:15px
 h1{color:#facc15;text-align:center;margin:5px}
 .card{background:#1e293b;padding:15px;border-radius:12px;margin:10px 0}
 button{width:100%;padding:12px;border:none;border-radius:10px;background:#facc15;font-weight:bold;margin:5px 0}
-input{width:100%;padding:10px;margin:5px 0;border-radius:8px;border:none;box-sizing:border-box}
-.big{font-size:28px;text-align:center;color:#4ade80}
+input,textarea{width:100%;padding:10px;margin:5px 0;border-radius:8px;border:none;box-sizing:border-box}
 .alert{background:#ef4444;color:white;padding:12px;border-radius:10px;text-align:center;font-weight:bold;margin:10px 0;animation:clignote 1s infinite}
 @keyframes clignote{0%{opacity:1}50%{opacity:0.5}100%{opacity:1}}
 .stock-bas{background:#7f1d1d !important;border:2px solid #ef4444}
@@ -21,27 +20,32 @@ input{width:100%;padding:10px;margin:5px 0;border-radius:8px;border:none;box-siz
 <body>
 <h1>👑 PATRON</h1>
 <p style="text-align:center">Gestion - Conakry</p>
-
 <div id="alerteZone"></div>
+<div class="total-box"><div>TOTAL GÉNÉRAL</div><b id="totalGeneral">0 GNF</b><div id="detailTotal" style="font-size:13px">Ventes: 0 | Stock: 0</div></div>
 
-<div class="total-box">
-<div>TOTAL GÉNÉRAL</div>
-<b id="totalGeneral">0 GNF</b>
-<div id="detailTotal" style="font-size:13px">Ventes: 0 | Stock: 0</div>
+<div class="card">
+<h3>⚡ AJOUT RAPIDE - Pour beaucoup de stock</h3>
+<p style="font-size:13px">Écris 1 produit par ligne : <b>Nom Quantité Prix</b><br>Ex: Chaussure Nike 10 150000</p>
+<textarea id="bulk" rows="6" placeholder="Chaussure Nike 10 150000&#10;T-shirt 20 80000&#10;Pantalon 15 120000"></textarea>
+<button onclick="ajoutRapide()" style="background:#4ade80">AJOUTER TOUT D'UN COUP</button>
 </div>
 
 <div class="card">
-<h3>📦 Ajouter Stock</h3>
+<h3>💾 Sauvegarde</h3>
+<button onclick="sauvegarder()" style="background:#38bdf8">COPIER MA SAUVEGARDE</button>
+<textarea id="zoneSauvegarde" rows="2" placeholder="Colle ici ta sauvegarde pour récupérer..."></textarea>
+<button onclick="restaurer()" style="background:#38bdf8">RESTAURER MON STOCK</button>
+</div>
+
+<div class="card">
+<h3>📦 Ajouter Stock (1 par 1)</h3>
 <input id="nomStock" placeholder="Ex: Chaussure Nike">
 <input id="qteStock" type="number" placeholder="Quantité Ex: 10">
 <input id="prixStock" type="number" placeholder="Prix vente Ex: 150000">
 <button onclick="ajouterStock()">AJOUTER AU STOCK</button>
 </div>
 
-<div class="card">
-<h3>📦 Mon Stock</h3>
-<div id="listeStock">Aucun stock</div>
-</div>
+<div class="card"><h3>📦 Mon Stock <span id="nbProduits"></span></h3><div id="listeStock">Aucun stock</div></div>
 
 <div class="card">
 <h3>➕ Vendre</h3>
@@ -50,82 +54,53 @@ input{width:100%;padding:10px;margin:5px 0;border-radius:8px;border:none;box-siz
 <button onclick="ajouterVente()">VENDRE</button>
 </div>
 
-<div class="card">
-<h3>📋 Ventes du Jour</h3>
-<div id="listeVente">Aucune vente</div>
-<button onclick="effacer()" style="background:#ef4444;color:white">EFFACER VENTES</button>
-</div>
+<div class="card"><h3>📋 Ventes du Jour</h3><div id="listeVente">Aucune vente</div>
+<button onclick="effacer()" style="background:#ef4444;color:white">EFFACER VENTES</button></div>
 
 <script>
 let stocks = JSON.parse(localStorage.getItem('patron_stock')||'[]');
 let ventes = JSON.parse(localStorage.getItem('patron')||'[]');
-
 function afficher(){
-  // ALERTE ROUGE
   let bas = stocks.filter(s=>s.qte <= 5);
   let zone = document.getElementById('alerteZone');
-  if(bas.length>0){
-    zone.innerHTML = `<div class="alert">🚨 ALERTE ROUGE - STOCK BAS : ${bas.map(s=>s.nom+' ('+s.qte+')').join(', ')} - Réapprovisionne vite !</div>`;
-  } else { zone.innerHTML=''; }
-
-  // STOCK
-  let htmlStock='';
-  let valeurStock=0;
+  if(bas.length>0){ zone.innerHTML = `<div class="alert">🚨 ALERTE ROUGE - STOCK BAS : ${bas.map(s=>s.nom+' ('+s.qte+')').join(', ')}</div>`; } else { zone.innerHTML=''; }
+  let htmlStock=''; let valeurStock=0;
   stocks.forEach((s,i)=>{
     valeurStock += s.qte * s.prix;
     let classe = s.qte <=5 ? 'stock-bas' : '';
     let badge = s.qte <=5 ? ' <span style="background:#ef4444;padding:2px 8px;border-radius:10px">⚠️ STOCK BAS</span>' : '';
-    htmlStock += `<div class="card ${classe}" style="margin:5px 0;padding:10px">
-      <b>${s.nom}</b>${badge}<br>
-      Qté: ${s.qte} | Prix: ${s.prix} GNF<br>
-      <button onclick="vendreStock(${i})" style="background:#4ade80">VENDRE 1</button>
-      <button onclick="supprimerStock(${i})" style="background:#64748b;color:white">SUPPRIMER</button>
-    </div>`;
+    htmlStock += `<div class="card ${classe}" style="margin:5px 0;padding:10px"><b>${s.nom}</b>${badge}<br>Qté: ${s.qte} | Prix: ${s.prix} GNF<br><button onclick="vendreStock(${i})" style="background:#4ade80">VENDRE 1</button><button onclick="supprimerStock(${i})" style="background:#64748b;color:white">SUPPRIMER</button></div>`;
   });
   document.getElementById('listeStock').innerHTML = htmlStock || 'Aucun stock';
-
-  // VENTES
+  document.getElementById('nbProduits').innerText = stocks.length ? `(${stocks.length} produits)` : '';
   let totalVente=0; let htmlVente='';
   ventes.forEach(v=>{ totalVente+=v.prix; htmlVente+=`<p>${v.nom} - ${v.prix} GNF</p>` });
   document.getElementById('listeVente').innerHTML = htmlVente || 'Aucune vente';
-
-  // TOTAL GENERAL = Ventes + Valeur Stock
   let totalGeneral = totalVente + valeurStock;
   document.getElementById('totalGeneral').innerText = totalGeneral + ' GNF';
   document.getElementById('detailTotal').innerText = `Ventes: ${totalVente} GNF | Valeur Stock: ${valeurStock} GNF`;
 }
-
-function ajouterStock(){
-  let n=document.getElementById('nomStock').value;
-  let q=parseInt(document.getElementById('qteStock').value);
-  let p=parseInt(document.getElementById('prixStock').value);
-  if(!n||!q||!p) return alert('Remplis nom, quantité et prix');
-  stocks.push({nom:n,qte:q,prix:p});
+function ajoutRapide(){
+  let txt = document.getElementById('bulk').value.trim();
+  if(!txt) return alert('Écris d’abord tes produits');
+  let lignes = txt.split('\n'); let ajoutes=0;
+  lignes.forEach(l=>{
+    let parts = l.trim().split(/\s+/);
+    if(parts.length < 3) return;
+    let prix = parseInt(parts.pop()); let qte = parseInt(parts.pop()); let nom = parts.join(' ');
+    if(nom && qte && prix){ stocks.push({nom:nom,qte:qte,prix:prix}); ajoutes++; }
+  });
   localStorage.setItem('patron_stock',JSON.stringify(stocks));
-  afficher();
-  document.getElementById('nomStock').value=''; document.getElementById('qteStock').value=''; document.getElementById('prixStock').value='';
+  document.getElementById('bulk').value='';
+  afficher(); alert('✅ '+ajoutes+' produits ajoutés !');
 }
-function vendreStock(i){
-  let s=stocks[i];
-  ventes.push({nom:s.nom,prix:s.prix});
-  s.qte--;
-  if(s.qte<=0) stocks.splice(i,1);
-  localStorage.setItem('patron_stock',JSON.stringify(stocks));
-  localStorage.setItem('patron',JSON.stringify(ventes));
-  afficher();
-  if(s.qte<=5 && s.qte>0) alert('🚨 ALERTE : Il reste seulement '+s.qte+' '+s.nom);
-}
+function ajouterStock(){ let n=document.getElementById('nomStock').value; let q=parseInt(document.getElementById('qteStock').value); let p=parseInt(document.getElementById('prixStock').value); if(!n||!q||!p) return alert('Remplis nom, quantité et prix'); stocks.push({nom:n,qte:q,prix:p}); localStorage.setItem('patron_stock',JSON.stringify(stocks)); afficher(); document.getElementById('nomStock').value=''; document.getElementById('qteStock').value=''; document.getElementById('prixStock').value=''; }
+function vendreStock(i){ let s=stocks[i]; ventes.push({nom:s.nom,prix:s.prix}); s.qte--; if(s.qte<=0) stocks.splice(i,1); localStorage.setItem('patron_stock',JSON.stringify(stocks)); localStorage.setItem('patron',JSON.stringify(ventes)); afficher(); }
 function supprimerStock(i){ stocks.splice(i,1); localStorage.setItem('patron_stock',JSON.stringify(stocks)); afficher(); }
-function ajouterVente(){
-  let n=document.getElementById('nomVente').value;
-  let p=parseInt(document.getElementById('prixVente').value);
-  if(!n||!p) return alert('Mets nom et prix');
-  ventes.push({nom:n,prix:p});
-  localStorage.setItem('patron',JSON.stringify(ventes));
-  afficher();
-  document.getElementById('nomVente').value=''; document.getElementById('prixVente').value='';
-}
+function ajouterVente(){ let n=document.getElementById('nomVente').value; let p=parseInt(document.getElementById('prixVente').value); if(!n||!p) return alert('Mets nom et prix'); ventes.push({nom:n,prix:p}); localStorage.setItem('patron',JSON.stringify(ventes)); afficher(); document.getElementById('nomVente').value=''; document.getElementById('prixVente').value=''; }
 function effacer(){ if(confirm('Effacer les ventes ?')){ ventes=[]; localStorage.removeItem('patron'); afficher(); } }
+function sauvegarder(){ let data = JSON.stringify({stocks:stocks, ventes:ventes}); document.getElementById('zoneSauvegarde').value = data; navigator.clipboard.writeText(data).then(()=>alert('✅ Copié ! Envoie-toi ce texte sur WhatsApp')); }
+function restaurer(){ try{ let txt = document.getElementById('zoneSauvegarde').value; let data = JSON.parse(txt); stocks = data.stocks || []; ventes = data.ventes || []; localStorage.setItem('patron_stock',JSON.stringify(stocks)); localStorage.setItem('patron',JSON.stringify(ventes)); afficher(); alert('✅ Stock restauré !'); }catch(e){ alert('Colle d’abord ta sauvegarde'); } }
 afficher();
 </script>
 </body>
