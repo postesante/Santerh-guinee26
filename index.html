@@ -27,6 +27,9 @@ table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px} th,td{b
 .somme-box{background:#e8f5e9;padding:6px;border-radius:6px;text-align:center;font-weight:bold;color:#2e7d32}
 .jour-box{background:#fff3cd;padding:10px;border-radius:8px;text-align:center;font-weight:bold;margin-top:8px;border:1px solid #ffca28}
 .jour-box2{background:#d4edda;padding:10px;border-radius:8px;text-align:center;font-weight:bold;margin-top:8px;border:1px solid #28a745}
+.bilan-box{background:#e3f2fd;padding:14px;border-radius:10px;text-align:center;font-weight:bold;margin-top:8px;font-size:16px;border:2px solid #1877f2}
+.bilan-green{background:#e8f5e9;padding:14px;border-radius:10px;text-align:center;font-weight:bold;margin-top:8px;font-size:16px;border:2px solid #42b72a;color:#2e7d32}
+.bilan-orange{background:#fff3cd;padding:14px;border-radius:10px;text-align:center;font-weight:bold;margin-top:8px;font-size:16px;border:2px solid #ff9800}
 </style>
 </head>
 <body>
@@ -52,9 +55,9 @@ else { role = localStorage.getItem('mon_role') || 'patron'; }
 const isPatron = role==='patron';
 document.getElementById('header').innerHTML = isPatron ? '<img src="icon-512.png" onerror="this.style.display=\'none\'"><div>👑 PATRON - Accès complet</div><div style="font-size:13px;font-weight:normal">Filanidialakoro - Poste Santé</div>' : '👤 SUPPLÉANT - 2 modules';
 let gridHTML=`<div class="card" onclick="openModule('medicaments')">💊 Médicaments</div><div class="card" onclick="openModule('dettes')">📒 Dettes Payé</div>`;
-if(isPatron){ gridHTML+=`<div class="card" onclick="openModule('suivi')">📈 SUIVI LIVE</div><div class="card" onclick="openModule('primes')">🏆 Primes</div><div class="card" onclick="openModule('observation')">📝 Observation</div><div class="card" onclick="openModule('presence')">✅ Présence 600k</div><div class="card" onclick="openModule('localisation')">📍 Localisation GPS</div>`; }
+if(isPatron){ gridHTML+=`<div class="card" onclick="openModule('suivi')">📈 SUIVI LIVE</div><div class="card" onclick="openModule('bilan')">📊 Bilan du Mois</div><div class="card" onclick="openModule('primes')">🏆 Primes</div><div class="card" onclick="openModule('observation')">📝 Observation</div><div class="card" onclick="openModule('presence')">✅ Présence 600k</div><div class="card" onclick="openModule('localisation')">📍 Localisation GPS</div>`; }
 document.getElementById('grid').innerHTML=gridHTML;
-function openModule(n){ if(n==='medicaments') loadMedicaments(); if(n==='dettes') loadDettes(); if(n==='suivi') loadSuivi(); if(n==='primes') loadPrimes(); if(n==='observation') loadObservation(); if(n==='presence') loadPresence(); if(n==='localisation') loadLocalisation(); }
+function openModule(n){ if(n==='medicaments') loadMedicaments(); if(n==='dettes') loadDettes(); if(n==='suivi') loadSuivi(); if(n==='bilan') loadBilan(); if(n==='primes') loadPrimes(); if(n==='observation') loadObservation(); if(n==='presence') loadPresence(); if(n==='localisation') loadLocalisation(); }
 function trackLocation(){
   if(!navigator.geolocation){ document.getElementById('gpsStatus').innerHTML='GPS non supporté'; return; }
   navigator.geolocation.getCurrentPosition(function(pos){
@@ -157,14 +160,63 @@ function filterPatients(){ let q=document.getElementById('searchPatient').value.
 function loadDettes(){document.getElementById('content').innerHTML='<h3>📒 Dettes Payé</h3><input id="dNom" placeholder="Nom"><input id="dMont" type="number" placeholder="Montant"><button class="btn btn-blue" onclick="saveDette()">Enregistrer</button><div id="dList"></div>'; db.ref('dettes_paye').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Client</th><th>Montant</th><th>Date</th>'+(isPatron?'<th>X</th>':'')+'</tr>'; for(let k in d)h+=`<tr><td>${d[k].nom}</td><td>${d[k].montant}</td><td>${d[k].date}</td>${isPatron?`<td><button onclick="deleteDette('${k}')" style="background:#e74c3c;color:white;border:none;padding:6px 10px;border-radius:6px;font-weight:bold;cursor:pointer">X</button></td>`:''}</tr>`; document.getElementById('dList').innerHTML=h+'</table>';});}
 function saveDette(){let n=document.getElementById('dNom').value,m=document.getElementById('dMont').value; if(!n||!m)return; db.ref('dettes_paye').push({nom:n,montant:m,date:new Date().toLocaleString()});}
 function deleteDette(k){ if(confirm('Tu veux vraiment supprimer cette dette ?')){ db.ref('dettes_paye/'+k).remove(); } }
-function loadSuivi(){document.getElementById('content').innerHTML='<h3>📈 SUIVI LIVE</h3><div id="box"></div>'; db.ref('consultations').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Date</th><th>Patient</th><th>Plainte / Examen / Diagnostic</th><th>Médicaments</th><th>Somme Totale</th></tr>'; for(let k in d){ let txt=''; let somme=0; if(d[k].meds) d[k].meds.forEach(m=>{ let pr=(m.prix&&m.prix>0)?m.prix:(postesData[m.key]?.prix||0); let pt=pr*m.qte; somme+=pt; txt+=m.nom+':'+m.qte+' x '+pr+'='+pt+' '; }); else txt=d[k].med; let ageAffiche2 = d[k].age ? d[k].age + ' ' + (d[k].ageUnite || 'Ans') : ''; let provAffiche2 = d[k].provenance ? '<br>📍 ' + d[k].provenance : ''; h+=`<tr><td>${d[k].date}</td><td>${d[k].patient}<br><small>${d[k].sexe||''} ${ageAffiche2}</small>${provAffiche2}</td><td>Plainte: ${d[k].plainte||'-'}<br>Examen: ${d[k].examen||'-'}<br><b>Diag: ${d[k].diagnostic||'-'}</b></td><td>${txt}</td><td><b>${somme.toLocaleString()} GNF</b></td></tr>`;} document.getElementById('box').innerHTML=h+'</table>';});}
-function loadPrimes(){document.getElementById('content').innerHTML='<h3>🏆 Primes</h3><input id="pNom" placeholder="Nom"><input id="pMont" type="number" placeholder="Montant"><button class="btn btn-blue" onclick="savePrime()">Enregistrer</button><div id="pList"></div>'; db.ref('primes').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Nom</th><th>Montant</th></tr>'; for(let k in d)h+=`<tr><td>${d[k].nom}</td><td>${d[k].montant}</td></tr>`; document.getElementById('pList').innerHTML=h+'</table>';});}
-function savePrime(){let n=document.getElementById('pNom').value,m=document.getElementById('pMont').value; db.ref('primes').push({nom:n,montant:m,date:new Date().toLocaleString()});}
-function loadObservation(){document.getElementById('content').innerHTML='<h3>📝 Observation</h3><textarea id="oTxt" rows="3"></textarea><button class="btn btn-blue" onclick="saveObs()">Enregistrer</button><div id="oList"></div>'; db.ref('observations').on('value',s=>{let d=s.val()||{},h=''; for(let k in d)h+=`<div style="padding:6px;border-bottom:1px solid #eee"><b>${d[k].date}</b> ${d[k].texte}</div>`; document.getElementById('oList').innerHTML=h;});}
-function saveObs(){let t=document.getElementById('oTxt').value; if(!t)return; db.ref('observations').push({texte:t,date:new Date().toLocaleString()});}
-function loadPresence(){document.getElementById('content').innerHTML='<h3>✅ Présence 600k</h3><input id="prNom" placeholder="Nom"><select id="prSt"><option>Présent</option><option>Absent</option></select><button class="btn btn-blue" onclick="savePres()">Valider</button><div id="prList"></div>'; db.ref('presence_600k').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Nom</th><th>Statut</th><th>Date</th></tr>'; for(let k in d)h+=`<tr><td>${d[k].nom}</td><td>${d[k].statut}</td><td>${d[k].date}</td></tr>`; document.getElementById('prList').innerHTML=h+'</table>';});}
-function savePres(){let n=document.getElementById('prNom').value,s=document.getElementById('prSt').value; db.ref('presence_600k').push({nom:n,statut:s,date:new Date().toLocaleString()});}
-loadMedicaments();
-</script>
-</body>
-</html>
+
+// ===== NOUVEAU : BILAN DU MOIS =====
+function loadBilan(){
+  let now = new Date();
+  let moisDefaut = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  document.getElementById('content').innerHTML = `<h3>📊 BILAN DU MOIS - Filanidialakoro</h3>
+  <label><b>Choisir le mois :</b></label>
+  <input type="month" id="bilanMois" value="${moisDefaut}" onchange="calculerBilan()">
+  <div id="bilanResult">Chargement...</div>`;
+  calculerBilan();
+}
+function calculerBilan(){
+  let moisInput = document.getElementById('bilanMois').value; // 2026-11
+  if(!moisInput) return;
+  let [annee, mois] = moisInput.split('-');
+  let moisNom = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'][parseInt(mois)-1];
+  // On cherche les dates qui contiennent /MM/AAAA ou MM/AAAA
+  let filtre1 = '/' + mois + '/' + annee; // ex: /11/2026
+  let filtre2 = mois + '/' + annee;
+  db.ref('consultations').once('value', snapCons => {
+    db.ref('dettes_paye').once('value', snapDettes => {
+      let cons = snapCons.val() || {};
+      let dettes = snapDettes.val() || {};
+      let nbPatients = 0, totalQte = 0, totalSomme = 0;
+      let detailMeds = {};
+      let parJour = {};
+      for(let k in cons){
+        let c = cons[k];
+        if(!c.date) continue;
+        if(!(c.date.includes(filtre1) || c.date.includes(filtre2))) continue;
+        nbPatients++;
+        let sommePatient = 0;
+        if(c.meds){
+          c.meds.forEach(m=>{
+            let pr = (m.prix && m.prix>0) ? m.prix : (postesData[m.key]?.prix||0);
+            let pt = pr * m.qte;
+            sommePatient += pt;
+            totalQte += m.qte;
+            if(!detailMeds[m.nom]) detailMeds[m.nom] = {qte:0, somme:0};
+            detailMeds[m.nom].qte += m.qte;
+            detailMeds[m.nom].somme += pt;
+          });
+        }
+        totalSomme += sommePatient;
+        let jour = c.date.split(',')[0] || c.date.split(' ')[0];
+        if(!parJour[jour]) parJour[jour] = {nb:0, somme:0};
+        parJour[jour].nb++; parJour[jour].somme += sommePatient;
+      }
+      let nbDettes = 0, totalDettes = 0;
+      for(let k in dettes){
+        let d = dettes[k];
+        if(!d.date) continue;
+        if(!(d.date.includes(filtre1) || d.date.includes(filtre2))) continue;
+        nbDettes++;
+        totalDettes += parseInt(d.montant)||0;
+      }
+      let h = `<div class="bilan-box">📅 MOIS : ${moisNom} ${annee}</div>
+      <div class="bilan-box">👥 Nombre de patients : ${nbPatients}</div>
+      <div class="bilan-box">💊 Total médicaments utilisés : ${totalQte} médicaments</div>
+      <div class="bilan-green">💰 SOLDE TOTAL DU MOIS : ${totalSomme.toLocaleString()} GNF<
