@@ -12,7 +12,7 @@ body{font-family:Arial;background:#f0f2f5;margin:0;padding:10px}
 #content{background:white;margin-top:12px;padding:12px;border-radius:10px}
 input,select,textarea{width:100%;padding:10px;margin:5px 0;border:1px solid #ccc;border-radius:8px;box-sizing:border-box}
 .btn{border:none;padding:11px;border-radius:8px;width:100%;font-weight:bold;color:white;cursor:pointer;margin-top:5px}
-.btn-blue{background:#1877f2} .btn-green{background:#42b72a} .btn-orange{background:#ff9800} .btn-red{background:#e74c3c} .btn-grey{background:#6c757d}
+.btn-blue{background:#1877f2} .btn-green{background:#42b72a} .btn-orange{background:#ff9800} .btn-red{background:#e74c3c} .btn-grey{background:#6c757d} .btn-pink{background:#e91e63}
 table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px} th,td{border:1px solid #ddd;padding:6px}
 .section{background:#f8f9fa;padding:10px;border-radius:8px;margin-top:10px;border:1px solid #e0e0e0}
 .med-row{display:flex;gap:5px;align-items:center;margin-bottom:6px}
@@ -32,6 +32,8 @@ table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px} th,td{b
 .caisse-big b{font-size:26px}
 .patient-link{color:#1877f2;font-weight:bold;cursor:pointer;text-decoration:underline}
 .fiche-box{background:#e3f2fd;padding:12px;border-radius:10px;border:2px solid #1877f2;margin-top:10px}
+.rdv-urgent{background:#ffcdd2 !important}
+.rdv-today{background:#fff3cd !important}
 </style>
 </head>
 <body>
@@ -57,15 +59,58 @@ const db={ref:function(p){return makeRef(p,0);}};
 let role=new URLSearchParams(location.search).get('role');
 if(role){try{localStorage.setItem('mon_role',role);}catch(e){}}else{try{role=localStorage.getItem('mon_role')||'patron';}catch(e){role='patron';}}
 const isPatron=role==='patron';
-document.getElementById('header').innerHTML=isPatron?'<div>👑 PATRON - Accès complet</div><div style="font-size:13px;font-weight:normal">Filanidialakoro - Poste Santé</div><div style="font-size:11px;background:#42b72a;padding:4px;border-radius:6px;margin-top:6px">✅ CONNECTÉ À FIREBASE - MODE LENT</div>':'👤 SUPPLÉANT - 2 modules';
-let gridHTML=`<div class="card" onclick="openModule('medicaments')">💊 Médicaments</div><div class="card" onclick="openModule('dettes')">📒 Dettes Payé</div>`;
+document.getElementById('header').innerHTML=isPatron?'<div>👑 PATRON - Accès complet</div><div style="font-size:13px;font-weight:normal">Filanidialakoro - Poste Santé Brousse</div><div style="font-size:11px;background:#42b72a;padding:4px;border-radius:6px;margin-top:6px">✅ CONNECTÉ À FIREBASE - MODE LENT</div>':'👤 SUPPLÉANT';
+let gridHTML=`<div class="card" onclick="openModule('medicaments')">💊 Médicaments</div><div class="card" onclick="openModule('dettes')">📒 Dettes Payé</div><div class="card" style="background:#fce4ec" onclick="openModule('carnet')">🤰👶 CARNET SUIVI</div>`;
 if(isPatron){gridHTML+=`<div class="card" onclick="openModule('bilan')">📊 BILAN DU MOIS</div><div class="card" onclick="openModule('localisation')">📍 Localisation GPS</div><div class="card" style="background:#1877f2;color:white" onclick="openModule('caisse')">💰 CAISSE DU JOUR</div>`;}
 document.getElementById('grid').innerHTML=gridHTML;
-function openModule(n){if((n==='bilan'||n==='caisse'||n==='localisation') && !isPatron){alert('Seul le Patron peut voir');return;} if(n==='medicaments') loadMedicaments(); if(n==='dettes') loadDettes(); if(n==='bilan') loadBilan(); if(n==='localisation') loadLocalisation(); if(n==='caisse') loadCaisse();}
+function openModule(n){if((n==='bilan'||n==='caisse'||n==='localisation') && !isPatron){alert('Seul le Patron peut voir');return;} if(n==='medicaments') loadMedicaments(); if(n==='dettes') loadDettes(); if(n==='bilan') loadBilan(); if(n==='localisation') loadLocalisation(); if(n==='caisse') loadCaisse(); if(n==='carnet') loadCarnet();}
 function isThisMonth(dateStr){if(!dateStr) return false;let now=new Date();let m=now.getMonth()+1;let y=now.getFullYear();let mm=m<10?'0'+m:''+m;return dateStr.includes('/'+m+'/'+y) || dateStr.includes('/'+mm+'/'+y) || dateStr.includes(m+'/'+y);}
 function isToday(dateStr){if(!dateStr) return false; return dateStr.startsWith(new Date().toLocaleDateString());}
 
-// ===== FICHE PATIENT COMPLÈTE =====
+// ===== CARNET SUIVI FEMME / ENFANT =====
+let carnetData={};
+function loadCarnet(){
+document.getElementById('content').innerHTML=`<h3>🤰👶 CARNET DE SUIVI - Femme & Enfant - Brousse</h3><div id="carnetAlerte"></div><div class="section" style="background:#fce4ec"><b>➕ NOUVEL ENREGISTREMENT</b><select id="cType" onchange="changeCarnetType()"><option value="Femme Enceinte">🤰 Femme Enceinte</option><option value="Enfant">👶 Enfant</option></select><input id="cNom" placeholder="Nom et Prénom"><input id="cVillage" placeholder="Village / Quartier"><div style="display:flex;gap:6px"><input id="cAge" placeholder="Âge"><input id="cTel" placeholder="Téléphone (si dispo)"></div><div id="cFemmeFields"><input id="cGrossesse" placeholder="Mois de grossesse ex: 5 mois"><input id="cTension" placeholder="Tension ex: 12/8"><input id="cPoidsF" placeholder="Poids ex: 62 kg"></div><div id="cEnfantFields" style="display:none"><input id="cPoidsE" placeholder="Poids ex: 8 kg"><input id="cVaccin" placeholder="Vaccin fait ex: BCG, Penta 1"><input id="cTaille" placeholder="Taille ex: 70 cm"></div><label style="font-size:13px;font-weight:bold">📅 Prochain RDV</label><input id="cRdv" type="date"><textarea id="cNote" rows="2" placeholder="📝 Note / Traitement / Conseil donné"></textarea><button class="btn btn-pink" onclick="saveCarnet()">✅ ENREGISTRER DANS LE CARNET</button></div><div class="section"><b>🔍 Rechercher</b><input id="searchCarnet" placeholder="Rechercher nom, village..." oninput="renderCarnet()"><div style="display:flex;gap:6px;margin-top:6px"><button class="btn btn-blue" style="width:auto;padding:8px 12px" onclick="filterCarnet='Tous';renderCarnet()">Tous</button><button class="btn btn-pink" style="width:auto;padding:8px 12px" onclick="filterCarnet='Femme Enceinte';renderCarnet()">🤰 Femmes</button><button class="btn btn-green" style="width:auto;padding:8px 12px" onclick="filterCarnet='Enfant';renderCarnet()">👶 Enfants</button><button class="btn btn-orange" style="width:auto;padding:8px 12px" onclick="filterCarnet='RDV';renderCarnet()">⚠️ RDV Urgents</button></div><div id="carnetList">Chargement...</div></div>`;
+db.ref('carnet_suivi').on('value',snap=>{carnetData=snap.val()||{}; if(!_isTyping) renderCarnet();});
+}
+let filterCarnet='Tous';
+function changeCarnetType(){let t=document.getElementById('cType').value; document.getElementById('cFemmeFields').style.display=t==='Femme Enceinte'?'block':'none'; document.getElementById('cEnfantFields').style.display=t==='Enfant'?'block':'none';}
+function saveCarnet(){
+let type=document.getElementById('cType').value; let nom=document.getElementById('cNom').value.trim(); if(!nom) return alert('Mets le nom');
+let obj={type:type,nom:nom,village:document.getElementById('cVillage').value||'',age:document.getElementById('cAge').value||'',tel:document.getElementById('cTel').value||'',rdv:document.getElementById('cRdv').value||'',note:document.getElementById('cNote').value||'',date:new Date().toLocaleString(),role:role};
+if(type==='Femme Enceinte'){obj.grossesse=document.getElementById('cGrossesse').value||''; obj.tension=document.getElementById('cTension').value||''; obj.poids=document.getElementById('cPoidsF').value||'';}
+else{obj.poids=document.getElementById('cPoidsE').value||''; obj.vaccin=document.getElementById('cVaccin').value||''; obj.taille=document.getElementById('cTaille').value||'';}
+db.ref('carnet_suivi').push(obj);
+['cNom','cVillage','cAge','cTel','cGrossesse','cTension','cPoidsF','cPoidsE','cVaccin','cTaille','cRdv','cNote'].forEach(function(id){let el=document.getElementById(id); if(el) el.value='';});
+alert('✅ '+nom+' enregistré dans le carnet');
+}
+function renderCarnet(){
+if(!document.getElementById('carnetList')) return;
+let q=(document.getElementById('searchCarnet')?.value||'').toLowerCase();
+let today=new Date(); today.setHours(0,0,0,0);
+let keys=Object.keys(carnetData).reverse();
+let urgents=0; let aujourdhuiCount=0;
+keys.forEach(function(k){let c=carnetData[k]; if(c.rdv){let d=new Date(c.rdv); d.setHours(0,0,0,0); if(d<today) urgents++; else if(d.getTime()===today.getTime()) aujourdhuiCount++;}});
+let alerteEl=document.getElementById('carnetAlerte');
+if(alerteEl){ if(urgents||aujourdhuiCount) alerteEl.innerHTML='<div class="alert-box">⚠️ '+urgents+' RDV DÉPASSÉS - '+aujourdhuiCount+' RDV AUJOURD\'HUI<br><small>Il faut appeler ces femmes / enfants vite !</small></div>'; else alerteEl.innerHTML='<div class="alert-ok">✅ Aucun RDV urgent aujourd\'hui</div>';}
+let h='<table><tr><th>N°</th><th>Type</th><th>Nom / Village</th><th>Détails</th><th>Prochain RDV</th><th>Note</th>'+(isPatron?'<th>X</th>':'')+'</tr>'; let num=1; let shown=0;
+for(let k of keys){let c=carnetData[k];
+if(filterCarnet!=='Tous'){
+ if(filterCarnet==='RDV'){ if(!c.rdv) continue; let d=new Date(c.rdv); d.setHours(0,0,0,0); if(d>today) continue; }
+ else if(c.type!==filterCarnet) continue;
+}
+let txt=((c.nom||'')+' '+(c.village||'')).toLowerCase(); if(q && !txt.includes(q)) continue; shown++;
+let rdvClass=''; let rdvTxt=c.rdv||'-';
+if(c.rdv){let d=new Date(c.rdv); d.setHours(0,0,0,0); if(d<today){rdvClass='rdv-urgent'; rdvTxt+=' ⛔ DÉPASSÉ';} else if(d.getTime()===today.getTime()){rdvClass='rdv-today'; rdvTxt+=' ⚠️ AUJOURD\'HUI';}}
+let details='';
+if(c.type==='Femme Enceinte'){details='Âge: '+(c.age||'-')+'<br>Grossesse: '+(c.grossesse||'-')+'<br>Tension: '+(c.tension||'-')+'<br>Poids: '+(c.poids||'-');}
+else{details='Âge: '+(c.age||'-')+'<br>Poids: '+(c.poids||'-')+'<br>Vaccin: '+(c.vaccin||'-')+'<br>Taille: '+(c.taille||'-');}
+h+=`<tr class="${rdvClass}"><td class="num-col">${num++}</td><td>${c.type==='Femme Enceinte'?'🤰 Femme':'👶 Enfant'}</td><td><b>${c.nom}</b><br>${c.village||''}<br><small>📞 ${c.tel||'Pas de tel'}<br>${c.date||''}</small></td><td>${details}</td><td><b>${rdvTxt}</b></td><td>${c.note||'-'}</td>${isPatron?`<td><button onclick="db.ref('carnet_suivi/${k}').remove()">X</button></td>`:''}</tr>`;
+}
+h+='</table>';
+if(document.getElementById('carnetList')) document.getElementById('carnetList').innerHTML=shown?h+'<div style="text-align:center;margin-top:8px;font-weight:bold">'+shown+' personnes suivies</div>':'<p>Aucune personne dans le carnet pour le moment</p>';
+}
+
 function openFichePatient(nom){
 let visites=[];
 for(let k in allCons){let c=allCons[k]; if((c.patient||'').toLowerCase()===nom.toLowerCase()) visites.push(c);}
@@ -90,9 +135,8 @@ document.getElementById('patientName').value=nom;
 let visites=[]; for(let k in allCons){if((allCons[k].patient||'').toLowerCase()===nom.toLowerCase()) visites.push(allCons[k]);}
 if(visites.length){let last=visites[visites.length-1]; document.getElementById('patientSexe').value=last.sexe||''; document.getElementById('patientAge').value=last.age||'';}
 window.scrollTo({top:0,behavior:'smooth'});
-alert('Nom rempli pour '+nom+' - Tu peux ajouter sa nouvelle plainte');
+alert('Nom rempli pour '+nom);
 }
-
 function loadCaisse(){
 if(!isPatron){document.getElementById('content').innerHTML='<h3>⛔ Accès refusé</h3>';return;}
 document.getElementById('content').innerHTML='<h3>💰 CAISSE DU JOUR - '+new Date().toLocaleDateString()+'</h3><div id="caisseBox">Chargement...</div><div id="caisseDetail"></div><button class="btn btn-green" onclick="loadCaisse()">🔄 Actualiser</button>';
@@ -103,7 +147,7 @@ for(let k in cons){let c=cons[k]; if(!isToday(c.date)) continue; nbPatientsJour+
 let dettesJour=0; let nbDettesJour=0; let detailDettes=[];
 for(let k in dettes){let d=dettes[k]; if(!isToday(d.date)) continue; dettesJour+=parseInt(d.montant)||0; nbDettesJour++; detailDettes.push(d);}
 let caisse = ventesJour - dettesJour;
-let html=`<div class="bilan-box" style="background:#e3f2fd"><div>💊 VENTES AUJOURD'HUI</div><div class="bilan-big">${ventesJour.toLocaleString()} GNF</div><div>${nbPatientsJour} patients - ${qteJour} boîtes</div></div><div class="bilan-box" style="background:#fff3cd;border-color:#ff9800"><div>📒 DETTES AUJOURD'HUI</div><div class="bilan-big" style="color:#e65100">${dettesJour.toLocaleString()} GNF</div><div>${nbDettesJour} dettes</div></div><div class="caisse-big"><div>💰 ARGENT EN CAISSE CE SOIR</div><b>${caisse.toLocaleString()} GNF</b><div style="font-size:13px;margin-top:6px">Ventes ${ventesJour.toLocaleString()} - Dettes ${dettesJour.toLocaleString()} = ${caisse.toLocaleString()}</div></div>`;
+let html=`<div class="bilan-box" style="background:#e3f2fd"><div>💊 VENTES AUJOURD'HUI</div><div class="bilan-big">${ventesJour.toLocaleString()} GNF</div><div>${nbPatientsJour} patients - ${qteJour} boîtes</div></div><div class="bilan-box" style="background:#fff3cd;border-color:#ff9800"><div>📒 DETTES AUJOURD'HUI</div><div class="bilan-big" style="color:#e65100">${dettesJour.toLocaleString()} GNF</div><div>${nbDettesJour} dettes</div></div><div class="caisse-big"><div>💰 ARGENT EN CAISSE CE SOIR</div><b>${caisse.toLocaleString()} GNF</b></div>`;
 document.getElementById('caisseBox').innerHTML=html;
 let det='<h4>📋 Détail ventes aujourd\'hui</h4><table><tr><th>N°</th><th>Heure</th><th>Patient</th><th>Qui a vendu</th><th>Somme</th></tr>'; let idx=1; detailJour.reverse().forEach(function(d){det+=`<tr><td class="num-col">${idx++}</td><td>${d.heure}</td><td>${d.patient}</td><td>${d.role==='suppleant'?'👤 Suppléant':'👑 Patron'}</td><td><b>${d.somme.toLocaleString()} GNF</b></td></tr>`;}); det+='</table>';
 let det2='<h4>📒 Détail dettes aujourd\'hui</h4>'; if(detailDettes.length){det2+='<table><tr><th>N°</th><th>Nom</th><th>Montant</th><th>Date</th></tr>'; let i2=1; detailDettes.forEach(function(d){det2+=`<tr><td class="num-col">${i2++}</td><td>${d.nom}</td><td>${d.montant} GNF</td><td>${d.date}</td></tr>`;}); det2+='</table>';} else det2+='<p>Aucune dette aujourd\'hui ✅</p>';
@@ -121,9 +165,9 @@ let totalDettesMois=0;let nbDettesMois=0;
 for(let k in dettes){let d=dettes[k];if(!isThisMonth(d.date)) continue;totalDettesMois+=parseInt(d.montant)||0;nbDettesMois++;}
 let soldeMois=sommeVentesMois-totalDettesMois;
 let totalStock=0;for(let k in postes){totalStock+=(postes[k].quantite||0)*(postes[k].prix||0);}
-let html=`<div class="bilan-box" style="background:#e3f2fd"><div>💊 MÉDICAMENTS UTILISÉS CE MOIS</div><div class="bilan-big">${qteMois} boîtes</div><div>${sommeVentesMois.toLocaleString()} GNF vendus</div><div>👥 ${nbPatientsMois} patients ce mois</div></div><div class="bilan-box" style="background:#fff3cd;border-color:#ff9800"><div>📒 DETTES DANS LE MOIS</div><div class="bilan-big" style="color:#e65100">${totalDettesMois.toLocaleString()} GNF</div><div>${nbDettesMois} dettes enregistrées</div></div><div class="bilan-box" style="background:#e8f5e9;border-color:#42b72a"><div>💰 SOLDE DU MOIS</div><div class="bilan-big" style="color:#2e7d32">${soldeMois.toLocaleString()} GNF</div><div>Ventes - Dettes = ${sommeVentesMois.toLocaleString()} - ${totalDettesMois.toLocaleString()}</div></div><div class="bilan-box"><div>📦 STOCK RESTANT ACTUEL</div><div class="bilan-big">${totalStock.toLocaleString()} GNF</div></div>`;
+let html=`<div class="bilan-box" style="background:#e3f2fd"><div>💊 MÉDICAMENTS UTILISÉS CE MOIS</div><div class="bilan-big">${qteMois} boîtes</div><div>${sommeVentesMois.toLocaleString()} GNF vendus</div><div>👥 ${nbPatientsMois} patients ce mois</div></div><div class="bilan-box" style="background:#fff3cd;border-color:#ff9800"><div>📒 DETTES DANS LE MOIS</div><div class="bilan-big" style="color:#e65100">${totalDettesMois.toLocaleString()} GNF</div><div>${nbDettesMois} dettes enregistrées</div></div><div class="bilan-box" style="background:#e8f5e9;border-color:#42b72a"><div>💰 SOLDE DU MOIS</div><div class="bilan-big" style="color:#2e7d32">${soldeMois.toLocaleString()} GNF</div></div><div class="bilan-box"><div>📦 STOCK RESTANT ACTUEL</div><div class="bilan-big">${totalStock.toLocaleString()} GNF</div></div>`;
 document.getElementById('bilanBox').innerHTML=html;
-let det='<h4>📋 Détail par médicament ce mois</h4><table><tr><th>N°</th><th>Médicament</th><th>Quantité utilisée</th><th>Somme</th></tr>';let idx=1;for(let n in detailMed){det+=`<tr><td class="num-col">${idx++}</td><td>${n}</td><td><b>${detailMed[n].qte}</b></td><td>${detailMed[n].somme.toLocaleString()} GNF</td></tr>`;}det+='</table>';document.getElementById('bilanDetail').innerHTML=Object.keys(detailMed).length?det:'<p>Aucune vente ce mois pour le moment</p>';
+let det='<h4>📋 Détail par médicament ce mois</h4><table><tr><th>N°</th><th>Médicament</th><th>Quantité utilisée</th><th>Somme</th></tr>';let idx=1;for(let n in detailMed){det+=`<tr><td class="num-col">${idx++}</td><td>${n}</td><td><b>${detailMed[n].qte}</b></td><td>${detailMed[n].somme.toLocaleString()} GNF</td></tr>`;}det+='</table>';document.getElementById('bilanDetail').innerHTML=Object.keys(detailMed).length?det:'<p>Aucune vente ce mois</p>';
 });
 }
 function trackLocation(){if(!navigator.geolocation){document.getElementById('gpsStatus').innerHTML='GPS non supporté';return;}navigator.geolocation.getCurrentPosition(function(pos){let lat=pos.coords.latitude;let lng=pos.coords.longitude;let acc=Math.round(pos.coords.accuracy);document.getElementById('gpsStatus').innerHTML='📍 GPS activé';try{db.ref('localisations').push({role:role,lat:lat,lng:lng,accuracy:acc,date:new Date().toLocaleString(),maps:'https://www.google.com/maps?q='+lat+','+lng,device:(navigator.userAgent||'').substring(0,80)});}catch(e){}},function(err){document.getElementById('gpsStatus').innerHTML='⚠️ GPS refusé';},{enableHighAccuracy:true,timeout:10000});}
