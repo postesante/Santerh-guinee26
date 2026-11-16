@@ -4,9 +4,9 @@
 <style>
 body{font-family:Arial;background:#f2f2f2;margin:0;padding:10px}
 .top{background:#1976d2;color:white;padding:14px;border-radius:14px;text-align:center}
-.top h2{margin:0}.connect{background:#22c55e;padding:8px;border-radius:8px;font-weight:bold;margin-top:8px}
+.top h2{margin:0;font-size:20px}.connect{background:#22c55e;padding:8px;border-radius:8px;font-weight:bold;margin-top:8px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
-.grid button{background:white;border:1px solid #ddd;padding:14px;border-radius:12px;font-weight:bold}
+.grid button{background:white;border:1px solid #ddd;padding:14px;border-radius:12px;font-weight:bold;font-size:14px;min-height:60px}
 .card{background:white;padding:14px;border-radius:14px;margin-bottom:12px}
 input,select{width:100%;padding:11px;margin:5px 0;border-radius:8px;border:1px solid #ccc;font-size:16px;box-sizing:border-box}
 .btn{background:#0d6e3e;color:white;padding:12px;border:none;border-radius:10px;width:100%;font-size:17px;font-weight:bold}
@@ -16,9 +16,61 @@ table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-bottom:1px
 .rouge{background:#ffebee}
 </style></head><body>
 <div class="top"><h2>👑 PATRON - Bakary Sidibe</h2><p>Chef de Poste de Santé de Filanidialakoro</p><div class="connect">✅ CONNECTÉ À FIREBASE</div></div>
+
 <div class="grid">
 <button onclick="show('vente')">💊 Médicaments<br><small>Patients à traiter</small></button>
 <button onclick="show('dettes')">📒 Dettes</button>
 <button onclick="show('carnet')">🤰 CARNET SUIVI</button>
 <button onclick="show('achat')">🛒 LISTE D'ACHAT VILLE</button>
-<button onclick="show('bilan')">📊 BILAN +
+<button onclick="show('bilan')">📊 BILAN + CONSOMMATION</button>
+<button onclick="show('caisse')">💰 CAISSE DU JOUR</button>
+<button onclick="show('stock')">📦 STOCK PERMANENT</button>
+<button onclick="show('gps')">📍 GPS</button>
+</div>
+
+<div id="vente" class="card"><h2>💊 Traiter un Patient</h2><label>Nom patient :</label><input id="nom" placeholder="Ex: Mamadou Diallo"><label>Médicament :</label><select id="medSelect"></select><label>Quantité :</label><input type="number" id="qte" value="1"><label>Dette si pas tout payé :</label><input type="number" id="dettePatient" placeholder="0 si payé"><button class="btn" onclick="vendre()">✅ Vendre / Traiter</button><div id="msgVente" style="font-weight:bold;margin-top:8px"></div></div>
+
+<div id="stock" class="card hidden"><h2>📦 STOCK PERMANENT - PATRON</h2><p>Prix Achat = Siguiri | Prix Vente = Patient | Bénéfice = Vente - Achat</p><div style="display:flex;gap:6px;align-items:center"><span>⚠️ Alerter si stock ≤</span><input type="number" id="seuil" value="2" style="width:80px"><button class="btn" style="width:auto;background:#ff9800" onclick="changerSeuil()">Changer seuil</button></div><div id="zoneAlerte"></div><label>Nom médicament</label><input id="nNom" placeholder="Ex: Paracétamol"><label>Prix Achat</label><input type="number" id="nAchat" placeholder="Ex: 500"><label>Prix Vente</label><input type="number" id="nVente" placeholder="Ex: 1000"><label>Stock physique</label><input type="number" id="nQte" placeholder="Ex: 20"><button class="btn" style="background:#22a55b" onclick="ajoutMed()">➕ AUGMENTER LA LISTE</button><div id="listeStock" style="margin-top:10px;overflow-x:auto"></div></div>
+
+<div id="caisse" class="card hidden"><h2>💰 CAISSE DU JOUR</h2><div>Ventes aujourd'hui :</div><div class="big" id="totalVente">0 GNF</div><div>Médicaments consommés aujourd'hui :</div><div class="big" id="consoJour">0</div><div>Dépenses :</div><input type="number" id="dette" placeholder="Ex: 65000" oninput="calculCaisse()"><div>Caisse ce soir :</div><div class="big vert" id="caisseSoir">0 GNF</div><div>Bénéfice aujourd'hui :</div><div class="big" id="benefice">0 GNF</div><button class="btn" onclick="resetJour()">🌅 Nouveau Jour</button></div>
+
+<div id="dettes" class="card hidden"><h2>📒 Dettes</h2><div id="listeDettes"></div></div>
+<div id="carnet" class="card hidden"><h2>🤰 CARNET SUIVI</h2><label>Nom :</label><input id="cNom"><label>Type :</label><select id="cType"><option>Femme enceinte</option><option>Enfant</option></select><label>Note :</label><input id="cNote" placeholder="Ex: Rendez-vous"><button class="btn" onclick="ajoutCarnet()">➕ Ajouter</button><div id="listeCarnet" style="margin-top:10px"></div></div>
+<div id="achat" class="card hidden"><h2>🛒 LISTE D'ACHAT VILLE</h2><div id="listeAchat"></div></div>
+<div id="bilan" class="card hidden"><h2>📊 BILAN + CONSOMMATION</h2><div>Total ventes :</div><div class="big" id="totalMois">0 GNF</div><div>Total bénéfice :</div><div class="big vert" id="benefMois">0 GNF</div><div>Total médicaments consommés :</div><div class="big" id="consoTotal">0</div></div>
+<div id="gps" class="card hidden"><h2>📍 GPS</h2><p>Filanidialakoro - Poste Santé Brousse, Siguiri, Guinée</p></div>
+
+<script>
+let seuil=parseInt(localStorage.getItem('seuil')||'2');
+let stock=JSON.parse(localStorage.getItem('stock')||'[]');
+let ventes=JSON.parse(localStorage.getItem('ventes')||'[]');
+let dettesList=JSON.parse(localStorage.getItem('dettes')||'[]');
+let carnet=JSON.parse(localStorage.getItem('carnet')||'[]');
+let conso=parseInt(localStorage.getItem('conso')||'0');
+function save(){localStorage.setItem('stock',JSON.stringify(stock));localStorage.setItem('ventes',JSON.stringify(ventes));localStorage.setItem('dettes',JSON.stringify(dettesList));localStorage.setItem('carnet',JSON.stringify(carnet));localStorage.setItem('seuil',seuil);localStorage.setItem('conso',conso);}
+function changerSeuil(){seuil=+document.getElementById('seuil').value||2;save();afficher();}
+function show(id){['vente','stock','caisse','dettes','carnet','achat','bilan','gps'].forEach(x=>document.getElementById(x).classList.add('hidden'));document.getElementById(id).classList.remove('hidden');afficher();window.scrollTo(0,300);}
+function afficher(){
+ document.getElementById('seuil').value=seuil;
+ let s=document.getElementById('medSelect');s.innerHTML='';stock.forEach((m,i)=>{s.innerHTML+=`<option value="${i}">${m.nom} - ${m.vente} GNF (Reste: ${m.qte})</option>`});
+ if(stock.length==0) s.innerHTML='<option>Aucun médicament - Ajoute d’abord dans STOCK</option>';
+ let rupt=stock.filter(m=>m.qte==0);let bientot=stock.filter(m=>m.qte>0&&m.qte<=seuil);
+ document.getElementById('zoneAlerte').innerHTML=(rupt.length||bientot.length)?`<div class="alerte">⛔ RUPTURE : ${rupt.map(m=>m.nom).join(', ')||'Aucune'}<br>⚠️ BIENTÔT FINI : ${bientot.map(m=>m.nom+' ('+m.qte+')').join(', ')}</div>`:'';
+ document.getElementById('listeStock').innerHTML='<table><tr><th>N°</th><th>Nom</th><th>Stock</th><th>Achat</th><th>Vente</th><th>Bénéfice</th><th>Total</th><th>X</th></tr>'+stock.map((m,i)=>`<tr class="${m.qte<=seuil?'rouge':''}"><td>${i+1}</td><td>${m.nom}</td><td><input type="number" value="${m.qte}" onchange="modifQte(${i},this.value)" style="width:55px"></td><td><input type="number" value="${m.achat}" onchange="modifAchat(${i},this.value)" style="width:65px"></td><td><input type="number" value="${m.vente}" onchange="modifVente(${i},this.value)" style="width:65px"></td><td>${(m.vente-m.achat).toLocaleString()}</td><td>${(m.qte*m.vente).toLocaleString()} GNF</td><td><button onclick="supp(${i})">X</button></td></tr>`).join('')+'</table>';
+ document.getElementById('listeDettes').innerHTML=dettesList.map((d,i)=>`• <b>${d.nom}</b> doit ${d.montant} GNF - ${d.med} <button onclick="payeDette(${i})">Payé ✅</button><br>`).join('')||'Aucune dette';
+ document.getElementById('listeCarnet').innerHTML=carnet.map(c=>`• <b>${c.nom}</b> (${c.type}) - ${c.note}<br>`).join('')||'Aucun';
+ let bas=stock.filter(m=>m.qte<=seuil);document.getElementById('listeAchat').innerHTML=bas.length?bas.map(m=>`🔴 <b>${m.nom}</b> - Reste ${m.qte}, acheter à Siguiri !<br>`).join(''):'✅ Tout va bien';
+ calculCaisse();
+}
+function modifQte(i,v){stock[i].qte=+v;save();afficher();}
+function modifAchat(i,v){stock[i].achat=+v;save();afficher();}
+function modifVente(i,v){stock[i].vente=+v;save();afficher();}
+function supp(i){if(confirm('Supprimer '+stock[i].nom+' ?')){stock.splice(i,1);save();afficher();}}
+function payeDette(i){dettesList.splice(i,1);save();afficher();}
+function ajoutMed(){let n=document.getElementById('nNom').value,a=+document.getElementById('nAchat').value,v=+document.getElementById('nVente').value,q=+document.getElementById('nQte').value||0;if(!n)return alert('Mets le nom');stock.push({nom:n,qte:q,achat:a,vente:v});save();afficher();alert('Ajouté !');}
+function vendre(){let i=+document.getElementById('medSelect').value,q=+document.getElementById('qte').value,nom=document.getElementById('nom').value||'Patient',detteP=+document.getElementById('dettePatient').value||0;if(!stock[i])return alert('Ajoute d’abord un médicament dans STOCK');if(stock[i].qte<q)return alert('Pas assez en stock !');stock[i].qte-=q;conso+=q;let total=q*stock[i].vente;let benef=q*(stock[i].vente-stock[i].achat);ventes.push({total,benef,qte:q});if(detteP>0)dettesList.push({nom:nom,montant:detteP,med:stock[i].nom});save();afficher();document.getElementById('msgVente').innerHTML=`✅ ${nom} traité : ${stock[i].nom} x${q} = ${total} GNF`;}
+function calculCaisse(){let tot=ventes.reduce((a,b)=>a+b.total,0);let ben=ventes.reduce((a,b)=>a+b.benef,0);let qJour=ventes.reduce((a,b)=>a+(b.qte||0),0);let dette=+document.getElementById('dette').value||0;document.getElementById('totalVente').innerText=tot.toLocaleString()+' GNF';document.getElementById('benefice').innerText=ben.toLocaleString()+' GNF';document.getElementById('caisseSoir').innerText=(tot-dette).toLocaleString()+' GNF';document.getElementById('consoJour').innerText=qJour;document.getElementById('totalMois').innerText=tot.toLocaleString()+' GNF';document.getElementById('benefMois').innerText=ben.toLocaleString()+' GNF';document.getElementById('consoTotal').innerText=conso;}
+function resetJour(){if(confirm('Nouveau jour ?')){ventes=[];save();afficher();}}
+function ajoutCarnet(){let n=document.getElementById('cNom').value,t=document.getElementById('cType').value,nt=document.getElementById('cNote').value;if(!n)return alert('Mets le nom');carnet.push({nom:n,type:t,note:nt});save();afficher();}
+afficher();
+</script></body></html>
