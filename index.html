@@ -13,8 +13,7 @@ input,select{width:100%;padding:11px;margin:5px 0;border-radius:8px;border:1px s
 table{width:100%;border-collapse:collapse;font-size:14px}
 td,th{border-bottom:1px solid #ddd;padding:7px;text-align:left}
 .big{font-size:24px;font-weight:bold;text-align:center}
-.vert{color:green}.orange{color:#e67e22}.rouge{color:red}
-.hidden{display:none}
+.vert{color:green}.hidden{display:none}
 </style></head>
 <body>
 <h1>🏥 Poste de Filanidialakoro</h1>
@@ -26,7 +25,6 @@ td,th{border-bottom:1px solid #ddd;padding:7px;text-align:left}
 <button onclick="show('achat')">🛒 Achat</button>
 </div>
 
-<!-- VENTE + THERMOMETRE -->
 <div id="vente" class="card">
 <h2>💊 Traiter un Patient</h2>
 <label>Nom du patient :</label><input id="nom" placeholder="Ex: Mamadou Diallo">
@@ -39,7 +37,6 @@ td,th{border-bottom:1px solid #ddd;padding:7px;text-align:left}
 <div id="msgVente" style="margin-top:8px;font-weight:bold"></div>
 </div>
 
-<!-- STOCK -->
 <div id="stock" class="card hidden">
 <h2>📦 Stock</h2>
 <label>Nom médicament :</label><input id="nNom" placeholder="Ex: Paracétamol">
@@ -48,9 +45,9 @@ td,th{border-bottom:1px solid #ddd;padding:7px;text-align:left}
 <label>Quantité :</label><input type="number" id="nQte" placeholder="Ex: 20">
 <button class="btn btn2" onclick="ajoutMed()">➕ Ajouter au Stock</button>
 <div id="listeStock" style="margin-top:10px"></div>
+<button class="btn" style="background:#c62828;margin-top:10px" onclick="reparer()">🔧 Si tu vois encore undefined, appuie ici</button>
 </div>
 
-<!-- CAISSE -->
 <div id="caisse" class="card hidden">
 <h2>💰 Caisse du Jour</h2>
 <div>Ventes aujourd'hui :</div><div class="big" id="totalVente">0 GNF</div>
@@ -60,7 +57,6 @@ td,th{border-bottom:1px solid #ddd;padding:7px;text-align:left}
 <button class="btn" onclick="resetJour()">🌅 Nouveau Jour</button>
 </div>
 
-<!-- CARNET -->
 <div id="carnet" class="card hidden">
 <h2>👩‍👧 Carnet - Femmes & Enfants</h2>
 <label>Nom :</label><input id="cNom" placeholder="Nom">
@@ -70,14 +66,24 @@ td,th{border-bottom:1px solid #ddd;padding:7px;text-align:left}
 <div id="listeCarnet" style="margin-top:10px"></div>
 </div>
 
-<!-- ACHAT -->
 <div id="achat" class="card hidden">
 <h2>🛒 Liste d'Achat - Ce qu'il faut acheter</h2>
 <div id="listeAchat"></div>
 </div>
 
 <script>
-let stock = JSON.parse(localStorage.getItem('stock')||'[]');
+// CETTE PARTIE REPARE TON ANCIEN CODE
+function norm(m){
+  if(!m) return {nom:'Medicament',achat:0,vente:0,qte:0};
+  return {
+    nom: m.nom || m.name || m.medicament || m.nomMedicament || m.libelle || 'Medicament',
+    achat: m.achat ?? m.prixAchat ?? m.achatPrix ?? m.cout ?? 0,
+    vente: m.vente ?? m.prixVente ?? m.prix ?? m.price ?? m.pv ?? 0,
+    qte: m.qte ?? m.quantite ?? m.quantité ?? m.stock ?? m.quantity ?? m.nbr ?? 0
+  };
+}
+let stockRaw = JSON.parse(localStorage.getItem('stock')||'[]');
+let stock = stockRaw.map(norm);
 let ventes = JSON.parse(localStorage.getItem('ventes')||'[]');
 let carnet = JSON.parse(localStorage.getItem('carnet')||'[]');
 if(stock.length==0){
@@ -91,6 +97,7 @@ if(stock.length==0){
  ]; save();
 }
 function save(){localStorage.setItem('stock',JSON.stringify(stock));localStorage.setItem('ventes',JSON.stringify(ventes));localStorage.setItem('carnet',JSON.stringify(carnet));}
+function reparer(){localStorage.removeItem('stock');location.reload();}
 function show(id){['vente','stock','caisse','carnet','achat'].forEach(x=>document.getElementById(x).classList.add('hidden'));document.getElementById(id).classList.remove('hidden');afficher();}
 function checkTemp(v){let z=document.getElementById('resTemp');v=parseFloat(v);if(!v){z.innerHTML='';return;}
 if(v<37.5){z.innerHTML='✅ Normal - Pas de fièvre';z.style.color='green';}
@@ -99,7 +106,7 @@ else{z.innerHTML='🔴 Forte fièvre ! Traiter vite';z.style.color='red';}}
 function afficher(){
  let s=document.getElementById('medSelect');s.innerHTML='';stock.forEach((m,i)=>{s.innerHTML+=`<option value="${i}">${m.nom} - ${m.vente} GNF (Reste: ${m.qte})</option>`});
  let ls=document.getElementById('listeStock');ls.innerHTML='<table><tr><th>Médicament</th><th>Achat</th><th>Vente</th><th>Qté</th></tr>'+stock.map(m=>`<tr><td>${m.nom}</td><td>${m.achat}</td><td>${m.vente}</td><td>${m.qte}</td></tr>`).join('')+'</table>';
- let lc=document.getElementById('listeCarnet');lc.innerHTML=carnet.map(c=>`• <b>${c.nom}</b> (${c.type}) - ${c.note}<br>`).join('')||'Aucun pour le moment';
+ let lc=document.getElementById('listeCarnet');lc.innerHTML=carnet.map(c=>`• <b>${c.nom||c.name||''}</b> (${c.type||''}) - ${c.note||c.remarque||''}<br>`).join('')||'Aucun pour le moment';
  let la=document.getElementById('listeAchat');let bas=stock.filter(m=>m.qte<=5);la.innerHTML=bas.length?bas.map(m=>`🔴 <b>${m.nom}</b> - Il reste ${m.qte}, il faut acheter !<br>`).join(''):'✅ Tout va bien, rien à acheter';
  calculCaisse();
 }
