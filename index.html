@@ -34,6 +34,7 @@ table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px} th,td{b
 .fiche-box{background:#e3f2fd;padding:12px;border-radius:10px;border:2px solid #1877f2;margin-top:10px}
 .rdv-urgent{background:#ffcdd2 !important}
 .rdv-today{background:#fff3cd !important}
+.grossesse-badge{background:#e91e63;color:white;padding:4px 8px;border-radius:12px;font-weight:bold;font-size:12px;display:inline-block;margin-top:4px}
 </style>
 </head>
 <body>
@@ -67,10 +68,10 @@ function openModule(n){if((n==='bilan'||n==='caisse'||n==='localisation') && !is
 function isThisMonth(dateStr){if(!dateStr) return false;let now=new Date();let m=now.getMonth()+1;let y=now.getFullYear();let mm=m<10?'0'+m:''+m;return dateStr.includes('/'+m+'/'+y) || dateStr.includes('/'+mm+'/'+y) || dateStr.includes(m+'/'+y);}
 function isToday(dateStr){if(!dateStr) return false; return dateStr.startsWith(new Date().toLocaleDateString());}
 
-// ===== CARNET SUIVI FEMME / ENFANT =====
+// ===== CARNET SUIVI FEMME / ENFANT - AVEC AGE GROSSESSE =====
 let carnetData={};
 function loadCarnet(){
-document.getElementById('content').innerHTML=`<h3>🤰👶 CARNET DE SUIVI - Femme & Enfant - Brousse</h3><div id="carnetAlerte"></div><div class="section" style="background:#fce4ec"><b>➕ NOUVEL ENREGISTREMENT</b><select id="cType" onchange="changeCarnetType()"><option value="Femme Enceinte">🤰 Femme Enceinte</option><option value="Enfant">👶 Enfant</option></select><input id="cNom" placeholder="Nom et Prénom"><input id="cVillage" placeholder="Village / Quartier"><div style="display:flex;gap:6px"><input id="cAge" placeholder="Âge"><input id="cTel" placeholder="Téléphone (si dispo)"></div><div id="cFemmeFields"><input id="cGrossesse" placeholder="Mois de grossesse ex: 5 mois"><input id="cTension" placeholder="Tension ex: 12/8"><input id="cPoidsF" placeholder="Poids ex: 62 kg"></div><div id="cEnfantFields" style="display:none"><input id="cPoidsE" placeholder="Poids ex: 8 kg"><input id="cVaccin" placeholder="Vaccin fait ex: BCG, Penta 1"><input id="cTaille" placeholder="Taille ex: 70 cm"></div><label style="font-size:13px;font-weight:bold">📅 Prochain RDV</label><input id="cRdv" type="date"><textarea id="cNote" rows="2" placeholder="📝 Note / Traitement / Conseil donné"></textarea><button class="btn btn-pink" onclick="saveCarnet()">✅ ENREGISTRER DANS LE CARNET</button></div><div class="section"><b>🔍 Rechercher</b><input id="searchCarnet" placeholder="Rechercher nom, village..." oninput="renderCarnet()"><div style="display:flex;gap:6px;margin-top:6px"><button class="btn btn-blue" style="width:auto;padding:8px 12px" onclick="filterCarnet='Tous';renderCarnet()">Tous</button><button class="btn btn-pink" style="width:auto;padding:8px 12px" onclick="filterCarnet='Femme Enceinte';renderCarnet()">🤰 Femmes</button><button class="btn btn-green" style="width:auto;padding:8px 12px" onclick="filterCarnet='Enfant';renderCarnet()">👶 Enfants</button><button class="btn btn-orange" style="width:auto;padding:8px 12px" onclick="filterCarnet='RDV';renderCarnet()">⚠️ RDV Urgents</button></div><div id="carnetList">Chargement...</div></div>`;
+document.getElementById('content').innerHTML=`<h3>🤰👶 CARNET DE SUIVI - Femme & Enfant</h3><div id="carnetAlerte"></div><div class="section" style="background:#fce4ec"><b>➕ NOUVEL ENREGISTREMENT</b><select id="cType" onchange="changeCarnetType()"><option value="Femme Enceinte">🤰 Femme Enceinte</option><option value="Enfant">👶 Enfant</option></select><input id="cNom" placeholder="Nom et Prénom"><input id="cVillage" placeholder="Village / Quartier"><div style="display:flex;gap:6px"><input id="cAge" placeholder="Âge de la femme ex: 28 ans"><input id="cTel" placeholder="Téléphone (si dispo)"></div><div id="cFemmeFields"><div style="background:white;padding:10px;border-radius:8px;border:2px solid #e91e63;margin:6px 0"><b style="color:#e91e63">🤰 ÂGE DE LA GROSSESSE</b><div style="display:flex;gap:6px;margin-top:6px"><input id="cGrossesseMois" type="number" placeholder="Mois ex: 5"><input id="cGrossesseSA" type="number" placeholder="Semaines SA ex: 22"></div><div style="font-size:12px;color:#666">Ex: 5 mois = 22 SA. Mets ce que tu connais, mois ou SA ou les 2.</div></div><input id="cDdr" type="date"><label style="font-size:12px">📅 DDR (Date Dernières Règles) - si tu connais</label><input id="cTension" placeholder="Tension ex: 12/8"><input id="cPoidsF" placeholder="Poids ex: 62 kg"></div><div id="cEnfantFields" style="display:none"><input id="cPoidsE" placeholder="Poids ex: 8 kg"><input id="cVaccin" placeholder="Vaccin fait ex: BCG, Penta 1"><input id="cTaille" placeholder="Taille ex: 70 cm"></div><label style="font-size:13px;font-weight:bold">📅 Prochain RDV</label><input id="cRdv" type="date"><textarea id="cNote" rows="2" placeholder="📝 Note / Traitement / Conseil donné"></textarea><button class="btn btn-pink" onclick="saveCarnet()">✅ ENREGISTRER DANS LE CARNET</button></div><div class="section"><b>🔍 Rechercher</b><input id="searchCarnet" placeholder="Rechercher nom, village..." oninput="renderCarnet()"><div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap"><button class="btn btn-blue" style="width:auto;padding:8px 12px" onclick="filterCarnet='Tous';renderCarnet()">Tous</button><button class="btn btn-pink" style="width:auto;padding:8px 12px" onclick="filterCarnet='Femme Enceinte';renderCarnet()">🤰 Femmes</button><button class="btn btn-green" style="width:auto;padding:8px 12px" onclick="filterCarnet='Enfant';renderCarnet()">👶 Enfants</button><button class="btn btn-orange" style="width:auto;padding:8px 12px" onclick="filterCarnet='RDV';renderCarnet()">⚠️ RDV Urgents</button></div><div id="carnetList">Chargement...</div></div>`;
 db.ref('carnet_suivi').on('value',snap=>{carnetData=snap.val()||{}; if(!_isTyping) renderCarnet();});
 }
 let filterCarnet='Tous';
@@ -78,11 +79,18 @@ function changeCarnetType(){let t=document.getElementById('cType').value; docume
 function saveCarnet(){
 let type=document.getElementById('cType').value; let nom=document.getElementById('cNom').value.trim(); if(!nom) return alert('Mets le nom');
 let obj={type:type,nom:nom,village:document.getElementById('cVillage').value||'',age:document.getElementById('cAge').value||'',tel:document.getElementById('cTel').value||'',rdv:document.getElementById('cRdv').value||'',note:document.getElementById('cNote').value||'',date:new Date().toLocaleString(),role:role};
-if(type==='Femme Enceinte'){obj.grossesse=document.getElementById('cGrossesse').value||''; obj.tension=document.getElementById('cTension').value||''; obj.poids=document.getElementById('cPoidsF').value||'';}
-else{obj.poids=document.getElementById('cPoidsE').value||''; obj.vaccin=document.getElementById('cVaccin').value||''; obj.taille=document.getElementById('cTaille').value||'';}
+if(type==='Femme Enceinte'){
+  let mois=document.getElementById('cGrossesseMois').value||'';
+  let sa=document.getElementById('cGrossesseSA').value||'';
+  // Si seulement mois, on calcule SA approximatif : mois * 4.3
+  let saCalc = sa ? sa : (mois ? Math.round(parseFloat(mois)*4.3) : '');
+  let moisCalc = mois ? mois : (sa ? (parseFloat(sa)/4.3).toFixed(1) : '');
+  obj.grossesseMois=moisCalc; obj.grossesseSA=saCalc; obj.grossesse = (moisCalc?moisCalc+' mois':'') + (saCalc?' / '+saCalc+' SA':'');
+  obj.ddr=document.getElementById('cDdr').value||''; obj.tension=document.getElementById('cTension').value||''; obj.poids=document.getElementById('cPoidsF').value||'';
+} else {obj.poids=document.getElementById('cPoidsE').value||''; obj.vaccin=document.getElementById('cVaccin').value||''; obj.taille=document.getElementById('cTaille').value||'';}
 db.ref('carnet_suivi').push(obj);
-['cNom','cVillage','cAge','cTel','cGrossesse','cTension','cPoidsF','cPoidsE','cVaccin','cTaille','cRdv','cNote'].forEach(function(id){let el=document.getElementById(id); if(el) el.value='';});
-alert('✅ '+nom+' enregistré dans le carnet');
+['cNom','cVillage','cAge','cTel','cGrossesseMois','cGrossesseSA','cDdr','cTension','cPoidsF','cPoidsE','cVaccin','cTaille','cRdv','cNote'].forEach(function(id){let el=document.getElementById(id); if(el) el.value='';});
+alert('✅ '+nom+' enregistré');
 }
 function renderCarnet(){
 if(!document.getElementById('carnetList')) return;
@@ -92,8 +100,8 @@ let keys=Object.keys(carnetData).reverse();
 let urgents=0; let aujourdhuiCount=0;
 keys.forEach(function(k){let c=carnetData[k]; if(c.rdv){let d=new Date(c.rdv); d.setHours(0,0,0,0); if(d<today) urgents++; else if(d.getTime()===today.getTime()) aujourdhuiCount++;}});
 let alerteEl=document.getElementById('carnetAlerte');
-if(alerteEl){ if(urgents||aujourdhuiCount) alerteEl.innerHTML='<div class="alert-box">⚠️ '+urgents+' RDV DÉPASSÉS - '+aujourdhuiCount+' RDV AUJOURD\'HUI<br><small>Il faut appeler ces femmes / enfants vite !</small></div>'; else alerteEl.innerHTML='<div class="alert-ok">✅ Aucun RDV urgent aujourd\'hui</div>';}
-let h='<table><tr><th>N°</th><th>Type</th><th>Nom / Village</th><th>Détails</th><th>Prochain RDV</th><th>Note</th>'+(isPatron?'<th>X</th>':'')+'</tr>'; let num=1; let shown=0;
+if(alerteEl){ if(urgents||aujourdhuiCount) alerteEl.innerHTML='<div class="alert-box">⚠️ '+urgents+' RDV DÉPASSÉS - '+aujourdhuiCount+' RDV AUJOURD\'HUI</div>'; else alerteEl.innerHTML='<div class="alert-ok">✅ Aucun RDV urgent aujourd\'hui</div>';}
+let h='<table><tr><th>N°</th><th>Type</th><th>Nom / Village</th><th>🤰 Âge Grossesse / Détails</th><th>Prochain RDV</th><th>Note</th>'+(isPatron?'<th>X</th>':'')+'</tr>'; let num=1; let shown=0;
 for(let k of keys){let c=carnetData[k];
 if(filterCarnet!=='Tous'){
  if(filterCarnet==='RDV'){ if(!c.rdv) continue; let d=new Date(c.rdv); d.setHours(0,0,0,0); if(d>today) continue; }
@@ -103,12 +111,14 @@ let txt=((c.nom||'')+' '+(c.village||'')).toLowerCase(); if(q && !txt.includes(q
 let rdvClass=''; let rdvTxt=c.rdv||'-';
 if(c.rdv){let d=new Date(c.rdv); d.setHours(0,0,0,0); if(d<today){rdvClass='rdv-urgent'; rdvTxt+=' ⛔ DÉPASSÉ';} else if(d.getTime()===today.getTime()){rdvClass='rdv-today'; rdvTxt+=' ⚠️ AUJOURD\'HUI';}}
 let details='';
-if(c.type==='Femme Enceinte'){details='Âge: '+(c.age||'-')+'<br>Grossesse: '+(c.grossesse||'-')+'<br>Tension: '+(c.tension||'-')+'<br>Poids: '+(c.poids||'-');}
-else{details='Âge: '+(c.age||'-')+'<br>Poids: '+(c.poids||'-')+'<br>Vaccin: '+(c.vaccin||'-')+'<br>Taille: '+(c.taille||'-');}
+if(c.type==='Femme Enceinte'){
+  let ageG = c.grossesse || ((c.grossesseMois||c.grossesseSA) ? (c.grossesseMois?c.grossesseMois+' mois':'') + (c.grossesseSA?' / '+c.grossesseSA+' SA':'') : '-');
+  details='<b>Âge femme:</b> '+(c.age||'-')+'<br><span class="grossesse-badge">🤰 '+ageG+'</span><br><b>DDR:</b> '+(c.ddr||'-')+'<br><b>Tension:</b> '+(c.tension||'-')+'<br><b>Poids:</b> '+(c.poids||'-');
+} else {details='<b>Âge:</b> '+(c.age||'-')+'<br><b>Poids:</b> '+(c.poids||'-')+'<br><b>Vaccin:</b> '+(c.vaccin||'-')+'<br><b>Taille:</b> '+(c.taille||'-');}
 h+=`<tr class="${rdvClass}"><td class="num-col">${num++}</td><td>${c.type==='Femme Enceinte'?'🤰 Femme':'👶 Enfant'}</td><td><b>${c.nom}</b><br>${c.village||''}<br><small>📞 ${c.tel||'Pas de tel'}<br>${c.date||''}</small></td><td>${details}</td><td><b>${rdvTxt}</b></td><td>${c.note||'-'}</td>${isPatron?`<td><button onclick="db.ref('carnet_suivi/${k}').remove()">X</button></td>`:''}</tr>`;
 }
 h+='</table>';
-if(document.getElementById('carnetList')) document.getElementById('carnetList').innerHTML=shown?h+'<div style="text-align:center;margin-top:8px;font-weight:bold">'+shown+' personnes suivies</div>':'<p>Aucune personne dans le carnet pour le moment</p>';
+if(document.getElementById('carnetList')) document.getElementById('carnetList').innerHTML=shown?h+'<div style="text-align:center;margin-top:8px;font-weight:bold">'+shown+' personnes suivies</div>':'<p>Aucune personne dans le carnet</p>';
 }
 
 function openFichePatient(nom){
