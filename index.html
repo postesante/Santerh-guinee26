@@ -39,6 +39,8 @@ table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px} th,td{b
 .ordonnance h2{text-align:center;margin:0;border-bottom:2px solid #000;padding-bottom:8px}
 .benef-box{background:#e8f5e9;padding:8px;border-radius:8px;text-align:center;font-weight:bold;color:#2e7d32;border:1px solid #42b72a;margin-top:8px}
 .prix-input{border:2px solid #ff9800 !important;background:#fff3cd !important;font-weight:bold}
+.stock-top{background:#e3f2fd;padding:12px;border-radius:10px;text-align:center;font-weight:bold;border:2px solid #1877f2;margin-top:8px}
+.alert-line{background:white;padding:6px;border-radius:6px;margin:4px 0;text-align:left;font-size:13px;border:1px solid #ffcdd2}
 @media print{body *{visibility:hidden} #printZone, #printZone *{visibility:visible} #printZone{position:absolute;left:0;top:0;width:100%}}
 </style>
 </head>
@@ -85,8 +87,6 @@ function openModule(n){
 }
 function isThisMonth(dateStr){if(!dateStr) return false;let now=new Date();let m=now.getMonth()+1;let y=now.getFullYear();let mm=m<10?'0'+m:''+m;return dateStr.includes('/'+m+'/'+y) || dateStr.includes('/'+mm+'/'+y) || dateStr.includes(m+'/'+y);}
 function isToday(dateStr){if(!dateStr) return false; return dateStr.startsWith(new Date().toLocaleDateString());}
-
-// ===== LISTE D'ACHAT - PRIX UNITAIRE MODIFIABLE =====
 let achatsData={};
 function loadAchats(){
 if(!isPatron){document.getElementById('content').innerHTML='<h3>⛔ Accès refusé</h3><p>Seul le Patron.</p>';return;}
@@ -128,54 +128,16 @@ h+='</table>';
 document.getElementById('achatsList').innerHTML=h;
 if(document.getElementById('achatsTotal')) document.getElementById('achatsTotal').innerHTML=keys.length?'<div class="total-box" style="background:#fff3cd">💰 TOTAL À PAYER À SIGUIRI (PRIX ACHAT) : '+totalListe.toLocaleString()+' GNF<br><small>Si tu modifies un prix, le total change tout seul</small></div>':'';
 }
-function calcAutoTotal(key){
-let qEl=document.getElementById('autoQte_'+key); let pEl=document.getElementById('autoPrix_'+key); let tEl=document.getElementById('autoTotal_'+key);
-if(!qEl||!pEl||!tEl) return; let q=parseInt(qEl.value)||0; let p=parseInt(pEl.value)||0; tEl.innerHTML=(q*p).toLocaleString()+' GNF';
-}
-function updatePrixAchatListe(k,val){
-let prix=parseInt(val)||0;
-db.ref('achats/'+k+'/prixAchat').set(prix);
-db.ref('achats/'+k+'/prix').set(prix);
-}
-function ajouterAutoAchat(key){
-let qteEl=document.getElementById('autoQte_'+key); let prixEl=document.getElementById('autoPrix_'+key);
-let qte=qteEl?parseInt(qteEl.value)||10:10; let prix=prixEl?parseInt(prixEl.value)||0:0;
-let p=postesData[key]; if(!p) return;
-if(!prix){ if(!confirm('Prix Achat = 0 GNF. Tu veux vraiment ajouter avec 0 ? Tu peux taper le prix d\'abord.')) return; }
-db.ref('achats/'+key).set({nom:p.nom||key,posteKey:key,qte:qte,prix:prix,prixAchat:prix,date:new Date().toLocaleString(),auto:true});
-alert('✅ '+p.nom+' mis dans ta liste à '+prix.toLocaleString()+' GNF / unité');
-}
-function marquerAchete(k){
-if(!isPatron) return;let a=achatsData[k]; if(!a) return;
-let prixA=a.prixAchat||a.prix||0;
-if(!confirm('Tu as acheté '+a.qte+' x '+a.nom+' à '+prixA.toLocaleString()+' GNF / unité ?\nTotal : '+((a.qte||0)*prixA).toLocaleString()+' GNF\n\nÇa va :\n- Ajouter au stock\n- Mettre à jour le Prix Achat dans Médicaments')) return;
-if(a.posteKey && postesData[a.posteKey]){
-  let cur=postesData[a.posteKey].quantite||0;
-  db.ref('postes/'+a.posteKey+'/quantite').set(cur + (parseInt(a.qte)||0));
-  // MET A JOUR LE PRIX ACHAT DANS LE STOCK AVEC LE VRAI PRIX PAYÉ À SIGUIRI
-  if(prixA>0) db.ref('postes/'+a.posteKey+'/prixAchat').set(prixA);
-  alert('✅ Stock mis à jour : '+a.nom+' passe de '+cur+' à '+(cur+parseInt(a.qte))+'\nPrix Achat mis à jour à '+prixA.toLocaleString()+' GNF');
-} else { alert('✅ '+a.nom+' acheté'); }
-db.ref('achats/'+k).remove();
-}
+function calcAutoTotal(key){let qEl=document.getElementById('autoQte_'+key); let pEl=document.getElementById('autoPrix_'+key); let tEl=document.getElementById('autoTotal_'+key);if(!qEl||!pEl||!tEl) return; let q=parseInt(qEl.value)||0; let p=parseInt(pEl.value)||0; tEl.innerHTML=(q*p).toLocaleString()+' GNF';}
+function updatePrixAchatListe(k,val){let prix=parseInt(val)||0;db.ref('achats/'+k+'/prixAchat').set(prix);db.ref('achats/'+k+'/prix').set(prix);}
+function ajouterAutoAchat(key){let qteEl=document.getElementById('autoQte_'+key); let prixEl=document.getElementById('autoPrix_'+key);let qte=qteEl?parseInt(qteEl.value)||10:10; let prix=prixEl?parseInt(prixEl.value)||0:0;let p=postesData[key]; if(!p) return;if(!prix){ if(!confirm('Prix Achat = 0 GNF. Tu veux vraiment ajouter avec 0 ? Tu peux taper le prix d\'abord.')) return; }db.ref('achats/'+key).set({nom:p.nom||key,posteKey:key,qte:qte,prix:prix,prixAchat:prix,date:new Date().toLocaleString(),auto:true});alert('✅ '+p.nom+' mis dans ta liste à '+prix.toLocaleString()+' GNF / unité');}
+function marquerAchete(k){if(!isPatron) return;let a=achatsData[k]; if(!a) return;let prixA=a.prixAchat||a.prix||0;if(!confirm('Tu as acheté '+a.qte+' x '+a.nom+' à '+prixA.toLocaleString()+' GNF / unité ?\nTotal : '+((a.qte||0)*prixA).toLocaleString()+' GNF\n\nÇa va :\n- Ajouter au stock\n- Mettre à jour le Prix Achat dans Médicaments')) return;if(a.posteKey && postesData[a.posteKey]){let cur=postesData[a.posteKey].quantite||0;db.ref('postes/'+a.posteKey+'/quantite').set(cur + (parseInt(a.qte)||0));if(prixA>0) db.ref('postes/'+a.posteKey+'/prixAchat').set(prixA);alert('✅ Stock mis à jour : '+a.nom+' passe de '+cur+' à '+(cur+parseInt(a.qte))+'\nPrix Achat mis à jour à '+prixA.toLocaleString()+' GNF');} else { alert('✅ '+a.nom+' acheté'); }db.ref('achats/'+k).remove();}
 function copierListeAchat(){let txt='🛒 LISTE D\'ACHAT - FILANIDIALAKORO - '+new Date().toLocaleDateString()+'\n\n'; let total=0; let i=1;for(let k in achatsData){let a=achatsData[k]; let prixA=a.prixAchat||a.prix||0; let tot=(a.qte||0)*prixA; total+=tot; txt+=i+'. '+a.nom+' - '+a.qte+' x '+prixA+' (Achat) = '+tot+' GNF\n'; i++;}txt+='\nTOTAL À PAYER À SIGUIRI : '+total.toLocaleString()+' GNF';if(navigator.clipboard) navigator.clipboard.writeText(txt).then(function(){alert('✅ Liste copiée !');}); else alert(txt);}
 function printListeAchat(){let html='<div id="ordonnanceBox" class="ordonnance"><h2>🛒 LISTE D\'ACHAT - VILLE<br><span style="font-size:14px">POSTE DE SANTÉ - FILANIDIALAKORO - '+new Date().toLocaleDateString()+'</span></h2>'; let total=0; let i=1;for(let k in achatsData){let a=achatsData[k]; let prixA=a.prixAchat||a.prix||0; let tot=(a.qte||0)*prixA; total+=tot; html+='<div style="border-bottom:1px dashed #ccc;padding:6px 0">'+(i++)+'. <b>'+a.nom+'</b> - '+a.qte+' x '+prixA.toLocaleString()+' (Achat) = '+tot.toLocaleString()+' GNF</div>';}html+='<div style="text-align:right;font-weight:bold;margin-top:10px">TOTAL À PAYER : '+total.toLocaleString()+' GNF</div></div>';document.getElementById('printZone').innerHTML=html; window.print(); setTimeout(function(){document.getElementById('printZone').innerHTML='';},500);}
-
-// ===== ORDONNANCE =====
-function openOrdonnance(key){
-let c=allCons[key]; if(!c) return alert('Introuvable');
-let total=0; let medsHtml='';
-if(c.meds){c.meds.forEach(function(m,i){let pr=m.prixVente||m.prix||getPrixVente(postesData[m.key])||0; let pt=pr*m.qte; total+=pt; medsHtml+='<div style="border-bottom:1px dashed #ccc;padding:8px 0"><b>'+(i+1)+'. '+m.nom+'</b><br>Quantité : '+m.qte+' - Prix : '+pr.toLocaleString()+' GNF - Total : '+pt.toLocaleString()+' GNF</div>';});}
-let html='<div id="ordonnanceBox" class="ordonnance"><h2>📄 ORDONNANCE<br><span style="font-size:14px">POSTE DE SANTÉ - FILANIDIALAKORO<br>SIGUIRI - BROUSSE</span></h2><div><b>Date :</b> '+c.date+'</div><div><b>Nom :</b> '+c.patient+'</div><div><b>Sexe / Âge :</b> '+(c.sexe||'-')+' / '+(c.age?c.age+' ans':'-')+'</div><div><b>Plainte :</b> '+(c.plainte||'-')+'</div><div><b>Examen :</b> '+(c.examen||'-')+'</div><div><b>Diagnostic :</b> <b>'+(c.diagnostic||'-')+'</b></div><h3 style="border-top:2px solid #000;padding-top:8px">💊 TRAITEMENT</h3>'+medsHtml+'<div style="text-align:right;font-weight:bold;margin-top:10px">TOTAL À PAYER : '+total.toLocaleString()+' GNF</div><div><b>Conseil :</b> '+(c.conseil||'Bien suivre le traitement. Revenir si fièvre persiste.')+'</div><div style="display:flex;justify-content:space-between;margin-top:30px"><div>Signature Soignant<br><br>__________________</div><div>Signature Patient<br><br>__________________</div></div></div><button class="btn btn-blue" onclick="printOrdonnance()">🖨️ IMPRIMER / CAPTURE</button><button class="btn btn-green" onclick="copyOrdonnance(\''+key+'\')">📋 COPIER LE TEXTE</button><button class="btn btn-grey" onclick="document.getElementById(\'ordonnanceBtns\')?.remove()">Fermer</button>';
-let old=document.getElementById('ordonnanceBtns'); if(old) old.remove();
-document.getElementById('content').insertAdjacentHTML('afterbegin', '<div id="ordonnanceBtns">'+html+'</div>');
-document.getElementById('ordonnanceBox').scrollIntoView({behavior:'smooth'});
-}
+function openOrdonnance(key){let c=allCons[key]; if(!c) return alert('Introuvable');let total=0; let medsHtml='';if(c.meds){c.meds.forEach(function(m,i){let pr=m.prixVente||m.prix||getPrixVente(postesData[m.key])||0; let pt=pr*m.qte; total+=pt; medsHtml+='<div style="border-bottom:1px dashed #ccc;padding:8px 0"><b>'+(i+1)+'. '+m.nom+'</b><br>Quantité : '+m.qte+' - Prix : '+pr.toLocaleString()+' GNF - Total : '+pt.toLocaleString()+' GNF</div>';});}let html='<div id="ordonnanceBox" class="ordonnance"><h2>📄 ORDONNANCE<br><span style="font-size:14px">POSTE DE SANTÉ - FILANIDIALAKORO<br>SIGUIRI - BROUSSE</span></h2><div><b>Date :</b> '+c.date+'</div><div><b>Nom :</b> '+c.patient+'</div><div><b>Sexe / Âge :</b> '+(c.sexe||'-')+' / '+(c.age?c.age+' ans':'-')+'</div><div><b>Plainte :</b> '+(c.plainte||'-')+'</div><div><b>Examen :</b> '+(c.examen||'-')+'</div><div><b>Diagnostic :</b> <b>'+(c.diagnostic||'-')+'</b></div><h3 style="border-top:2px solid #000;padding-top:8px">💊 TRAITEMENT</h3>'+medsHtml+'<div style="text-align:right;font-weight:bold;margin-top:10px">TOTAL À PAYER : '+total.toLocaleString()+' GNF</div><div><b>Conseil :</b> '+(c.conseil||'Bien suivre le traitement. Revenir si fièvre persiste.')+'</div><div style="display:flex;justify-content:space-between;margin-top:30px"><div>Signature Soignant<br><br>__________________</div><div>Signature Patient<br><br>__________________</div></div></div><button class="btn btn-blue" onclick="printOrdonnance()">🖨️ IMPRIMER / CAPTURE</button><button class="btn btn-green" onclick="copyOrdonnance(\''+key+'\')">📋 COPIER LE TEXTE</button><button class="btn btn-grey" onclick="document.getElementById(\'ordonnanceBtns\')?.remove()">Fermer</button>';let old=document.getElementById('ordonnanceBtns'); if(old) old.remove();document.getElementById('content').insertAdjacentHTML('afterbegin', '<div id="ordonnanceBtns">'+html+'</div>');document.getElementById('ordonnanceBox').scrollIntoView({behavior:'smooth'});}
 function printOrdonnance(){let el=document.getElementById('ordonnanceBox'); if(!el) return; document.getElementById('printZone').innerHTML=el.outerHTML; window.print(); setTimeout(function(){document.getElementById('printZone').innerHTML='';},500);}
 function copyOrdonnance(key){let c=allCons[key]; let txt='ORDONNANCE - FILANIDIALAKORO\nDate: '+c.date+'\nPatient: '+c.patient+'\nDiagnostic: '+(c.diagnostic||'-')+'\nTraitement:\n'; if(c.meds) c.meds.forEach(function(m,i){let pr=m.prixVente||m.prix||0; txt+=(i+1)+'. '+m.nom+' x'+m.qte+' = '+(pr*m.qte)+' GNF\n';}); if(navigator.clipboard) navigator.clipboard.writeText(txt).then(function(){alert('✅ Texte copié !');}); else alert(txt);}
 function openOrdonnanceCarnet(key){if(!isPatron) return;let c=carnetData[key]; if(!c) return;let html='<div id="ordonnanceBox" class="ordonnance"><h2>📄 FICHE DE SUIVI<br><span style="font-size:14px">POSTE DE SANTÉ - FILANIDIALAKORO</span></h2><div><b>Date :</b> '+new Date().toLocaleString()+'</div><div><b>Nom :</b> '+c.nom+'</div><div><b>Village :</b> '+(c.village||'-')+'</div><div><b>Type :</b> '+c.type+'</div>';if(c.type==='Femme Enceinte'){html+='<div><b>Âge femme :</b> '+(c.age||'-')+'</div><div><b>Âge Grossesse :</b> <b>'+(c.grossesse||'-')+'</b></div><div><b>DDR :</b> '+(c.ddr||'-')+'</div><div><b>Tension :</b> '+(c.tension||'-')+' | <b>Poids :</b> '+(c.poids||'-')+'</div>';} else {html+='<div><b>Âge enfant :</b> '+(c.age||'-')+' | <b>Poids :</b> '+(c.poids||'-')+' | <b>Vaccin :</b> '+(c.vaccin||'-')+'</div>';}html+='<div><b>Prochain RDV :</b> <b>'+(c.rdv||'-')+'</b></div><div><b>Note :</b> '+(c.note||'-')+'</div><div style="display:flex;justify-content:space-between;margin-top:30px"><div>Signature Soignant<br><br>__________________</div><div>Signature Patient<br><br>__________________</div></div></div><button class="btn btn-blue" onclick="printOrdonnance()">🖨️ IMPRIMER</button><button class="btn btn-grey" onclick="document.getElementById(\'ordonnanceBtns\')?.remove()">Fermer</button>';let old=document.getElementById('ordonnanceBtns'); if(old) old.remove();document.getElementById('content').insertAdjacentHTML('afterbegin', '<div id="ordonnanceBtns">'+html+'</div>');document.getElementById('ordonnanceBox').scrollIntoView({behavior:'smooth'});}
-
-// ===== CARNET - PATRON SEULEMENT =====
 let carnetData={};
 function loadCarnet(){
 if(!isPatron){document.getElementById('content').innerHTML='<h3>⛔ Accès refusé</h3><p>Seul le Patron peut voir le Carnet.</p>';return;}
@@ -221,7 +183,7 @@ let postesData={};
 function loadMedicaments(){
 let h='';
 if(isPatron){
-h=`<div class="section"><b>STOCK PERMANENT - PATRON : Prix Achat / Prix Vente / Bénéfice</b><div style="background:#e8f5e9;padding:8px;border-radius:8px;font-size:13px;margin-top:6px"><b>Prix Achat</b> = ce que TU payes à Siguiri &nbsp;|&nbsp; <b>Prix Vente</b> = ce que le PATIENT paye &nbsp;|&nbsp; <b>Bénéfice</b> = Vente - Achat</div><div style="display:flex;gap:6px;align-items:center;margin-top:6px"><span style="font-size:13px">⚠️ Alerter si stock ≤</span><input id="seuilInput" type="number" value="${seuilAlerte}" style="width:80px"><button class="btn btn-orange" style="width:auto;padding:10px 14px" onclick="changerSeuil()">Changer seuil</button></div><div id="alerteBox"></div><div style="background:#fff3cd;padding:10px;border-radius:8px;margin-top:8px"><b>➕ Nouveau médicament</b><input id="newMedName" placeholder="Nom médicament"><div style="display:flex;gap:6px"><input id="newMedAchat" type="number" placeholder="Prix Achat ex: 15000"><input id="newMedVente" type="number" placeholder="Prix Vente ex: 20000"></div><button class="btn btn-green" onclick="addMedicament()">AUGMENTER LA LISTE</button></div><div id="medTable">Chargement...</div><div id="totalStockBox"></div><div id="totalJourBox"></div><div id="bilanMoisMini"></div></div>`;
+h=`<div class="section"><b>STOCK PERMANENT - PATRON : Prix Achat / Prix Vente / Bénéfice</b><div style="background:#e8f5e9;padding:8px;border-radius:8px;font-size:13px;margin-top:6px"><b>Prix Achat</b> = ce que TU payes à Siguiri &nbsp;|&nbsp; <b>Prix Vente</b> = ce que le PATIENT paye &nbsp;|&nbsp; <b>Bénéfice</b> = Vente - Achat</div><div id="stockTopBox"></div><div style="display:flex;gap:6px;align-items:center;margin-top:6px"><span style="font-size:13px">⚠️ Alerter si stock ≤</span><input id="seuilInput" type="number" value="${seuilAlerte}" style="width:80px"><button class="btn btn-orange" style="width:auto;padding:10px 14px" onclick="changerSeuil()">Changer seuil</button></div><div id="alerteBox"></div><div style="background:#fff3cd;padding:10px;border-radius:8px;margin-top:8px"><b>➕ Nouveau médicament</b><input id="newMedName" placeholder="Nom médicament"><div style="display:flex;gap:6px"><input id="newMedAchat" type="number" placeholder="Prix Achat ex: 15000"><input id="newMedVente" type="number" placeholder="Prix Vente ex: 20000"></div><button class="btn btn-green" onclick="addMedicament()">AUGMENTER LA LISTE</button></div><div id="medTable">Chargement...</div><div id="totalStockBox"></div><div id="totalJourBox"></div><div id="bilanMoisMini"></div></div>`;
 }else{
 h=`<div class="section"><b>💊 MÉDICAMENTS - STOCK</b><div id="alerteBox"></div><div id="medTable">Chargement...</div><div id="totalJourBox"></div></div>`;
 }
@@ -234,16 +196,20 @@ try{seuilAlerte = parseInt(localStorage.getItem('seuil_alerte')) || 2;}catch(e){
 function changerSeuil(){if(!isPatron) return;let v=parseInt(document.getElementById('seuilInput').value); if(!v && v!==0) return; seuilAlerte=v; try{localStorage.setItem('seuil_alerte',v);}catch(e){} dbSet('config/seuil_alerte',v); loadStock(); alert('Seuil changé à '+v);}
 dbGet('config/seuil_alerte').then(function(v){if(v){seuilAlerte=parseInt(v)||2; try{localStorage.setItem('seuil_alerte',seuilAlerte);}catch(e){}}});
 function loadStock(){db.ref('postes').on('value',snap=>{postesData=snap.val()||{};if(_isTyping) return; let keys=Object.keys(postesData).sort(function(a,b){return (postesData[a].nom||'').localeCompare(postesData[b].nom||'');});
+let grandTotalVente=0;let grandTotalAchat=0;for(let k of keys){let q=postesData[k].quantite||0;grandTotalVente+=q*getPrixVente(postesData[k]);grandTotalAchat+=q*getPrixAchat(postesData[k]);}
+let topEl=document.getElementById('stockTopBox');if(topEl && isPatron){topEl.innerHTML='<div class="stock-top">📦 TON STOCK EN HAUT<br><span style="font-size:18px">Valeur Vente : '+grandTotalVente.toLocaleString()+' GNF</span><br><span style="font-size:13px">Valeur Achat : '+grandTotalAchat.toLocaleString()+' GNF | 💚 Bénéfice futur : '+(grandTotalVente-grandTotalAchat).toLocaleString()+' GNF</span></div>';}
 let low=[]; let zero=[];
-for(let k of keys){let q=postesData[k].quantite||0; if(q===0) zero.push(postesData[k].nom||k); else if(q<=seuilAlerte) low.push((postesData[k].nom||k)+' ('+q+')');}
+for(let k of keys){let q=postesData[k].quantite||0; let pA=getPrixAchat(postesData[k]); let pV=getPrixVente(postesData[k]); let benef=getBenef(postesData[k]); let detail=(postesData[k].nom||k)+' ('+q+') - Achat '+pA.toLocaleString()+' / Vente '+pV.toLocaleString()+' / Bénéf. '+benef.toLocaleString(); if(q===0) zero.push(detail); else if(q<=seuilAlerte) low.push(detail);}
 let alerteEl=document.getElementById('alerteBox');
 if(alerteEl){
   if(zero.length || low.length){
     let txt='';
-    if(zero.length) txt+='⛔ RUPTURE : '+zero.join(', ')+'<br>';
-    if(low.length) txt+='⚠️ BIENTÔT FINI (≤ '+seuilAlerte+') : '+low.join(', ');
+    if(zero.length){txt+='<div style="font-size:16px">⛔ RUPTURE :</div>'; zero.forEach(function(d){txt+='<div class="alert-line">⛔ '+d+' GNF</div>';});}
+    if(low.length){txt+='<div style="font-size:16px;margin-top:6px">⚠️ BIENTÔT FINI (≤ '+seuilAlerte+') :</div>'; low.forEach(function(d){txt+='<div class="alert-line">⚠️ '+d+' GNF</div>';});}
+    if(isPatron) txt+='<button class="btn btn-orange" onclick="openModule(\'achats\')">🛒 ALLER À LA LISTE D\'ACHAT VILLE →</button>';
+    else txt+='<div style="font-size:12px">Dis au Patron d\'acheter, il reste peu</div>';
     alerteEl.innerHTML='<div class="alert-box">'+txt+'</div>';
-  } else { alerteEl.innerHTML='<div class="alert-ok">✅ Stock OK</div>'; }
+  } else { alerteEl.innerHTML='<div class="alert-ok">✅ Stock OK - Aucune rupture</div>'; }
 }
 let t='';
 if(isPatron){
@@ -251,7 +217,7 @@ t='<table><tr><th>N°</th><th>Nom</th><th>Stock</th><th>Prix Achat</th><th>Prix 
 }else{
 t='<table><tr><th>N°</th><th>Nom</th><th>Stock</th><th>Prix à payer</th></tr>';
 }
-let grandTotalVente=0;let grandTotalAchat=0;let num=1;for(let k of keys){let q=postesData[k].quantite||0;let pA=getPrixAchat(postesData[k]);let pV=getPrixVente(postesData[k]);let benef=getBenef(postesData[k]);let totalV=q*pV;let totalA=q*pA;grandTotalVente+=totalV;grandTotalAchat+=totalA;let rowClass=q===0?'zero-row':(q<=seuilAlerte?'low-row':'');let stockTxt=q===0?'⛔ 0':(q<=seuilAlerte?'⚠️ '+q:q);
+let num=1;for(let k of keys){let q=postesData[k].quantite||0;let pA=getPrixAchat(postesData[k]);let pV=getPrixVente(postesData[k]);let benef=getBenef(postesData[k]);let totalV=q*pV;let rowClass=q===0?'zero-row':(q<=seuilAlerte?'low-row':'');let stockTxt=q===0?'⛔ 0':(q<=seuilAlerte?'⚠️ '+q:q);
 if(isPatron){
 t+=`<tr class="${rowClass}"><td class="num-col">${num++}</td><td>${postesData[k].nom||k} ${q===0?'⛔ RUPTURE':(q<=seuilAlerte?'⚠️':'' )}</td><td><input id="q_${k}" type="number" value="${q}" onchange="updateQ('${k}')" style="padding:4px"></td><td><input id="pa_${k}" type="number" value="${pA}" onchange="updatePrixAchat('${k}')" style="padding:4px"></td><td><input id="pv_${k}" type="number" value="${pV}" onchange="updatePrixVente('${k}')" style="padding:4px"></td><td style="color:${benef>=0?'#2e7d32':'#c62828'}"><b>${benef.toLocaleString()}</b></td><td><b>${totalV.toLocaleString()} GNF</b></td><td><button onclick="deleteMed('${k}')">X</button></td></tr>`;
 }else{
