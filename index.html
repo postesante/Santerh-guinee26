@@ -1,87 +1,24 @@
 <!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SUPPLÉANT - Filanidialakoro</title>
+<title>Chef Bakary - Filanidialakoro</title>
 <style>
 body{font-family:Arial;background:#f2f2f2;margin:0;padding:10px}
-.top{background:#ff9800;color:white;padding:14px;border-radius:14px;text-align:center}
-.top h2{margin:0;font-size:19px}
-.top p{margin:2px;font-size:14px}
-.connect{background:#22c55e;color:white;padding:8px;border-radius:8px;font-weight:bold;margin-top:8px;font-size:13px}
+.top{background:#1976d2;color:white;padding:14px;border-radius:14px;text-align:center}
+.top h2{margin:0}.connect{background:#22c55e;padding:8px;border-radius:8px;font-weight:bold;margin-top:8px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
-.grid button{background:white;border:1px solid #ddd;padding:16px;border-radius:12px;font-weight:bold;font-size:15px}
-.card{background:white;padding:14px;border-radius:14px;margin-bottom:12px;box-shadow:0 2px 6px #ccc}
+.grid button{background:white;border:1px solid #ddd;padding:14px;border-radius:12px;font-weight:bold}
+.card{background:white;padding:14px;border-radius:14px;margin-bottom:12px}
 input,select{width:100%;padding:11px;margin:5px 0;border-radius:8px;border:1px solid #ccc;font-size:16px;box-sizing:border-box}
 .btn{background:#0d6e3e;color:white;padding:12px;border:none;border-radius:10px;width:100%;font-size:17px;font-weight:bold}
-table{width:100%;border-collapse:collapse;font-size:14px}
-td,th{border-bottom:1px solid #ddd;padding:7px;text-align:left}
-.hidden{display:none}
-</style></head>
-<body>
-
-<div class="top">
-<h2>👤 SUPPLÉANT - Accès limité</h2>
-<p>Filanidialakoro - Poste Santé Brousse</p>
-<div class="connect">✅ CONNECTÉ À FIREBASE</div>
-</div>
-
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-bottom:1px solid #ddd;padding:7px;text-align:left}
+.big{font-size:24px;font-weight:bold;text-align:center}.vert{color:green}.hidden{display:none}
+.alerte{background:#ffe0e0;border:2px solid red;padding:12px;border-radius:12px;text-align:center;font-weight:bold}
+.rouge{background:#ffebee}
+</style></head><body>
+<div class="top"><h2>👑 PATRON - Bakary Sidibe</h2><p>Chef de Poste de Santé de Filanidialakoro</p><div class="connect">✅ CONNECTÉ À FIREBASE</div></div>
 <div class="grid">
 <button onclick="show('vente')">💊 Médicaments<br><small>Patients à traiter</small></button>
-<button onclick="show('dettes')">📒 Dettes Payé</button>
-</div>
-
-<!-- MEDICAMENTS SEULEMENT -->
-<div id="vente" class="card">
-<h2>💊 Médicaments - Patients à traiter</h2>
-<label>Nom du patient :</label><input id="nom" placeholder="Ex: Mamadou Diallo">
-<label>Choisir médicament :</label><select id="medSelect"></select>
-<label>Quantité :</label><input type="number" id="qte" value="1">
-<label>Dette ? (si le patient ne paye pas tout)</label><input type="number" id="dettePatient" placeholder="0 si payé">
-<button class="btn" onclick="vendre()">✅ Vendre / Traiter</button>
-<div id="msgVente" style="margin-top:8px;font-weight:bold"></div>
-<h3>Stock disponible :</h3>
-<div id="listeSimple"></div>
-</div>
-
-<!-- DETTES SEULEMENT -->
-<div id="dettes" class="card hidden">
-<h2>📒 Dettes Payé</h2>
-<p>Quand un patient qui devait, vient payer, coche-le.</p>
-<div id="listeDettes"></div>
-<label>Nom patient qui a payé :</label><input id="dNom" placeholder="Nom">
-<label>Montant payé :</label><input type="number" id="dMontant" placeholder="Ex: 5000">
-<button class="btn" onclick="ajoutDettePaye()">✅ Il a payé</button>
-<div id="msgDette" style="margin-top:8px;font-weight:bold"></div>
-</div>
-
-<script>
-let stock = JSON.parse(localStorage.getItem('stock')||'[]');
-let dettesList = JSON.parse(localStorage.getItem('dettes')||'[]');
-let ventes = JSON.parse(localStorage.getItem('ventes')||'[]');
-if(stock.length==0){
- stock=[
-  {nom:'AAS 300mg',qte:160,vente:1000},
-  {nom:'Amoxicilline',qte:150,vente:1000},
-  {nom:'Ampiciline 1g',qte:100,vente:7500},
-  {nom:'Artemether 80mg injection ampoule',qte:34,vente:7500},
-  {nom:'Artemether comprimé Adulte',qte:1,vente:20000},
-  {nom:'Artemether sirop',qte:2,vente:20000},
-  {nom:'Catether G24',qte:13,vente:10000},
-  {nom:'Ciproperf',qte:2,vente:5000},
-  {nom:'Fil à suture',qte:2,vente:5000},
-  {nom:'Ringer 1/2',qte:0,vente:10000},
-  {nom:'Paracétamol',qte:20,vente:1000},
-  {nom:'ORS',qte:25,vente:700}
- ]; save();
-}
-function save(){localStorage.setItem('stock',JSON.stringify(stock));localStorage.setItem('ventes',JSON.stringify(ventes));localStorage.setItem('dettes',JSON.stringify(dettesList));}
-function show(id){['vente','dettes'].forEach(x=>document.getElementById(x).classList.add('hidden'));document.getElementById(id).classList.remove('hidden');afficher();}
-function afficher(){
- let s=document.getElementById('medSelect');s.innerHTML='';stock.forEach((m,i)=>{s.innerHTML+=`<option value="${i}">${m.nom} - ${m.vente} GNF (Reste: ${m.qte})</option>`});
- document.getElementById('listeSimple').innerHTML='<table><tr><th>Médicament</th><th>Reste</th><th>Prix</th></tr>'+stock.map(m=>`<tr><td>${m.nom}</td><td>${m.qte}</td><td>${m.vente} GNF</td></tr>`).join('')+'</table>';
- document.getElementById('listeDettes').innerHTML=dettesList.map((d,i)=>`• <b>${d.nom}</b> doit ${d.montant} GNF - ${d.med} <button onclick="suppDette(${i})">Payé ✅</button><br>`).join('')||'Aucune dette';
-}
-function suppDette(i){if(confirm('Ce patient a payé ?')){dettesList.splice(i,1);save();afficher();}}
-function ajoutDettePaye(){let n=document.getElementById('dNom').value,m=+document.getElementById('dMontant').value;if(!n)return alert('Mets le nom');document.getElementById('msgDette').innerHTML=`✅ Merci, ${n} a payé ${m} GNF`;}
-function vendre(){let i=+document.getElementById('medSelect').value,q=+document.getElementById('qte').value,nom=document.getElementById('nom').value||'Patient',detteP=+document.getElementById('dettePatient').value||0;if(stock[i].qte<q)return alert('Pas assez en stock !');stock[i].qte-=q;let total=q*stock[i].vente;ventes.push({total,benef:total});if(detteP>0) dettesList.push({nom:nom,montant:detteP,med:stock[i].nom});save();afficher();document.getElementById('msgVente').innerHTML=`✅ ${nom} traité : ${stock[i].nom} x${q} = ${total} GNF`;}
-afficher();
-</script></body></html>
+<button onclick="show('dettes')">📒 Dettes</button>
+<button onclick="show('carnet')">🤰 CARNET SUIVI</button>
+<button onclick="show('achat')">🛒 LISTE D'ACHAT VILLE</button>
+<button onclick="show('bilan')">📊 BILAN +
