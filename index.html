@@ -35,11 +35,11 @@ table input{padding:8px;margin:0;font-size:14px}
 <div id="vente" class="card">
 <h2>💊 Traiter un Patient</h2>
 <div id="zoneImportSuppleant" style="display:none;background:#fff3cd;padding:12px;border-radius:12px;border:2px dashed #ff9800;margin-bottom:10px">
-<b>📥 SUPPLÉANT - Reçois le Stock du Patron :</b><br>
-<label>Colle ici le CODE que Bakary t'a envoyé sur WhatsApp :</label>
+<b>📥 ISSOUF - Reçois le Stock du Patron :</b><br>
+<p id="msgImportAuto" style="font-size:13px"></p>
+<label>Si le lien n'a pas marché, colle ici le CODE que Bakary t'a envoyé :</label>
 <textarea id="codeImport" rows="3" placeholder="Colle le code ici..."></textarea>
 <button class="btn" style="background:#ff9800" onclick="importerStock()">📥 IMPORTER LE STOCK DU PATRON</button>
-<p style="font-size:12px">Après ça, tu vas voir TOUS les médicaments de Bakary.</p>
 </div>
 <label>Nom et Prénom :</label><input id="nom" placeholder="Ex: Mamadou Diallo">
 <label>Âge :</label><input type="number" id="age" placeholder="Ex: 25">
@@ -61,10 +61,11 @@ table input{padding:8px;margin:0;font-size:14px}
 <div id="stock" class="card hidden">
 <h2>📦 STOCK PERMANENT</h2>
 <div style="background:#e3f2fd;padding:12px;border-radius:12px;border:2px solid #1976d2;margin-bottom:10px">
-<b>📤 ENVOYER TON STOCK AU SUPPLÉANT :</b><br>
-<p style="font-size:13px">1. Appuie sur le bouton<br>2. Ça copie le CODE<br>3. Envoie le CODE au suppléant sur WhatsApp</p>
-<button class="btn" style="background:#1976d2" onclick="exporterStock()">📤 ENVOYER LE STOCK AU SUPPLÉANT</button>
-<textarea id="codeExport" rows="3" placeholder="Le code va s'afficher ici, tu le copies et tu l'envoies..." readonly></textarea>
+<b>📤 ENVOYER TON STOCK À ISSOUF KOULIBALY :</b><br>
+<p style="font-size:13px">1. Appuie sur le bouton<br>2. Appuie sur ENVOYER SUR WHATSAPP<br>3. Issouf clique juste sur le lien, c'est tout !</p>
+<button class="btn" style="background:#1976d2" onclick="exporterStock()">📤 CRÉER LE LIEN POUR ISSOUF</button>
+<textarea id="codeExport" rows="3" placeholder="Le lien pour Issouf va s'afficher ici..." readonly></textarea>
+<button class="btn" id="btnWhats" style="background:#25D366;display:none" onclick="envoyerWhats()">📲 ENVOYER SUR WHATSAPP À ISSOUF</button>
 </div>
 <div style="display:flex;gap:6px;align-items:center"><span>⚠️ Alerter si stock ≤</span><input type="number" id="seuil" value="2" style="width:80px"><button class="btn" style="width:auto;background:#ff9800" onclick="changerSeuil()">Changer seuil</button></div>
 <div id="zoneAlerte" style="margin-top:10px"></div>
@@ -113,10 +114,13 @@ table input{padding:8px;margin:0;font-size:14px}
 
 <div id="gps" class="card hidden"><h2>📍 GPS</h2><p>Filanidialakoro - Poste Santé Brousse, Siguiri, Guinée</p></div>
 <script>
-let isSuppleant = window.location.search.includes('suppleant') || window.location.hash.includes('suppleant');
+// === ISSOUF KOULIBALY = SUPPLÉANT ===
+let urlBas = (window.location.search + window.location.hash).toLowerCase();
+let isSuppleant = urlBas.includes('suppleant') || urlBas.includes('issouf') || urlBas.includes('koulibaly');
+let nomSuppleant = 'Issouf Koulibaly';
 if(isSuppleant){
-  document.getElementById('titreTop').innerText='🧑‍⚕️ SUPPLÉANT';
-  document.getElementById('sousTitreTop').innerText='Poste de Santé de Filanidialakoro - Tu vois SEULEMENT Médicaments + Dettes';
+  document.getElementById('titreTop').innerText='🧑‍⚕️ SUPPLÉANT - ' + nomSuppleant;
+  document.getElementById('sousTitreTop').innerText='Bonjour Issouf ! Poste de Santé de Filanidialakoro - Tu vois SEULEMENT Médicaments + Dettes';
   document.getElementById('topBar').style.background='#ff9800';
   document.querySelectorAll('.patron-only').forEach(e=>e.style.display='none');
   document.querySelectorAll('.patron-only-btn').forEach(e=>e.style.display='none');
@@ -131,31 +135,55 @@ stock=stock.filter(m=>m&&typeof m==='object'); ventes=ventes.filter(v=>v&&typeof
 stock.forEach(m=>{ if(m.prix==null) m.prix=m.vente||m.achat||0; if(m.vente==null) m.vente=m.prix||0; if(m.achat==null) m.achat=m.prix||0; if(!m.nom) m.nom='Médicament'; if(m.qte==null) m.qte=0; m.achat=+m.achat||0; m.vente=+m.vente||0; m.prix=m.vente; });
 dettesList.forEach(d=>{ if(!d.date) d.date=new Date().toLocaleString('fr-FR'); if(!d.nom) d.nom=d.patient||d.name||'Patient'; if(!d.montant) d.montant=d.dette||d.amount||0; });
 ventes.forEach(v=>{ if(!v.medDetail) v.medDetail=v.med||''; if(!v.total) v.total=0; });
+try{
+  let hash = window.location.hash || '';
+  if(hash.includes('stock=')){
+    let code = hash.split('stock=')[1].split('&')[0];
+    let nouveau = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(code)))));
+    if(Array.isArray(nouveau) && nouveau.length>0){
+      stock = nouveau;
+      stock.forEach(m=>{ if(m.prix==null) m.prix=m.vente||m.achat||0; if(m.vente==null) m.vente=m.prix||0; if(m.achat==null) m.achat=m.prix||0; m.achat=+m.achat||0; m.vente=+m.vente||0; m.prix=m.vente; });
+      localStorage.setItem('stock', JSON.stringify(stock));
+      setTimeout(()=>{ let el=document.getElementById('msgImportAuto'); if(el) el.innerHTML='✅ <b>Stock reçu automatiquement ! '+stock.length+' médicaments. Tu peux traiter les patients, Issouf.</b>'; },500);
+    }
+  }
+}catch(e){}
 function save(){try{localStorage.setItem('stock',JSON.stringify(stock));localStorage.setItem('ventes',JSON.stringify(ventes));localStorage.setItem('dettes',JSON.stringify(dettesList));localStorage.setItem('carnet',JSON.stringify(carnet));localStorage.setItem('seuil',seuil);localStorage.setItem('conso',conso);localStorage.setItem('consoList',JSON.stringify(consoList));}catch(e){}}
-// === TRANSFERT STOCK PATRON -> SUPPLEANT ===
+let lienPartage='';
 function exporterStock(){
   if(stock.length==0) return alert('Ton stock est vide ! Ajoute d’abord des médicaments.');
   let code = btoa(unescape(encodeURIComponent(JSON.stringify(stock))));
-  let el=document.getElementById('codeExport'); el.value=code; el.select();
-  try{ navigator.clipboard.writeText(code); }catch(e){}
-  alert('✅ CODE COPIÉ ! Envoie-le au suppléant sur WhatsApp.\nIl a '+stock.length+' médicaments.');
+  let base = window.location.origin + window.location.pathname;
+  lienPartage = base + '?suppleant=issouf-koulibaly#stock=' + encodeURIComponent(code);
+  let el=document.getElementById('codeExport'); el.value=lienPartage; el.select();
+  try{ navigator.clipboard.writeText(lienPartage); }catch(e){}
+  document.getElementById('btnWhats').style.display='block';
+  alert('✅ LIEN CRÉÉ POUR ISSOUF ! Appuie maintenant sur ENVOYER SUR WHATSAPP.\nIl contient '+stock.length+' médicaments.');
+}
+function envoyerWhats(){
+  if(!lienPartage) return alert('Appuie d’abord sur CRÉER LE LIEN POUR ISSOUF !');
+  let msg = encodeURIComponent('👋 Bonjour Issouf Koulibaly, voici ton application. Clique sur le lien pour voir les médicaments : ' + lienPartage);
+  window.open('https://wa.me/?text=' + msg, '_blank');
 }
 function importerStock(){
   let code=document.getElementById('codeImport').value.trim();
   if(!code) return alert('Colle d’abord le CODE que Bakary t’a envoyé !');
   try{
-    let nouveau = JSON.parse(decodeURIComponent(escape(atob(code))));
+    let txt = code;
+    if(txt.includes('stock=')) txt = txt.split('stock=')[1].split('&')[0];
+    txt = decodeURIComponent(txt);
+    let nouveau = JSON.parse(decodeURIComponent(escape(atob(txt))));
     if(!Array.isArray(nouveau) || nouveau.length==0) return alert('Code vide ou faux !');
     stock = nouveau;
     stock.forEach(m=>{ if(m.prix==null) m.prix=m.vente||m.achat||0; if(m.vente==null) m.vente=m.prix||0; if(m.achat==null) m.achat=m.prix||0; m.achat=+m.achat||0; m.vente=+m.vente||0; m.prix=m.vente; });
     save(); afficher();
-    alert('✅ BRAVO ! Tu as reçu '+stock.length+' médicaments du Patron Bakary. Tu peux maintenant traiter les patients !');
+    alert('✅ BRAVO ISSOUF ! Tu as reçu '+stock.length+' médicaments du Patron Bakary. Tu peux maintenant traiter les patients !');
     document.getElementById('codeImport').value='';
-  }catch(e){ alert('❌ Code faux ! Demande à Bakary de renvoyer le code.'); }
+  }catch(e){ alert('❌ Code faux ! Demande à Bakary de renvoyer le LIEN.'); }
 }
 function changerSeuil(){seuil=+document.getElementById('seuil').value||2;save();afficher();}
 function show(id){
-  if(isSuppleant && !['vente','dettes'].includes(id)){ alert('⛔ Tu es Suppléant. Tu peux voir SEULEMENT Médicaments + Dettes.'); return; }
+  if(isSuppleant && !['vente','dettes'].includes(id)){ alert('⛔ Issouf, tu peux voir SEULEMENT Médicaments + Dettes.'); return; }
   try{['vente','stock','caisse','dettes','carnet','achat','bilan','gps'].forEach(x=>{let el=document.getElementById(x);if(el)el.classList.add('hidden');});let target=document.getElementById(id);if(target)target.classList.remove('hidden');}catch(e){} try{afficher();}catch(e){} window.scrollTo(0,300);}
 function nettoyerDettes(){if(confirm('Effacer TOUTES les dettes ?')){dettesList=[];save();afficher();alert('Nettoyé !');}}
 function resetBilan(){if(confirm('Effacer TOUT le Bilan ? Ça efface les médicaments consommés et les ventes. Les dettes restent.')){consoList=[];ventes=[];conso=0;save();afficher();alert('Bilan remis à zéro !');}}
@@ -163,7 +191,7 @@ function ajoutDetteManuelle(){let nom=document.getElementById('dNom').value.trim
 function suppPatient(i){if(confirm('Supprimer ce patient ? '+(ventes[i]&&ventes[i].nom))){ventes.splice(i,1);save();afficher();}}
 function afficher(){try{
  document.getElementById('seuil').value=seuil;
- if(stock.length==0){ document.getElementById('listeMedsChoix').innerHTML='<p>Aucun médicament - Demande au Patron Bakary de t’envoyer le CODE du stock (voir en haut 📥)</p>'; }
+ if(stock.length==0){ document.getElementById('listeMedsChoix').innerHTML='<p>Aucun médicament - Demande au Patron Bakary de t’envoyer le LIEN du stock (voir en haut 📥)</p>'; }
  else { document.getElementById('listeMedsChoix').innerHTML=stock.map((m,i)=>`<div class="med-row"><input type="checkbox" id="chk${i}"><b style="flex:1">${m.nom} - Vente: ${m.vente} GNF (Reste: ${m.qte})</b><span>Qté:</span><input type="number" id="qteMed${i}" value="1" min="1"></div>`).join(''); }
  let rupt=stock.filter(m=>m.qte==0);let bientot=stock.filter(m=>m.qte>0&&m.qte<=seuil);
  document.getElementById('zoneAlerte').innerHTML=(rupt.length||bientot.length)?`<div class="alerte">⛔ RUPTURE : ${rupt.map(m=>m.nom).join(', ')||'Aucune'}<br>⚠️ BIENTÔT FINI (≤ ${seuil}) : ${bientot.map(m=>m.nom+' ('+m.qte+')').join(', ')}<br>Il faut acheter ces médicaments vite !</div>`:'';
