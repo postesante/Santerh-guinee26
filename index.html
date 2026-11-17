@@ -19,9 +19,9 @@ label{font-weight:bold;font-size:14px}
 .med-row input[type=checkbox]{width:22px;height:22px}
 .med-row input[type=number]{width:70px}
 table input{padding:8px;margin:0;font-size:14px}
-.syncbox{background:#e8f5e9;border:2px solid #22c55e;padding:10px;border-radius:12px;text-align:center;margin-bottom:10px}
+.codebox{background:#fff3cd;border:3px dashed #ff9800;padding:10px;border-radius:12px;word-break:break-all;font-size:12px}
 </style></head><body>
-<div class="top" id="topBar"><h2 id="titreTop">👑 PATRON - Bakary Sidibe</h2><p id="sousTitreTop">Chef de Poste de Santé de Filanidialakoro - Tu vois TOUT</p><div class="connect" id="statutSync">✅ CONNECTÉ - SYNC AUTO</div></div>
+<div class="top" id="topBar"><h2 id="titreTop">👑 PATRON - Bakary Sidibe</h2><p id="sousTitreTop">Chef de Poste de Santé de Filanidialakoro - Tu vois TOUT</p><div class="connect">✅ CONNECTÉ</div></div>
 <div class="grid">
 <button onclick="show('vente')">💊 Médicaments<br><small>Patients à traiter</small></button>
 <button onclick="show('dettes')">📒 Dettes</button>
@@ -34,14 +34,13 @@ table input{padding:8px;margin:0;font-size:14px}
 </div>
 
 <div id="vente" class="card">
-<div class="syncbox" id="boxSyncSuppleant" style="display:none">
-<b>🔄 ISSOUF - Pour recevoir les médicaments + dettes de Bakary :</b><br>
-<button class="btn" style="background:#ff9800;margin-top:6px" onclick="chargerDuCloud(true)">🔄 ACTUALISER - RECEVOIR DE BAKARY</button>
-<p id="msgSync" style="font-size:13px;font-weight:bold"></p>
-</div>
-<div class="syncbox patron-only" id="boxSyncPatron">
-<b>☁️ SYNC AUTO :</b> <span id="msgSyncPatron">Tes médicaments + dettes partent tout seuls vers Issouf</span><br>
-<button class="btn" style="background:#1976d2;margin-top:6px" onclick="envoyerVersCloud(true)">☁️ ENVOYER MAINTENANT VERS ISSOUF</button>
+<div id="zoneImportSuppleant" style="display:none;background:#fff3cd;padding:12px;border-radius:12px;border:2px dashed #ff9800;margin-bottom:10px">
+<b>📥 ISSOUF - Reçois les Médicaments + Dettes de Bakary :</b><br>
+<p style="font-size:13px">1. Bakary t'a envoyé un CODE sur WhatsApp<br>2. Appuie longtemps sur le code dans WhatsApp -> Copier<br>3. Viens ici, appuie longtemps dans la case -> Coller<br>4. Appuie sur RECEVOIR</p>
+<label>Colle ici le CODE de Bakary :</label>
+<textarea id="codeImport" rows="4" placeholder="Colle ici le long code que Bakary t'a envoyé sur WhatsApp..."></textarea>
+<button class="btn" style="background:#ff9800" onclick="importerStock()">📥 RECEVOIR MÉDICAMENTS + DETTES</button>
+<p id="msgImportAuto" style="font-size:13px;font-weight:bold"></p>
 </div>
 <h2>💊 Traiter un Patient</h2>
 <label>Nom et Prénom :</label><input id="nom" placeholder="Ex: Mamadou Diallo">
@@ -64,10 +63,16 @@ table input{padding:8px;margin:0;font-size:14px}
 <div id="stock" class="card hidden">
 <h2>📦 STOCK PERMANENT</h2>
 <div style="background:#e3f2fd;padding:12px;border-radius:12px;border:2px solid #1976d2;margin-bottom:10px">
-<b>📤 TON STOCK VA TOUT SEUL CHEZ ISSOUF :</b><br>
-<p style="font-size:13px">Tu n'as plus besoin d'envoyer de code. Chaque fois que tu changes quelque chose, appuie ici :</p>
-<button class="btn" style="background:#1976d2" onclick="envoyerVersCloud(true)">☁️ ENVOYER STOCK + DETTES VERS ISSOUF</button>
-<p id="msgEnvoiStock" style="font-weight:bold"></p>
+<b>📤 ENVOYER TON STOCK + TES DETTES À ISSOUF :</b><br>
+<p style="font-size:13px">1. Appuie sur CRÉER LE CODE<br>2. Le code apparaît, tu le copies<br>3. Tu l'envoies à Issouf sur WhatsApp<br>4. Issouf colle le code chez lui, il reçoit TOUT !<br><b>Ça marche même sans internet, c'est juste un message WhatsApp !</b></p>
+<button class="btn" style="background:#1976d2" onclick="exporterStock()">📤 CRÉER LE CODE POUR ISSOUF</button>
+<div id="zoneCodeExport" style="display:none;margin-top:10px">
+<p>Ton code pour Issouf (appuie sur COPIER) :</p>
+<textarea id="codeExport" rows="5" readonly class="codebox"></textarea>
+<button class="btn" style="background:#22c55e;margin-top:8px" onclick="copierCode()">📋 COPIER LE CODE</button>
+<button class="btn" style="background:#25D366;margin-top:8px" onclick="envoyerWhats()">📲 ENVOYER CE CODE À ISSOUF SUR WHATSAPP</button>
+</div>
+<p id="msgExport" style="font-weight:bold"></p>
 </div>
 <div style="display:flex;gap:6px;align-items:center"><span>⚠️ Alerter si stock ≤</span><input type="number" id="seuil" value="2" style="width:80px"><button class="btn" style="width:auto;background:#ff9800" onclick="changerSeuil()">Changer seuil</button></div>
 <div id="zoneAlerte" style="margin-top:10px"></div>
@@ -83,7 +88,6 @@ table input{padding:8px;margin:0;font-size:14px}
 <div id="caisse" class="card hidden"><h2>💰 CAISSE DU JOUR</h2><div>Ventes aujourd'hui :</div><div class="big" id="totalVente">0 GNF</div><div>Médicaments consommés aujourd'hui :</div><div class="big" id="consoJour">0</div><div>Dépenses :</div><input type="number" id="dette" placeholder="Ex: 65000" oninput="calculCaisse()"><div>Caisse ce soir :</div><div class="big vert" id="caisseSoir">0 GNF</div><div>Bénéfice aujourd'hui :</div><div class="big" id="benefice">0 GNF</div><button class="btn" onclick="resetJour()">🌅 Nouveau Jour</button></div>
 
 <div id="dettes" class="card hidden">
-<div class="syncbox" id="boxSyncDettes" style="display:none"><button class="btn" style="background:#ff9800" onclick="chargerDuCloud(true)">🔄 ACTUALISER - RECEVOIR LES DETTES DE BAKARY</button></div>
 <h2>📒 Dettes</h2>
 <p><b>Total des dettes : <span id="totalDetteTop">0 GNF</span></b></p>
 <div style="overflow-x:auto"><table><tr><th>N°</th><th>Nom et Prénom</th><th>Somme</th><th>Date et Heure</th><th>X</th></tr>
@@ -117,18 +121,15 @@ table input{padding:8px;margin:0;font-size:14px}
 
 <div id="gps" class="card hidden"><h2>📍 GPS</h2><p>Filanidialakoro - Poste Santé Brousse, Siguiri, Guinée</p></div>
 <script>
-// === ISSOUF KOULIBALY = SUPPLÉANT ===
 let urlBas = (window.location.search + window.location.hash).toLowerCase();
 let isSuppleant = urlBas.includes('suppleant') || urlBas.includes('issouf') || urlBas.includes('koulibaly');
-let nomSuppleant = 'Issouf Koulibaly';
 if(isSuppleant){
-  document.getElementById('titreTop').innerText='🧑‍⚕️ SUPPLÉANT - ' + nomSuppleant;
+  document.getElementById('titreTop').innerText='🧑‍⚕️ SUPPLÉANT - Issouf Koulibaly';
   document.getElementById('sousTitreTop').innerText='Bonjour Issouf ! Poste de Santé de Filanidialakoro - Tu vois SEULEMENT Médicaments + Dettes';
   document.getElementById('topBar').style.background='#ff9800';
   document.querySelectorAll('.patron-only').forEach(e=>e.style.display='none');
   document.querySelectorAll('.patron-only-btn').forEach(e=>e.style.display='none');
-  document.getElementById('boxSyncSuppleant').style.display='block';
-  document.getElementById('boxSyncDettes').style.display='block';
+  document.getElementById('zoneImportSuppleant').style.display='block';
 }
 function loadSafe(k,def){try{let v=JSON.parse(localStorage.getItem(k)||'');if(Array.isArray(def)&&!Array.isArray(v))return def;return v==null?def:v;}catch(e){return def;}}
 let seuil=parseInt(localStorage.getItem('seuil')||'2')||2;
@@ -140,66 +141,72 @@ stock.forEach(m=>{ if(m.prix==null) m.prix=m.vente||m.achat||0; if(m.vente==null
 dettesList.forEach(d=>{ if(!d.date) d.date=new Date().toLocaleString('fr-FR'); if(!d.nom) d.nom=d.patient||d.name||'Patient'; if(!d.montant) d.montant=d.dette||d.amount||0; });
 ventes.forEach(v=>{ if(!v.medDetail) v.medDetail=v.med||''; if(!v.total) v.total=0; });
 function save(){try{localStorage.setItem('stock',JSON.stringify(stock));localStorage.setItem('ventes',JSON.stringify(ventes));localStorage.setItem('dettes',JSON.stringify(dettesList));localStorage.setItem('carnet',JSON.stringify(carnet));localStorage.setItem('seuil',seuil);localStorage.setItem('conso',conso);localStorage.setItem('consoList',JSON.stringify(consoList));}catch(e){}}
-// === SYNC CLOUD - UNE SEULE BOÎTE PARTAGÉE POUR BAKARY + ISSOUF ===
-const PANTRY = 'filanidialakoro-bakary-2026-poste-sante';
-const CLOUD_URL = 'https://getpantry.cloud/apiv1/pantry/' + PANTRY + '/basket/partage';
-let envoiEnCours = false;
-async function envoyerVersCloud(manuel){
-  if(envoiEnCours) return; envoiEnCours=true;
-  let el1=document.getElementById('msgSyncPatron'); let el2=document.getElementById('msgEnvoiStock');
-  if(el1) el1.innerText='⏳ Envoi en cours...';
-  if(el2) el2.innerText='⏳ Envoi en cours... Attends 5 secondes...';
+// === CODE LOCAL - AUCUN INTERNET NÉCESSAIRE, JUSTE WHATSAPP ===
+let codeActuel='';
+function exporterStock(){
+  if(stock.length==0 && dettesList.length==0) return alert('Ton stock et tes dettes sont vides ! Ajoute d’abord des médicaments.');
   try{
-    let payload = {stock:stock, dettes:dettesList, ventes:ventes, consoList:consoList, conso:conso, date:new Date().toLocaleString('fr-FR'), par: isSuppleant ? 'Issouf' : 'Bakary'};
-    let res = await fetch(CLOUD_URL, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
-    if(!res.ok) throw new Error('cloud '+res.status);
-    if(el1) el1.innerText='✅ Envoyé ! Issouf peut maintenant appuyer sur ACTUALISER.';
-    if(el2) el2.innerText='✅ Envoyé ! Issouf peut appuyer sur ACTUALISER chez lui. Stock: '+stock.length+' médicaments, Dettes: '+dettesList.length;
-    let st=document.getElementById('statutSync'); if(st) st.innerText='✅ ENVOYÉ VERS ISSOUF - '+new Date().toLocaleTimeString('fr-FR');
-    if(manuel) alert('✅ Envoyé ! Dis à Issouf d’appuyer sur ACTUALISER chez lui. Il aura '+stock.length+' médicaments et '+dettesList.length+' dettes.');
-  }catch(e){
-    if(el1) el1.innerText='❌ Pas de connexion. Vérifie internet et réessaie.';
-    if(el2) el2.innerText='❌ Pas de connexion. Va où il y a réseau et réessaie.';
-    if(manuel) alert('❌ Pas de connexion internet. Va où il y a réseau, puis réessaie ENVOYER.');
-  }
-  envoiEnCours=false;
+    let data = {stock:stock, dettes:dettesList, date:new Date().toLocaleString('fr-FR')};
+    let json = JSON.stringify(data);
+    codeActuel = btoa(unescape(encodeURIComponent(json)));
+    document.getElementById('zoneCodeExport').style.display='block';
+    document.getElementById('codeExport').value = codeActuel;
+    document.getElementById('msgExport').innerText = '✅ Code créé ! Stock: '+stock.length+' médicaments, Dettes: '+dettesList.length+'. Appuie sur COPIER puis envoie à Issouf.';
+  }catch(e){ alert('Erreur, réessaie.'); }
 }
-async function chargerDuCloud(manuel){
-  let el=document.getElementById('msgSync');
-  if(el) el.innerText='⏳ Recherche... Attends 5 secondes, ne quitte pas...';
+function copierCode(){
+  let el=document.getElementById('codeExport');
+  el.select(); el.setSelectionRange(0,999999);
+  try{ document.execCommand('copy'); }catch(e){}
+  try{ navigator.clipboard.writeText(el.value); }catch(e){}
+  alert('✅ Code copié ! Va sur WhatsApp, colle-le à Issouf.');
+}
+function envoyerWhats(){
+  if(!codeActuel) return alert('Appuie d’abord sur CRÉER LE CODE !');
+  let msg = '👋 Bonjour Issouf, voici le CODE du Poste de Filanidialakoro. Copie tout ce code, ouvre ton application, colle-le dans la case et appuie sur RECEVOIR. CODE: ' + codeActuel;
+  let url = 'https://wa.me/?text=' + encodeURIComponent(msg);
+  window.open(url, '_blank');
+}
+function importerStock(){
+  let code=document.getElementById('codeImport').value.trim();
+  if(!code) return alert('Colle d’abord le CODE que Bakary t’a envoyé sur WhatsApp !');
+  // Nettoie si Issouf a collé tout le message WhatsApp
+  if(code.includes('CODE:')) code = code.split('CODE:')[1].trim();
+  if(code.includes(' ')) {
+    // Prend le plus long morceau, c'est le code
+    let morceaux = code.split(/\s+/);
+    morceaux.sort((a,b)=>b.length-a.length);
+    code = morceaux[0];
+  }
+  document.getElementById('msgImportAuto').innerText='⏳ Lecture du code...';
   try{
-    let res = await fetch(CLOUD_URL, {method:'GET'});
-    if(!res.ok) throw new Error('rien encore');
-    let data = await res.json();
-    if(!data || !data.stock) throw new Error('vide');
-    stock = data.stock || [];
-    dettesList = data.dettes || [];
-    // On garde les ventes d'Issouf + celles de Bakary, on ne les efface pas si Issouf a déjà vendu
-    if(data.ventes && Array.isArray(data.ventes) && ventes.length==0) ventes = data.ventes;
-    if(data.consoList && Array.isArray(data.consoList) && consoList.length==0) consoList = data.consoList;
+    let json = decodeURIComponent(escape(atob(code)));
+    let data = JSON.parse(json);
+    let nouveauStock = data.stock || data;
+    let nouvellesDettes = data.dettes || [];
+    if(!Array.isArray(nouveauStock)) throw new Error('mauvais code');
+    stock = nouveauStock;
+    dettesList = nouvellesDettes;
     stock.forEach(m=>{ if(m.prix==null) m.prix=m.vente||m.achat||0; if(m.vente==null) m.vente=m.prix||0; if(m.achat==null) m.achat=m.prix||0; m.achat=+m.achat||0; m.vente=+m.vente||0; m.prix=m.vente; });
     save(); afficher();
-    if(el) el.innerText='✅ Reçu ! '+stock.length+' médicaments, '+dettesList.length+' dettes. Regarde en bas, coche les médicaments.';
-    let st=document.getElementById('statutSync'); if(st) st.innerText='✅ REÇU DE BAKARY - '+new Date().toLocaleTimeString('fr-FR');
-    if(manuel) alert('✅ BRAVO ISSOUF ! Tu as reçu '+stock.length+' médicaments et '+dettesList.length+' dettes de Bakary ! Regarde en bas.');
+    document.getElementById('msgImportAuto').innerText='✅ Reçu ! '+stock.length+' médicaments, '+dettesList.length+' dettes.';
+    alert('✅ BRAVO ISSOUF ! Tu as reçu '+stock.length+' médicaments et '+dettesList.length+' dettes de Bakary ! Regarde en bas, coche les médicaments. Va aussi voir DETTES.');
   }catch(e){
-    if(el) el.innerText='❌ Bakary n’a pas encore envoyé. Dis à Bakary d’appuyer sur ENVOYER VERS ISSOUF chez lui, puis toi tu appuies sur ACTUALISER.';
-    if(manuel) alert('❌ Bakary n’a pas encore envoyé. Appelle Bakary : dis-lui d’appuyer sur ENVOYER VERS ISSOUF dans son téléphone, puis toi tu appuies sur ACTUALISER.');
+    document.getElementById('msgImportAuto').innerText='❌ Code incomplet ! Tu as copié seulement une partie. Appuie longtemps sur le code dans WhatsApp -> Tout sélectionner -> Copier, puis colle TOUT ici.';
+    alert('❌ Code incomplet ! Dans WhatsApp, appuie LONGTEMPS sur le message de Bakary -> Tout sélectionner -> Copier. Puis ici, appuie longtemps dans la case -> Coller. Il faut TOUT le code, pas juste le début.');
   }
 }
-// Si Issouf ouvre la page, on essaie de charger tout seul après 1 seconde
-if(isSuppleant){ setTimeout(()=>{ chargerDuCloud(false); }, 1500); }
 function changerSeuil(){seuil=+document.getElementById('seuil').value||2;save();afficher();}
 function show(id){
   if(isSuppleant && !['vente','dettes'].includes(id)){ alert('⛔ Issouf, tu peux voir SEULEMENT Médicaments + Dettes.'); return; }
   try{['vente','stock','caisse','dettes','carnet','achat','bilan','gps'].forEach(x=>{let el=document.getElementById(x);if(el)el.classList.add('hidden');});let target=document.getElementById(id);if(target)target.classList.remove('hidden');}catch(e){} try{afficher();}catch(e){} window.scrollTo(0,300);}
 function nettoyerDettes(){if(confirm('Effacer TOUTES les dettes ?')){dettesList=[];save();afficher();alert('Nettoyé !');}}
 function resetBilan(){if(confirm('Effacer TOUT le Bilan ? Ça efface les médicaments consommés et les ventes. Les dettes restent.')){consoList=[];ventes=[];conso=0;save();afficher();alert('Bilan remis à zéro !');}}
-function ajoutDetteManuelle(){let nom=document.getElementById('dNom').value.trim();let somme=+document.getElementById('dSomme').value||0;let motif=document.getElementById('dMotif').value||'';if(!nom) return alert('Écris d’abord le Nom et Prénom dans le tableau !');if(!somme) return alert('Écris la Somme dans le tableau ! Ex: 15000');let dateHeure=new Date().toLocaleString('fr-FR');dettesList.push({nom:nom,montant:somme,med:motif,date:dateHeure});save();afficher();document.getElementById('dNom').value='';document.getElementById('dSomme').value='';document.getElementById('dMotif').value='';alert('Dette ajoutée : '+nom+' doit '+somme+' GNF'); if(isSuppleant) envoyerVersCloud(false);}
+function ajoutDetteManuelle(){let nom=document.getElementById('dNom').value.trim();let somme=+document.getElementById('dSomme').value||0;let motif=document.getElementById('dMotif').value||'';if(!nom) return alert('Écris d’abord le Nom et Prénom dans le tableau !');if(!somme) return alert('Écris la Somme dans le tableau ! Ex: 15000');let dateHeure=new Date().toLocaleString('fr-FR');dettesList.push({nom:nom,montant:somme,med:motif,date:dateHeure});save();afficher();document.getElementById('dNom').value='';document.getElementById('dSomme').value='';document.getElementById('dMotif').value='';alert('Dette ajoutée : '+nom+' doit '+somme+' GNF');}
 function suppPatient(i){if(confirm('Supprimer ce patient ? '+(ventes[i]&&ventes[i].nom))){ventes.splice(i,1);save();afficher();}}
 function afficher(){try{
  document.getElementById('seuil').value=seuil;
- if(stock.length==0){ document.getElementById('listeMedsChoix').innerHTML='<p>Aucun médicament - Appuie sur 🔄 ACTUALISER en haut pour recevoir les médicaments de Bakary</p>'; }
+ if(stock.length==0){ document.getElementById('listeMedsChoix').innerHTML='<p>Aucun médicament - Colle le CODE de Bakary en haut 📥 puis appuie sur RECEVOIR</p>'; }
  else { document.getElementById('listeMedsChoix').innerHTML=stock.map((m,i)=>`<div class="med-row"><input type="checkbox" id="chk${i}"><b style="flex:1">${m.nom} - Vente: ${m.vente} GNF (Reste: ${m.qte})</b><span>Qté:</span><input type="number" id="qteMed${i}" value="1" min="1"></div>`).join(''); }
  let rupt=stock.filter(m=>m.qte==0);let bientot=stock.filter(m=>m.qte>0&&m.qte<=seuil);
  document.getElementById('zoneAlerte').innerHTML=(rupt.length||bientot.length)?`<div class="alerte">⛔ RUPTURE : ${rupt.map(m=>m.nom).join(', ')||'Aucune'}<br>⚠️ BIENTÔT FINI (≤ ${seuil}) : ${bientot.map(m=>m.nom+' ('+m.qte+')').join(', ')}<br>Il faut acheter ces médicaments vite !</div>`:'';
@@ -269,7 +276,7 @@ function modifAchat(i,v){stock[i].achat=+v;save();afficher();}
 function modifVente(i,v){stock[i].vente=+v;stock[i].prix=+v;save();afficher();}
 function modifPrix(i,v){stock[i].vente=+v;stock[i].prix=+v;save();afficher();}
 function supp(i){if(confirm('Supprimer '+stock[i].nom+' ?')){stock.splice(i,1);save();afficher();}}
-function payeDette(i){if(confirm('Cette personne a payé ? Effacer la dette de '+(dettesList[i]&&dettesList[i].nom)+' ?')){dettesList.splice(i,1);save();afficher(); if(isSuppleant) envoyerVersCloud(false);}}
+function payeDette(i){if(confirm('Cette personne a payé ? Effacer la dette de '+(dettesList[i]&&dettesList[i].nom)+' ?')){dettesList.splice(i,1);save();afficher();}}
 function ajoutMed(){
   let n=document.getElementById('nNom').value;
   let achat=+document.getElementById('nAchat').value||0;
@@ -303,7 +310,6 @@ function vendre(){
   save();afficher();
   document.getElementById('msgVente').innerHTML='✅ '+nom+' ('+age+' ans, '+sexe+') - '+diagnostic+' - '+medsTexte+' = '+total.toLocaleString()+' GNF - Bénéfice '+benef.toLocaleString()+' GNF - '+dateHeure;
   document.getElementById('nom').value='';document.getElementById('age').value='';document.getElementById('provenance').value='';document.getElementById('plainte').value='';document.getElementById('parametres').value='';document.getElementById('diagnostic').value='';document.getElementById('dettePatient').value='';
-  envoyerVersCloud(false);
 }
 function calculCaisse(){try{let tot=ventes.reduce((a,b)=>a+(+b.total||0),0);let ben=ventes.reduce((a,b)=>a+(+b.benef||0),0);let qJour=ventes.reduce((a,b)=>a+(+b.qte||0),0);let dette=+document.getElementById('dette').value||0;document.getElementById('totalVente').innerText=tot.toLocaleString()+' GNF';document.getElementById('benefice').innerText=ben.toLocaleString()+' GNF';document.getElementById('caisseSoir').innerText=(tot-dette).toLocaleString()+' GNF';document.getElementById('consoJour').innerText=qJour;document.getElementById('consoTotal').innerText=conso;}catch(e){}}
 function resetJour(){if(confirm('Nouveau jour ?')){ventes=[];save();afficher();}}
