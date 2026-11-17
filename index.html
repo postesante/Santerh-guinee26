@@ -19,6 +19,7 @@ label{font-weight:bold;font-size:14px}
 .med-row input[type=checkbox]{width:22px;height:22px}
 .med-row input[type=number]{width:70px}
 table input{padding:8px;margin:0;font-size:14px}
+.codebox{background:#fff3cd;border:3px dashed #ff9800;padding:15px;border-radius:12px;text-align:center;font-size:28px;font-weight:bold;letter-spacing:3px}
 </style></head><body>
 <div class="top" id="topBar"><h2 id="titreTop">👑 PATRON - Bakary Sidibe</h2><p id="sousTitreTop">Chef de Poste de Santé de Filanidialakoro - Tu vois TOUT</p><div class="connect">✅ CONNECTÉ</div></div>
 <div class="grid">
@@ -35,11 +36,12 @@ table input{padding:8px;margin:0;font-size:14px}
 <div id="vente" class="card">
 <h2>💊 Traiter un Patient</h2>
 <div id="zoneImportSuppleant" style="display:none;background:#fff3cd;padding:12px;border-radius:12px;border:2px dashed #ff9800;margin-bottom:10px">
-<b>📥 ISSOUF - Reçois le Stock du Patron :</b><br>
-<p id="msgImportAuto" style="font-size:13px"></p>
-<label>Si le lien n'a pas marché, colle ici le CODE que Bakary t'a envoyé :</label>
-<textarea id="codeImport" rows="3" placeholder="Colle le code ici..."></textarea>
-<button class="btn" style="background:#ff9800" onclick="importerStock()">📥 IMPORTER LE STOCK DU PATRON</button>
+<b>📥 ISSOUF - Reçois le Stock du Patron Bakary :</b><br>
+<p style="font-size:13px">Bakary t'a envoyé un PETIT CODE sur WhatsApp. Tape-le ici :</p>
+<label>Petit Code de Bakary :</label>
+<input id="codeImport" placeholder="Ex: a1b2c3" style="font-size:22px;text-align:center;font-weight:bold;letter-spacing:3px;text-transform:uppercase">
+<button class="btn" style="background:#ff9800" onclick="importerStock()">📥 RECEVOIR LES MÉDICAMENTS</button>
+<p id="msgImportAuto" style="font-size:13px;font-weight:bold"></p>
 </div>
 <label>Nom et Prénom :</label><input id="nom" placeholder="Ex: Mamadou Diallo">
 <label>Âge :</label><input type="number" id="age" placeholder="Ex: 25">
@@ -62,10 +64,15 @@ table input{padding:8px;margin:0;font-size:14px}
 <h2>📦 STOCK PERMANENT</h2>
 <div style="background:#e3f2fd;padding:12px;border-radius:12px;border:2px solid #1976d2;margin-bottom:10px">
 <b>📤 ENVOYER TON STOCK À ISSOUF KOULIBALY :</b><br>
-<p style="font-size:13px">1. Appuie sur le bouton<br>2. Appuie sur ENVOYER SUR WHATSAPP<br>3. Issouf clique juste sur le lien, c'est tout !</p>
-<button class="btn" style="background:#1976d2" onclick="exporterStock()">📤 CRÉER LE LIEN POUR ISSOUF</button>
-<textarea id="codeExport" rows="3" placeholder="Le lien pour Issouf va s'afficher ici..." readonly></textarea>
-<button class="btn" id="btnWhats" style="background:#25D366;display:none" onclick="envoyerWhats()">📲 ENVOYER SUR WHATSAPP À ISSOUF</button>
+<p style="font-size:13px">1. Appuie sur CRÉER LE PETIT CODE<br>2. Un petit code apparaît, ex: <b>X7K9P2</b><br>3. Envoie ce petit code à Issouf sur WhatsApp<br>4. Issouf tape le code chez lui, il reçoit tout !</p>
+<button class="btn" style="background:#1976d2" onclick="exporterStock()">📤 CRÉER LE PETIT CODE POUR ISSOUF</button>
+<div id="zoneCodeExport" style="display:none;margin-top:10px">
+<p>Ton petit code pour Issouf :</p>
+<div class="codebox" id="codeExport">------</div>
+<button class="btn" style="background:#25D366;margin-top:8px" onclick="envoyerWhats()">📲 ENVOYER CE PETIT CODE À ISSOUF SUR WHATSAPP</button>
+<p style="font-size:12px">Si WhatsApp ne marche pas, dis à Issouf le code à voix haute au téléphone.</p>
+</div>
+<p id="msgExport" style="font-weight:bold"></p>
 </div>
 <div style="display:flex;gap:6px;align-items:center"><span>⚠️ Alerter si stock ≤</span><input type="number" id="seuil" value="2" style="width:80px"><button class="btn" style="width:auto;background:#ff9800" onclick="changerSeuil()">Changer seuil</button></div>
 <div id="zoneAlerte" style="margin-top:10px"></div>
@@ -135,51 +142,73 @@ stock=stock.filter(m=>m&&typeof m==='object'); ventes=ventes.filter(v=>v&&typeof
 stock.forEach(m=>{ if(m.prix==null) m.prix=m.vente||m.achat||0; if(m.vente==null) m.vente=m.prix||0; if(m.achat==null) m.achat=m.prix||0; if(!m.nom) m.nom='Médicament'; if(m.qte==null) m.qte=0; m.achat=+m.achat||0; m.vente=+m.vente||0; m.prix=m.vente; });
 dettesList.forEach(d=>{ if(!d.date) d.date=new Date().toLocaleString('fr-FR'); if(!d.nom) d.nom=d.patient||d.name||'Patient'; if(!d.montant) d.montant=d.dette||d.amount||0; });
 ventes.forEach(v=>{ if(!v.medDetail) v.medDetail=v.med||''; if(!v.total) v.total=0; });
-try{
-  let hash = window.location.hash || '';
-  if(hash.includes('stock=')){
-    let code = hash.split('stock=')[1].split('&')[0];
-    let nouveau = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(code)))));
-    if(Array.isArray(nouveau) && nouveau.length>0){
-      stock = nouveau;
-      stock.forEach(m=>{ if(m.prix==null) m.prix=m.vente||m.achat||0; if(m.vente==null) m.vente=m.prix||0; if(m.achat==null) m.achat=m.prix||0; m.achat=+m.achat||0; m.vente=+m.vente||0; m.prix=m.vente; });
-      localStorage.setItem('stock', JSON.stringify(stock));
-      setTimeout(()=>{ let el=document.getElementById('msgImportAuto'); if(el) el.innerHTML='✅ <b>Stock reçu automatiquement ! '+stock.length+' médicaments. Tu peux traiter les patients, Issouf.</b>'; },500);
-    }
-  }
-}catch(e){}
 function save(){try{localStorage.setItem('stock',JSON.stringify(stock));localStorage.setItem('ventes',JSON.stringify(ventes));localStorage.setItem('dettes',JSON.stringify(dettesList));localStorage.setItem('carnet',JSON.stringify(carnet));localStorage.setItem('seuil',seuil);localStorage.setItem('conso',conso);localStorage.setItem('consoList',JSON.stringify(consoList));}catch(e){}}
-let lienPartage='';
-function exporterStock(){
+// === NOUVEAU : PETIT CODE VIA INTERNET (npoint.io) ===
+let petitCode='';
+async function exporterStock(){
   if(stock.length==0) return alert('Ton stock est vide ! Ajoute d’abord des médicaments.');
-  let code = btoa(unescape(encodeURIComponent(JSON.stringify(stock))));
-  let base = window.location.origin + window.location.pathname;
-  lienPartage = base + '?suppleant=issouf-koulibaly#stock=' + encodeURIComponent(code);
-  let el=document.getElementById('codeExport'); el.value=lienPartage; el.select();
-  try{ navigator.clipboard.writeText(lienPartage); }catch(e){}
-  document.getElementById('btnWhats').style.display='block';
-  alert('✅ LIEN CRÉÉ POUR ISSOUF ! Appuie maintenant sur ENVOYER SUR WHATSAPP.\nIl contient '+stock.length+' médicaments.');
+  document.getElementById('msgExport').innerText='⏳ Création du petit code... Attends 5 secondes, ne quitte pas...';
+  try{
+    let res = await fetch('https://api.npoint.io/create', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({stock:stock, dettes:dettesList, patron:'Bakary', date:new Date().toLocaleString('fr-FR')})});
+    let data = await res.json();
+    if(!data.id) throw new Error('no id');
+    petitCode = data.id;
+    document.getElementById('zoneCodeExport').style.display='block';
+    document.getElementById('codeExport').innerText = petitCode;
+    document.getElementById('msgExport').innerText = '✅ Code créé ! Envoie ce code à Issouf. Il a '+stock.length+' médicaments.';
+    try{ navigator.clipboard.writeText(petitCode); }catch(e){}
+  }catch(e){
+    // Si internet bloque npoint, on fait un code local : Issouf tape le code et on utilise le code complet en secours
+    let codeLong = btoa(unescape(encodeURIComponent(JSON.stringify(stock))));
+    petitCode = codeLong;
+    document.getElementById('zoneCodeExport').style.display='block';
+    document.getElementById('codeExport').innerText = 'INTERNET FAIBLE - Copie ce long code : ' + codeLong.substring(0,60) + '...';
+    document.getElementById('msgExport').innerText = '⚠️ Internet faible. Utilise le long code. Si ça ne marche pas, appelle Issouf et dis-lui les médicaments.';
+    alert('Internet faible. Essaie encore une fois, ou vérifie ta connexion et réessaie.');
+  }
 }
 function envoyerWhats(){
-  if(!lienPartage) return alert('Appuie d’abord sur CRÉER LE LIEN POUR ISSOUF !');
-  let msg = encodeURIComponent('👋 Bonjour Issouf Koulibaly, voici ton application. Clique sur le lien pour voir les médicaments : ' + lienPartage);
+  if(!petitCode) return alert('Appuie d’abord sur CRÉER LE PETIT CODE !');
+  let msg = encodeURIComponent('👋 Bonjour Issouf Koulibaly, voici ton petit code pour recevoir les médicaments du Poste de Filanidialakoro. Ouvre ton application, tape ce code : ' + petitCode + ' puis appuie sur RECEVOIR LES MÉDICAMENTS. Ton lien : ' + window.location.origin + window.location.pathname + '?suppleant=issouf-koulibaly');
   window.open('https://wa.me/?text=' + msg, '_blank');
 }
-function importerStock(){
+async function importerStock(){
   let code=document.getElementById('codeImport').value.trim();
-  if(!code) return alert('Colle d’abord le CODE que Bakary t’a envoyé !');
+  if(!code) return alert('Tape d’abord le PETIT CODE que Bakary t’a envoyé !');
+  document.getElementById('msgImportAuto').innerText='⏳ Recherche des médicaments... Attends 5 secondes...';
   try{
+    // 1. Essaie le petit code internet
+    let res = await fetch('https://api.npoint.io/' + code);
+    if(res.ok){
+      let data = await res.json();
+      let nouveau = data.stock || data;
+      if(Array.isArray(nouveau) && nouveau.length>0){
+        stock = nouveau;
+        if(data.dettes && Array.isArray(data.dettes)) dettesList = data.dettes;
+        stock.forEach(m=>{ if(m.prix==null) m.prix=m.vente||m.achat||0; if(m.vente==null) m.vente=m.prix||0; if(m.achat==null) m.achat=m.prix||0; m.achat=+m.achat||0; m.vente=+m.vente||0; m.prix=m.vente; });
+        save(); afficher();
+        document.getElementById('msgImportAuto').innerText='✅ BRAVO ISSOUF ! Tu as reçu '+stock.length+' médicaments ! Regarde en bas, coche les médicaments.';
+        alert('✅ BRAVO ISSOUF ! Tu as reçu '+stock.length+' médicaments du Patron Bakary !');
+        return;
+      }
+    }
+    // 2. Sinon essaie le long code collé
     let txt = code;
     if(txt.includes('stock=')) txt = txt.split('stock=')[1].split('&')[0];
     txt = decodeURIComponent(txt);
-    let nouveau = JSON.parse(decodeURIComponent(escape(atob(txt))));
-    if(!Array.isArray(nouveau) || nouveau.length==0) return alert('Code vide ou faux !');
-    stock = nouveau;
-    stock.forEach(m=>{ if(m.prix==null) m.prix=m.vente||m.achat||0; if(m.vente==null) m.vente=m.prix||0; if(m.achat==null) m.achat=m.prix||0; m.achat=+m.achat||0; m.vente=+m.vente||0; m.prix=m.vente; });
-    save(); afficher();
-    alert('✅ BRAVO ISSOUF ! Tu as reçu '+stock.length+' médicaments du Patron Bakary. Tu peux maintenant traiter les patients !');
-    document.getElementById('codeImport').value='';
-  }catch(e){ alert('❌ Code faux ! Demande à Bakary de renvoyer le LIEN.'); }
+    let nouveau2 = JSON.parse(decodeURIComponent(escape(atob(txt))));
+    if(Array.isArray(nouveau2) && nouveau2.length>0){
+      stock = nouveau2;
+      stock.forEach(m=>{ if(m.prix==null) m.prix=m.vente||m.achat||0; if(m.vente==null) m.vente=m.prix||0; if(m.achat==null) m.achat=m.prix||0; m.achat=+m.achat||0; m.vente=+m.vente||0; m.prix=m.vente; });
+      save(); afficher();
+      alert('✅ BRAVO ISSOUF ! Tu as reçu '+stock.length+' médicaments !');
+      return;
+    }
+    throw new Error('vide');
+  }catch(e){
+    document.getElementById('msgImportAuto').innerText='❌ Code faux ou internet coupé. Vérifie le code, vérifie ta connexion, réessaie.';
+    alert('❌ Code faux ! Vérifie : 1) Le code est bien celui de Bakary ? 2) Tu as la connexion ? 3) Tu as tapé le code en MAJUSCULE ? Réessaie.');
+  }
 }
 function changerSeuil(){seuil=+document.getElementById('seuil').value||2;save();afficher();}
 function show(id){
@@ -191,7 +220,7 @@ function ajoutDetteManuelle(){let nom=document.getElementById('dNom').value.trim
 function suppPatient(i){if(confirm('Supprimer ce patient ? '+(ventes[i]&&ventes[i].nom))){ventes.splice(i,1);save();afficher();}}
 function afficher(){try{
  document.getElementById('seuil').value=seuil;
- if(stock.length==0){ document.getElementById('listeMedsChoix').innerHTML='<p>Aucun médicament - Demande au Patron Bakary de t’envoyer le LIEN du stock (voir en haut 📥)</p>'; }
+ if(stock.length==0){ document.getElementById('listeMedsChoix').innerHTML='<p>Aucun médicament - Tape le PETIT CODE de Bakary en haut 📥 puis appuie sur RECEVOIR</p>'; }
  else { document.getElementById('listeMedsChoix').innerHTML=stock.map((m,i)=>`<div class="med-row"><input type="checkbox" id="chk${i}"><b style="flex:1">${m.nom} - Vente: ${m.vente} GNF (Reste: ${m.qte})</b><span>Qté:</span><input type="number" id="qteMed${i}" value="1" min="1"></div>`).join(''); }
  let rupt=stock.filter(m=>m.qte==0);let bientot=stock.filter(m=>m.qte>0&&m.qte<=seuil);
  document.getElementById('zoneAlerte').innerHTML=(rupt.length||bientot.length)?`<div class="alerte">⛔ RUPTURE : ${rupt.map(m=>m.nom).join(', ')||'Aucune'}<br>⚠️ BIENTÔT FINI (≤ ${seuil}) : ${bientot.map(m=>m.nom+' ('+m.qte+')').join(', ')}<br>Il faut acheter ces médicaments vite !</div>`:'';
