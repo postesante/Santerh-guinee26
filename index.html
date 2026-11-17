@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Poste Santé - Bakary</title>
+<title>Poste Santé - Bakary - CORRIGÉ</title>
 <style>
 *{box-sizing:border-box} body{font-family:Arial,sans-serif;background:#f0f2f5;margin:0;padding:10px}
 .header{background:#0b6e4f;color:#fff;padding:15px;border-radius:12px;text-align:center}
@@ -29,14 +29,15 @@ th{background:#0b6e4f;color:#fff;padding:8px;text-align:left} td{padding:8px;bor
 .xbtn{background:#c0392b;color:#fff;border:none;border-radius:50%;width:28px;height:28px;font-weight:bold;cursor:pointer}
 .med-row{display:flex;gap:6px;align-items:center;background:#eafaf1;padding:6px;border-radius:10px;margin:5px 0}
 .med-row select{flex:2}.med-row input{flex:1}.med-row button{flex:0 0 32px;height:38px;background:#c0392b;color:#fff;border:none;border-radius:8px;font-weight:bold}
-/* NOUVEAU : STOCK EN LISTE VISIBLE */
 .stock-item{display:flex;justify-content:space-between;align-items:center;background:#f8f9fa;border:1px solid #eee;border-radius:12px;padding:10px;margin:6px 0}
 .stock-item b{font-size:15px}.stock-item small{color:#666;font-size:12px;display:block}
+#msgBox{position:fixed;top:10px;left:50%;transform:translateX(-50%);background:#0b6e4f;color:#fff;padding:12px 20px;border-radius:10px;font-weight:bold;z-index:9999;display:none;box-shadow:0 4px 12px rgba(0,0,0,.3)}
 </style>
 </head>
 <body>
+<div id="msgBox"></div>
 <div class="header"><h1>💊 POSTE SANTÉ - BAKARY</h1><p>Chef : Bakary Sidibe | Suppléant : Issouf Koulibaly</p><div id="roleBadge"></div></div>
-<div id="syncStatus" class="status off">● Connexion...</div>
+<div id="syncStatus" class="status ok">● Sauvegardé dans le téléphone ✅</div>
 <div id="kpiZone" class="kpi"><div><b id="kpiPatients">0</b><span>Patients</span></div><div><b id="kpiStock">0</b><span>Médicaments</span></div><div><b id="kpiDettes">0</b><span>GNF Dettes</span></div><div><b id="kpiBenef">0</b><span>GNF Bénéfice</span></div><div><b id="kpiCaisse">0</b><span>GNF Caisse</span></div></div>
 <div class="tabs" id="tabsZone"></div>
 
@@ -78,23 +79,34 @@ th{background:#0b6e4f;color:#fff;padding:8px;text-align:left} td{padding:8px;bor
 <div id="page-gps" style="display:none"><div class="card"><h3>📍 GPS</h3><p>Poste Santé de Bakary - Conakry, Guinée</p><a href="https://www.google.com/maps/search/?api=1&query=Conakry+Guinee" target="_blank"><button class="btn btn-blue">📍 OUVRIR GOOGLE MAPS</button></a></div></div>
 
 <script>
-const CODE='BAKARY-PHARMA-2026-V4';
 const params=new URLSearchParams(window.location.search);
 let ROLE = params.get('role')==='suppleant' ? 'suppleant' : 'patron';
 let DEFAULT_STOCK=[{nom:'Paracétamol',qte:20,achat:3000,vente:5000,seuil:5},{nom:'Amoxicilline',qte:15,achat:7000,vente:10000,seuil:5},{nom:'Artemether',qte:10,achat:10000,vente:15000,seuil:3},{nom:'Vitamine C',qte:30,achat:2000,vente:4000,seuil:5},{nom:'Fer',qte:20,achat:4000,vente:7000,seuil:5},{nom:'AAS300mg',qte:160,achat:250,vente:750,seuil:5}];
 let DATA={patients:[],stock:JSON.parse(JSON.stringify(DEFAULT_STOCK)),dettes:[],achats:[],updated:0};
-function apiUrl(){return 'https://api.jsonstorage.net/v1/json/'+encodeURIComponent(CODE);}
+
+function showMsg(txt){
+  let b=document.getElementById('msgBox');
+  b.innerText=txt; b.style.display='block';
+  setTimeout(()=>{b.style.display='none';},3000);
+}
 function sauvegarder(){
   DATA.updated=Date.now();
-  try{localStorage.setItem('pharma_data',JSON.stringify(DATA));}catch(e){}
-  try{fetch(apiUrl(),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(DATA)}).then(()=>{document.getElementById('syncStatus').innerText='● Connecté ✅';document.getElementById('syncStatus').className='status ok';}).catch(()=>{});}catch(e){}
+  try{localStorage.setItem('pharma_data',JSON.stringify(DATA));}catch(e){console.log(e)}
   document.getElementById('syncStatus').innerText='● Sauvegardé dans le téléphone ✅';
   document.getElementById('syncStatus').className='status ok';
 }
-async function charger(){
-  const local=localStorage.getItem('pharma_data');
-  if(local){try{const ld=JSON.parse(local); if(ld.updated && ld.updated>DATA.updated) DATA=ld;}catch(e){}}
-  try{const r=await fetch(apiUrl()); if(!r.ok) return; const j=await r.json(); if(j && j.patients && j.updated && j.updated>DATA.updated){DATA=j; localStorage.setItem('pharma_data',JSON.stringify(DATA)); afficher();}}catch(e){}
+function charger(){
+  try{
+    const local=localStorage.getItem('pharma_data');
+    if(local){
+      const ld=JSON.parse(local);
+      if(ld && ld.stock && Array.isArray(ld.stock)){
+        // Si local a des données, on le garde. Si local est vide mais on a déjà du stock par défaut, on garde défaut.
+        // On ne doit JAMAIS écraser avec un stock vide venu d'Internet
+        if(ld.stock.length>0 || ld.patients.length>0 || ld.achats.length>0){ DATA=ld; }
+      }
+    }
+  }catch(e){}
 }
 function showTab(t){['traitement','stock','dettes','achat','bilan','caisse','gps'].forEach(x=>{let el=document.getElementById('page-'+x);if(el)el.style.display=(x===t?'block':'none');});document.querySelectorAll('.tabs button').forEach(b=>{b.className=b.dataset.tab===t?'active':'';});afficher();}
 function buildTabs(){
@@ -121,7 +133,8 @@ function ajouterTraitement(){
   meds.forEach(m=>{const s=DATA.stock.find(x=>x.nom===m.nom);if(s)s.qte=Math.max(0,s.qte-m.qte);});
   if(paye==='dette'){DATA.dettes.unshift({nom,medoc:trait+' - '+medsTexte,prix,tel,date});}
   ['tNom','tAdresse','tAge','tPlainte','tDiag','tTrait','tTel'].forEach(id=>document.getElementById(id).value='');
-  resetMeds(); sauvegarder(); afficher(); alert('Patient enregistré ✅ : '+medsTexte);
+  if(ROLE==='patron') document.getElementById('tPrix').value='';
+  resetMeds(); sauvegarder(); afficher(); showMsg('Patient enregistré ✅ : '+medsTexte);
 }
 function ajouterStock(){
   if(ROLE!=='patron') return alert('Seul le Patron peut ajouter au stock');
@@ -137,7 +150,7 @@ function ajouterStock(){
   else { DATA.stock.push({nom,qte,achat,vente,seuil}); }
   sauvegarder(); afficher();
   document.getElementById('sNom').value=''; document.getElementById('sQte').value=''; document.getElementById('sAchat').value=''; document.getElementById('sVente').value=''; document.getElementById('sSeuil').value='5';
-  alert('✅ Médicament enregistré : '+nom+' - '+qte+' en stock');
+  showMsg('✅ Médicament enregistré : '+nom+' - '+qte+' en stock');
   showTab('stock');
 }
 function reparerStock(){
@@ -146,10 +159,30 @@ function reparerStock(){
       if(!DATA.stock.find(s=>s.nom.toLowerCase()===d.nom.toLowerCase())) DATA.stock.push(d);
     });
     if(DATA.stock.length===0) DATA.stock=JSON.parse(JSON.stringify(DEFAULT_STOCK));
-    sauvegarder(); afficher(); alert('Stock réparé ✅ Tu dois voir les médicaments maintenant');
+    sauvegarder(); afficher(); showMsg('Stock réparé ✅ Tu dois voir les médicaments maintenant');
   }
 }
-function ajouterAchat(){const nom=document.getElementById('aNom').value.trim();const qte=parseInt(document.getElementById('aQte').value)||0;const prix=parseInt(document.getElementById('aPrix').value)||0;if(!nom)return alert('Nom');const date=new Date().toLocaleDateString('fr-FR');DATA.achats.unshift({nom,qte,prix,date});const ex=DATA.stock.find(x=>x.nom.toLowerCase()===nom.toLowerCase());if(ex)ex.qte+=qte;else DATA.stock.push({nom,qte,achat:0,vente:0,seuil:5});sauvegarder();afficher();alert('Achat enregistré ✅');}
+// ===== CORRIGÉ : ACHAT =====
+function ajouterAchat(){
+  const nom=document.getElementById('aNom').value.trim();
+  const qte=parseInt(document.getElementById('aQte').value)||0;
+  const prix=parseInt(document.getElementById('aPrix').value)||0;
+  if(!nom){ alert('Mets le nom du médicament'); return; }
+  if(qte<=0){ alert('Mets la quantité, ex: 20'); return; }
+  const date=new Date().toLocaleDateString('fr-FR');
+  DATA.achats.unshift({nom,qte,prix,date});
+  const ex=DATA.stock.find(x=>x.nom.toLowerCase()===nom.toLowerCase());
+  if(ex){ ex.qte+=qte; if(prix>0 && qte>0){ ex.achat=Math.round(prix/qte); } }
+  else { DATA.stock.push({nom,qte,achat:(qte>0?Math.round(prix/qte):0),vente:0,seuil:5}); }
+  sauvegarder(); afficher();
+  // VIDER LES CASES - c'était le bug, avant ça restait plein
+  document.getElementById('aNom').value='';
+  document.getElementById('aQte').value='';
+  document.getElementById('aPrix').value='';
+  showMsg('✅ Achat enregistré : '+nom+' x'+qte+' - '+prix+' GNF');
+  // Aller voir dans Stock Permanent tout de suite
+  showTab('stock');
+}
 function supprimerDette(i){if(confirm('Dette payée ? Supprimer ?')){const d=DATA.dettes[i];const p=DATA.patients.find(x=>x.nom===d.nom&&x.prix===d.prix);if(p)p.paye='paye';DATA.dettes.splice(i,1);sauvegarder();afficher();}}
 function supprimerTrait(i){if(confirm('Supprimer ce traitement ?')){DATA.patients.splice(i,1);sauvegarder();afficher();}}
 function supprimerStock(i){if(ROLE!=='patron')return;if(confirm('Supprimer ?')){DATA.stock.splice(i,1);sauvegarder();afficher();}}
@@ -157,7 +190,7 @@ function afficher(){
   let vendu=DATA.patients.filter(p=>p.paye==='paye').reduce((a,p)=>a+p.prix,0);
   let dettesTot=DATA.dettes.reduce((a,d)=>a+d.prix,0);
   let achatsTot=DATA.achats.reduce((a,d)=>a+d.prix,0);
-  let benef=0;DATA.patients.forEach(p=>{if(p.meds){p.meds.forEach(m=>{const s=DATA.stock.find(x=>x.nom===m.nom);if(s&&p.paye==='paye')benef+=(s.vente-s.achat)*m.qte;});}else if(p.medoc){const s=DATA.stock.find(x=>x.nom===p.medoc);if(s&&p.paye==='paye')benef+=(s.vente-s.achat)*(p.qte||1);}});
+  let benef=0;DATA.patients.forEach(p=>{if(p.meds){p.meds.forEach(m=>{const s=DATA.stock.find(x=>x.nom===m.nom);if(s&&p.paye==='paye')benef+=(s.vente-s.achat)*m.qte;});}});
   document.getElementById('kpiPatients').innerText=DATA.patients.length;
   document.getElementById('kpiStock').innerText=DATA.stock.length;
   document.getElementById('kpiDettes').innerText=dettesTot.toLocaleString();
@@ -173,7 +206,6 @@ function afficher(){
   document.getElementById('tbodyTrait').innerHTML=DATA.patients.map((p,i)=>{
     let medsTxt = p.meds ? p.meds.map(m=>m.nom+' x'+m.qte).join('<br>') : (p.medoc||'')+' x'+(p.qte||1);
     return `<tr><td><b>${p.nom}</b></td><td>${p.plainte||''}</td><td>${p.diag||''}</td><td>${p.trait||''}</td><td>${medsTxt}</td>${ROLE==='patron'?`<td>${p.prix} GNF</td>`:''}<td>${p.paye==='paye'?'✅ Payé':'❌ Dette'}</td><td><button class="xbtn" onclick="supprimerTrait(${i})">X</button></td></tr>`;}).join('')||'<tr><td colspan="8">Aucun patient</td></tr>';
-  // STOCK EN LISTE VISIBLE - PAS DE TABLEAU CACHÉ
   const search=(document.getElementById('searchStock').value||'').toLowerCase();
   document.getElementById('nbStock').innerText=DATA.stock.length;
   if(ROLE==='patron'){
@@ -206,8 +238,8 @@ function afficher(){
   }
   document.querySelectorAll('.med-select').forEach(sel=>{ let val=sel.value; sel.innerHTML=medOptions(); if(val) sel.value=val; });
 }
-const saved=localStorage.getItem('pharma_data');if(saved){try{let ld=JSON.parse(saved); if(ld.stock && ld.stock.length>0) DATA=ld; else if(ld.stock && ld.stock.length===0){ /* garde stock par défaut, ne pas écraser avec vide */ }}catch(e){}}
-buildTabs();resetMeds();afficher();charger();setInterval(charger,8000);
+charger();
+buildTabs();resetMeds();afficher();
 </script>
 </body>
-</html>
+</html> 
