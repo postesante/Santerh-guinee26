@@ -3,22 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Stock - Poste Santé Bakary</title>
+<title>Stock Tableau - Poste Santé Bakary</title>
 <style>
 *{box-sizing:border-box} body{font-family:Arial,sans-serif;background:#f0f2f5;margin:0;padding:10px}
 .header{background:#0b6e4f;color:#fff;padding:15px;border-radius:12px;text-align:center}
 .header h1{margin:0;font-size:20px}
-.card{background:#fff;padding:12px;border-radius:12px;margin-bottom:10px}
+.card{background:#fff;padding:12px;border-radius:12px;margin-bottom:10px;overflow-x:auto}
 input{width:100%;padding:11px;margin:5px 0;border:1px solid #ccc;border-radius:8px;font-size:14px}
 .btn{width:100%;padding:13px;border:none;border-radius:10px;font-weight:bold;font-size:15px;cursor:pointer}
 .btn-green{background:#0b6e4f;color:#fff}.btn-orange{background:#f39c12;color:#fff;margin-top:8px}
-.stock-item{background:#f8f9fa;border:1px solid #eee;border-radius:12px;padding:10px;margin:6px 0}
-.stock-item b{font-size:16px}.stock-item small{color:#666;font-size:12px;display:block;line-height:1.6}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:650px}
+th{background:#0b6e4f;color:#fff;padding:9px;text-align:left;white-space:nowrap} td{padding:9px;border-bottom:1px solid #eee;white-space:nowrap}
+tfoot td{background:#eafaf1;font-weight:bold;font-size:14px}
 .alert{color:#fff;background:#c0392b;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:bold}
 .ok-stock{color:#fff;background:#0b6e4f;padding:3px 8px;border-radius:20px;font-size:11px}
 .warn{color:#fff;background:#f39c12;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:bold}
-.xbtn{background:#c0392b;color:#fff;border:none;border-radius:50%;width:30px;height:30px;font-weight:bold;cursor:pointer}
-.editbtn{background:#1a73e8;color:#fff;border:none;border-radius:8px;padding:6px 10px;font-weight:bold;cursor:pointer}
+.xbtn{background:#c0392b;color:#fff;border:none;border-radius:50%;width:28px;height:28px;font-weight:bold;cursor:pointer}
+.editbtn{background:#1a73e8;color:#fff;border:none;border-radius:8px;padding:5px 8px;font-weight:bold;cursor:pointer;font-size:12px}
 #msgBox{position:fixed;top:10px;left:50%;transform:translateX(-50%);background:#0b6e4f;color:#fff;padding:12px 20px;border-radius:10px;font-weight:bold;z-index:9999;display:none}
 .kpi{display:flex;gap:8px}.kpi div{flex:1;background:#fff;padding:10px;border-radius:10px;text-align:center}
 .kpi b{font-size:18px;display:block}.kpi span{font-size:11px;color:#666}
@@ -26,13 +27,13 @@ input{width:100%;padding:11px;margin:5px 0;border:1px solid #ccc;border-radius:8
 </head>
 <body>
 <div id="msgBox"></div>
-<div class="header"><h1>💊 STOCK - POSTE SANTÉ BAKARY</h1><p>Chef : Bakary Sidibe | ÉTAPE 1 : STOCK SEULEMENT</p></div>
-<div class="kpi" style="margin:10px 0"><div><b id="nbTotal">0</b><span>Médicaments</span></div><div><b id="nbRupture">0</b><span>En Rupture</span></div><div><b id="nbFini">0</b><span>Bientôt Fini</span></div></div>
+<div class="header"><h1>💊 STOCK - POSTE SANTÉ BAKARY</h1><p>Chef : Bakary Sidibe | ÉTAPE 1 : STOCK EN TABLEAU</p></div>
+<div class="kpi" style="margin:10px 0"><div><b id="nbTotal">0</b><span>Médicaments</span></div><div><b id="totalBenefKpi">0</b><span>GNF Total Bénéfice</span></div><div><b id="nbRupture">0</b><span>En Rupture</span></div></div>
 
 <div class="card"><h3>➕ Ajouter un médicament</h3>
 <input id="sNom" placeholder="Nom ex: Ceftriaxone 1g">
-<input id="sQte" type="number" placeholder="Stock Disponible - Quantité dans l'appli ex: 20">
-<input id="sPhysique" type="number" placeholder="Stock Physique - Quantité comptée dans l'armoire ex: 20">
+<input id="sQte" type="number" placeholder="Stock Disponible ex: 20">
+<input id="sPhysique" type="number" placeholder="Stock Physique (armoire) ex: 20">
 <input id="sAchat" type="number" placeholder="Prix d'achat 1 pièce GNF ex: 6500">
 <input id="sVente" type="number" placeholder="Prix de vente 1 pièce GNF ex: 10000">
 <input id="sSeuil" type="number" value="5" placeholder="Seuil alerte ex: 5">
@@ -40,29 +41,25 @@ input{width:100%;padding:11px;margin:5px 0;border:1px solid #ccc;border-radius:8
 <p id="msgAchat" style="text-align:center;font-weight:bold;color:#0b6e4f"></p>
 </div>
 
-<div class="card"><h3>💊 Stock Permanent - <span id="nbStock">0</span> médicaments</h3>
+<div class="card"><h3>💊 Tableau Stock Permanent</h3>
 <input id="searchStock" placeholder="🔍 Chercher un médicament..." oninput="afficher()">
-<div id="listeStock"></div>
+<div style="overflow-x:auto">
+<table>
+<thead><tr><th>N°</th><th>Nom du Médicament</th><th>Stock Disponible</th><th>Stock Physique</th><th>Prix d'Achat</th><th>Prix de Vente</th><th>Bénéfice / 1</th><th>Total Bénéfice</th><th>État</th><th></th></tr></thead>
+<tbody id="tbodyStock"></tbody>
+<tfoot><tr><td colspan="7" style="text-align:right">TOTAL BÉNÉFICE STOCK :</td><td id="totalBenef">0 GNF</td><td colspan="2"></td></tr></tfoot>
+</table>
+</div>
+<p id="emptyMsg" style="text-align:center;color:#c0392b;font-weight:bold;display:none">⚠️ Aucun médicament visible. Appuie sur Réparer.</p>
 <button class="btn btn-orange" onclick="reparerStock()">🔄 Si tu ne vois rien, appuie ici</button>
 </div>
 
 <script>
 let DEFAULT_STOCK=[{nom:'Paracétamol',qte:20,physique:20,achat:3000,vente:5000,seuil:5},{nom:'Amoxicilline',qte:15,physique:15,achat:7000,vente:10000,seuil:5},{nom:'Artemether',qte:10,physique:10,achat:10000,vente:15000,seuil:3}];
 let STOCK = JSON.parse(JSON.stringify(DEFAULT_STOCK));
-
-function showMsg(txt){
-  let b=document.getElementById('msgBox'); b.innerText=txt; b.style.display='block';
-  setTimeout(()=>{b.style.display='none';},3000);
-}
-function sauvegarder(){
-  try{localStorage.setItem('bakary_stock_v1',JSON.stringify(STOCK));}catch(e){}
-}
-function charger(){
-  try{
-    let l=localStorage.getItem('bakary_stock_v1');
-    if(l){ let d=JSON.parse(l); if(d && d.length>0) STOCK=d; }
-  }catch(e){}
-}
+function showMsg(txt){let b=document.getElementById('msgBox');b.innerText=txt;b.style.display='block';setTimeout(()=>{b.style.display='none';},3000);}
+function sauvegarder(){try{localStorage.setItem('bakary_stock_v1',JSON.stringify(STOCK));}catch(e){}}
+function charger(){try{let l=localStorage.getItem('bakary_stock_v1');if(l){let d=JSON.parse(l);if(d && d.length>0)STOCK=d;}}catch(e){}}
 function ajouterStock(){
   let nom=document.getElementById('sNom').value.trim();
   let qte=parseInt(document.getElementById('sQte').value)||0;
@@ -72,49 +69,48 @@ function ajouterStock(){
   let seuil=parseInt(document.getElementById('sSeuil').value)||5;
   if(!nom){alert('Mets le nom du médicament');return;}
   if(qte<=0){alert('Mets la quantité, ex: 20');return;}
-  if(physique===0) physique=qte; // Si tu ne mets pas physique, on met pareil que disponible
+  if(physique===0) physique=qte;
   let ex=STOCK.find(x=>x.nom.toLowerCase()===nom.toLowerCase());
-  if(ex){ ex.qte+=qte; ex.physique+=physique; ex.achat=achat; ex.vente=vente; ex.seuil=seuil; }
-  else{ STOCK.push({nom,qte,physique,achat,vente,seuil}); }
-  sauvegarder(); afficher();
-  document.getElementById('sNom').value=''; document.getElementById('sQte').value=''; document.getElementById('sPhysique').value=''; document.getElementById('sAchat').value=''; document.getElementById('sVente').value=''; document.getElementById('sSeuil').value='5';
+  if(ex){ex.qte+=qte;ex.physique+=physique;ex.achat=achat;ex.vente=vente;ex.seuil=seuil;}
+  else{STOCK.push({nom,qte,physique,achat,vente,seuil});}
+  sauvegarder();afficher();
+  document.getElementById('sNom').value='';document.getElementById('sQte').value='';document.getElementById('sPhysique').value='';document.getElementById('sAchat').value='';document.getElementById('sVente').value='';document.getElementById('sSeuil').value='5';
   showMsg('✅ Enregistré : '+nom+' x'+qte);
   document.getElementById('msgAchat').innerText='✅ Enregistré : '+nom+' x'+qte;
 }
-function supprimerStock(i){ if(confirm('Supprimer ce médicament ?')){ STOCK.splice(i,1); sauvegarder(); afficher(); } }
+function supprimerStock(i){if(confirm('Supprimer ce médicament ?')){STOCK.splice(i,1);sauvegarder();afficher();}}
 function corrigerPhysique(i){
-  let nv=prompt('Combien tu as compté dans l\'armoire pour '+STOCK[i].nom+' ?', STOCK[i].physique);
-  if(nv===null) return;
-  nv=parseInt(nv)||0;
-  STOCK[i].physique=nv; STOCK[i].qte=nv; // On met les 2 pareils après comptage
-  sauvegarder(); afficher(); showMsg('✅ Stock corrigé : '+STOCK[i].nom+' = '+nv);
+  let nv=prompt('Combien tu as compté dans l\'armoire pour '+STOCK[i].nom+' ?',STOCK[i].physique);
+  if(nv===null)return; nv=parseInt(nv)||0;
+  STOCK[i].physique=nv;STOCK[i].qte=nv; sauvegarder();afficher(); showMsg('✅ Stock corrigé : '+STOCK[i].nom+' = '+nv);
 }
 function reparerStock(){
   if(confirm('Remettre les médicaments de base ?')){
-    DEFAULT_STOCK.forEach(d=>{ if(!STOCK.find(s=>s.nom.toLowerCase()===d.nom.toLowerCase())) STOCK.push(d); });
-    if(STOCK.length===0) STOCK=JSON.parse(JSON.stringify(DEFAULT_STOCK));
-    sauvegarder(); afficher(); showMsg('Stock réparé ✅');
+    DEFAULT_STOCK.forEach(d=>{if(!STOCK.find(s=>s.nom.toLowerCase()===d.nom.toLowerCase()))STOCK.push(d);});
+    if(STOCK.length===0)STOCK=JSON.parse(JSON.stringify(DEFAULT_STOCK));
+    sauvegarder();afficher();showMsg('Stock réparé ✅');
   }
 }
 function afficher(){
   let search=(document.getElementById('searchStock').value||'').toLowerCase();
-  document.getElementById('nbStock').innerText=STOCK.length;
+  let filtered=STOCK.filter(s=>s.nom.toLowerCase().includes(search));
   document.getElementById('nbTotal').innerText=STOCK.length;
   document.getElementById('nbRupture').innerText=STOCK.filter(s=>s.qte===0).length;
-  document.getElementById('nbFini').innerText=STOCK.filter(s=>s.qte>0 && s.qte<=s.seuil).length;
-  let filtered=STOCK.filter(s=>s.nom.toLowerCase().includes(search));
-  if(filtered.length===0){
-    document.getElementById('listeStock').innerHTML='<p style="text-align:center;color:#c0392b;font-weight:bold">⚠️ Aucun médicament visible.<br>Appuie sur 🔄 en bas.</p>';
-  } else {
-    document.getElementById('listeStock').innerHTML=filtered.map(s=>{
-      let idx=STOCK.indexOf(s);
-      let alerte=s.qte===0?'<span class="alert">RUPTURE !</span>':s.qte<=s.seuil?'<span class="warn">⚠️ BIENTÔT FINI</span>':'<span class="ok-stock">DISPONIBLE</span>';
-      let diff = s.qte!==s.physique ? '<br><span style="color:#c0392b;font-weight:bold">⚠️ Différence ! Appli dit '+s.qte+' mais armoire = '+s.physique+'</span>' : '<br><span style="color:#0b6e4f">✅ Appli = Armoire, c\'est bon</span>';
-      return `<div class="stock-item"><div><b>${s.nom}</b><small>Stock Disponible (appli) : <b>${s.qte}</b> | Stock Physique (armoire) : <b>${s.physique}</b>${diff}<br>Achat : ${s.achat} GNF | Vente : ${s.vente} GNF | Bénéfice : ${s.vente-s.achat} GNF | Seuil : ${s.seuil}</small></div><div style="text-align:right;margin-top:6px">${alerte}<br><br><button class="editbtn" onclick="corrigerPhysique(${idx})">📦 Corriger Physique</button> <button class="xbtn" onclick="supprimerStock(${idx})">X</button></div></div>`;
-    }).join('');
-  }
+  // Calcul Total Bénéfice = (Vente - Achat) x Stock Disponible
+  let totalBenef=STOCK.reduce((a,s)=>a+((s.vente-s.achat)*s.qte),0);
+  document.getElementById('totalBenef').innerText=totalBenef.toLocaleString()+' GNF';
+  document.getElementById('totalBenefKpi').innerText=totalBenef.toLocaleString();
+  document.getElementById('emptyMsg').style.display=filtered.length===0?'block':'none';
+  document.getElementById('tbodyStock').innerHTML=filtered.map((s,idx)=>{
+    let i=STOCK.indexOf(s);
+    let benef=s.vente-s.achat;
+    let total=benef*s.qte;
+    let alerte=s.qte===0?'<span class="alert">RUPTURE !</span>':s.qte<=s.seuil?'<span class="warn">⚠️ BIENTÔT FINI</span>':'<span class="ok-stock">DISPONIBLE</span>';
+    let diff=s.qte!==s.physique?' <span style="color:#c0392b;font-weight:bold">⚠️ Diff!</span>':'';
+    return `<tr><td><b>${idx+1}</b></td><td><b>${s.nom}</b></td><td><b>${s.qte}</b>${diff}</td><td>${s.physique}</td><td>${s.achat.toLocaleString()} GNF</td><td>${s.vente.toLocaleString()} GNF</td><td>${benef.toLocaleString()} GNF</td><td><b>${total.toLocaleString()} GNF</b></td><td>${alerte}</td><td><button class="editbtn" onclick="corrigerPhysique(${i})">📦 Corriger</button> <button class="xbtn" onclick="supprimerStock(${i})">X</button></td></tr>`;
+  }).join('');
 }
-charger(); afficher();
+charger();afficher();
 </script>
 </body>
 </html>
