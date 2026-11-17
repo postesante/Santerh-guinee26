@@ -37,7 +37,6 @@ th{background:#0b6e4f;color:#fff;padding:8px;text-align:left} td{padding:8px;bor
 <div id="kpiZone" class="kpi"><div><b id="kpiPatients">0</b><span>Patients</span></div><div><b id="kpiStock">0</b><span>Médicaments</span></div><div><b id="kpiDettes">0</b><span>GNF Dettes</span></div><div><b id="kpiBenef">0</b><span>GNF Bénéfice</span></div><div><b id="kpiCaisse">0</b><span>GNF Caisse</span></div></div>
 <div class="tabs" id="tabsZone"></div>
 
-<!-- TRAITEMENT -->
 <div id="page-traitement">
 <div class="card"><h3>➕ Nouveau Traitement Patient</h3>
 <input id="tNom" placeholder="Nom et Prénom">
@@ -46,11 +45,9 @@ th{background:#0b6e4f;color:#fff;padding:8px;text-align:left} td{padding:8px;bor
 <input id="tPlainte" placeholder="Plainte ex: Fièvre, maux de tête">
 <input id="tDiag" placeholder="Diagnostic ex: Palu simple">
 <input id="tTrait" placeholder="Traitement ex: Artemether 2x / jour">
-
 <h4 style="margin:10px 0 0">💊 Médicaments pour ce patient :</h4>
 <div id="medsZone"></div>
 <button class="btn btn-orange" onclick="ajouterLigneMedoc()">➕ AJOUTER UN AUTRE MÉDICAMENT</button>
-
 <input id="tPrix" type="number" placeholder="Prix total GNF - PATRON SEULEMENT">
 <select id="tPaye"><option value="paye">✅ Payé</option><option value="dette">❌ Pas payé - Dette</option></select>
 <input id="tTel" placeholder="Téléphone (si dette)">
@@ -58,32 +55,50 @@ th{background:#0b6e4f;color:#fff;padding:8px;text-align:left} td{padding:8px;bor
 <div class="card"><h3>📋 Tableau Traitement Patients</h3><div style="overflow-x:auto"><table><thead><tr><th>N°</th><th>Nom et Prénom</th><th>Adresse</th><th>Sexe</th><th>Age</th><th>Plainte</th><th>Diagnostic</th><th>Traitement</th><th>Médicaments</th><th class="col-prix">Prix</th><th>Statut</th><th></th></tr></thead><tbody id="tbodyTrait"></tbody></table></div></div>
 </div>
 
-<!-- STOCK -->
 <div id="page-stock" style="display:none">
 <div class="card" id="formStock"><h3>➕ Ajouter au Stock Permanent - PATRON SEULEMENT</h3>
 <input id="sNom" placeholder="Nom du médicament"><input id="sQte" type="number" placeholder="Stock disponible"><input id="sAchat" type="number" placeholder="Prix d'achat GNF"><input id="sVente" type="number" placeholder="Prix de vente GNF"><input id="sSeuil" type="number" value="5" placeholder="Seuil alerte"><button class="btn btn-blue" onclick="ajouterStock()">➕ AJOUTER AU STOCK</button></div>
-<div class="card"><h3>💊 Stock Permanent</h3><p id="noteStock" style="font-size:12px;color:#666"></p><div style="overflow-x:auto"><table><thead id="theadStock"></thead><tbody id="tbodyStock"></tbody></table></div></div>
+<div class="card" id="cardStock"><h3>💊 Stock Permanent</h3><p id="noteStock" style="font-size:12px;color:#666"></p><div style="overflow-x:auto"><table><thead id="theadStock"></thead><tbody id="tbodyStock"></tbody></table></div></div>
 </div>
 
-<!-- DETTES -->
 <div id="page-dettes" style="display:none">
 <div class="card"><h3>💰 Tableau Dettes</h3><div style="overflow-x:auto"><table><thead id="theadDettes"></thead><tbody id="tbodyDettes"></tbody></table></div></div>
 </div>
 
-<!-- PATRON SEULEMENT -->
 <div id="page-achat" style="display:none"><div class="card"><h3>🛒 Achat</h3><input id="aNom" placeholder="Médicament acheté"><input id="aQte" type="number" placeholder="Quantité"><input id="aPrix" type="number" placeholder="Montant total GNF"><button class="btn btn-blue" onclick="ajouterAchat()">✅ ENREGISTRER ACHAT</button></div><div class="card"><h3>📋 Historique Achats</h3><div id="listeAchats"></div></div></div>
 <div id="page-bilan" style="display:none"><div class="card"><h3>📊 Bilan</h3><div id="bilanContent"></div></div></div>
 <div id="page-caisse" style="display:none"><div class="card"><h3>💰 Caisse</h3><p>Vendu payé : <b id="caisseVendu">0</b> GNF</p><p>Dettes : <b id="caisseDettes">0</b> GNF</p><p>Achats : <b id="caisseAchats">0</b> GNF</p><p><b>Bénéfice : <span id="caisseBenef">0</span> GNF</b></p></div></div>
 <div id="page-gps" style="display:none"><div class="card"><h3>📍 GPS</h3><p>Poste Santé de Bakary - Conakry, Guinée</p><a href="https://www.google.com/maps/search/?api=1&query=Conakry+Guinee" target="_blank"><button class="btn btn-blue">📍 OUVRIR GOOGLE MAPS</button></a></div></div>
 
 <script>
-const CODE='BAKARY-PHARMA-2026';
+const CODE='BAKARY-PHARMA-2026-V3';
 const params=new URLSearchParams(window.location.search);
 let ROLE = params.get('role')==='suppleant' ? 'suppleant' : 'patron';
 let DATA={patients:[],stock:[{nom:'Paracétamol',qte:20,achat:3000,vente:5000,seuil:5},{nom:'Amoxicilline',qte:15,achat:7000,vente:10000,seuil:5},{nom:'Artemether',qte:10,achat:10000,vente:15000,seuil:3},{nom:'Vitamine C',qte:30,achat:2000,vente:4000,seuil:5},{nom:'Fer',qte:20,achat:4000,vente:7000,seuil:5}],dettes:[],achats:[],updated:0};
 function apiUrl(){return 'https://api.jsonstorage.net/v1/json/'+encodeURIComponent(CODE);}
-async function sauvegarder(){DATA.updated=Date.now();localStorage.setItem('pharma_data',JSON.stringify(DATA));try{await fetch(apiUrl(),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(DATA)});document.getElementById('syncStatus').innerText='● Connecté - Automatique ✅';document.getElementById('syncStatus').className='status ok';}catch(e){document.getElementById('syncStatus').innerText='● Hors ligne - Sauvegardé ici';document.getElementById('syncStatus').className='status off';}}
-async function charger(){try{const r=await fetch(apiUrl());if(!r.ok)return;const j=await r.json();if(j&&j.patients&&j.updated>DATA.updated){DATA=j;localStorage.setItem('pharma_data',JSON.stringify(DATA));afficher();}document.getElementById('syncStatus').innerText='● Connecté - Automatique ✅';document.getElementById('syncStatus').className='status ok';}catch(e){}}
+// CORRIGÉ : sauvegarde locale D'ABORD, puis internet en arrière-plan
+function sauvegarder(){
+  DATA.updated=Date.now();
+  try{localStorage.setItem('pharma_data',JSON.stringify(DATA));}catch(e){}
+  try{
+    fetch(apiUrl(),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(DATA)}).then(()=>{
+      document.getElementById('syncStatus').innerText='● Connecté - Automatique ✅';
+      document.getElementById('syncStatus').className='status ok';
+    }).catch(()=>{});
+  }catch(e){}
+  document.getElementById('syncStatus').innerText='● Sauvegardé dans le téléphone ✅';
+  document.getElementById('syncStatus').className='status ok';
+}
+async function charger(){
+  // Ne pas écraser si on a déjà des données locales plus récentes
+  const local = localStorage.getItem('pharma_data');
+  if(local){ try{ const ld=JSON.parse(local); if(ld.updated && ld.updated > DATA.updated) DATA=ld; }catch(e){} }
+  try{
+    const r=await fetch(apiUrl()); if(!r.ok) return;
+    const j=await r.json();
+    if(j && j.patients && j.updated && j.updated > DATA.updated){ DATA=j; localStorage.setItem('pharma_data',JSON.stringify(DATA)); afficher(); }
+  }catch(e){}
+}
 function showTab(t){['traitement','stock','dettes','achat','bilan','caisse','gps'].forEach(x=>{let el=document.getElementById('page-'+x);if(el)el.style.display=(x===t?'block':'none');});document.querySelectorAll('.tabs button').forEach(b=>{b.className=b.dataset.tab===t?'active':'';});afficher();}
 function buildTabs(){
   let tabs=[];
@@ -95,50 +110,44 @@ function buildTabs(){
   if(ROLE==='suppleant'){ document.getElementById('tPrix').style.display='none'; }
   showTab('traitement');
 }
-
-// NOUVEAU : PLUSIEURS MÉDICAMENTS
-function medOptions(){
-  return DATA.stock.map(s=>`<option value="${s.nom}">${s.nom} ${ROLE==='patron'?'- reste '+s.qte:'- disponible'}</option>`).join('');
-}
-function ajouterLigneMedoc(){
-  const div=document.createElement('div');
-  div.className='med-row';
-  div.innerHTML=`<select class="med-select">${medOptions()}</select><input class="med-qte" type="number" value="1" min="1"><button onclick="this.parentElement.remove()">X</button>`;
-  document.getElementById('medsZone').appendChild(div);
-}
-function resetMeds(){
-  document.getElementById('medsZone').innerHTML='';
-  ajouterLigneMedoc();
-}
+function medOptions(){ return DATA.stock.map(s=>`<option value="${s.nom}">${s.nom} ${ROLE==='patron'?'- reste '+s.qte:'- disponible'}</option>`).join(''); }
+function ajouterLigneMedoc(){ const div=document.createElement('div'); div.className='med-row'; div.innerHTML=`<select class="med-select">${medOptions()}</select><input class="med-qte" type="number" value="1" min="1"><button onclick="this.parentElement.remove()">X</button>`; document.getElementById('medsZone').appendChild(div); }
+function resetMeds(){ document.getElementById('medsZone').innerHTML=''; ajouterLigneMedoc(); }
 function ajouterTraitement(){
   const nom=document.getElementById('tNom').value.trim();const adresse=document.getElementById('tAdresse').value.trim();const sexe=document.getElementById('tSexe').value;const age=document.getElementById('tAge').value;const plainte=document.getElementById('tPlainte').value.trim();const diag=document.getElementById('tDiag').value.trim();const trait=document.getElementById('tTrait').value.trim();const prix=ROLE==='patron'?(parseInt(document.getElementById('tPrix').value)||0):0;const paye=document.getElementById('tPaye').value;const tel=document.getElementById('tTel').value.trim();
   if(!nom||!trait) return alert('Mets Nom et Traitement');
-  // Récupère TOUS les médicaments choisis
-  let meds=[];
-  document.querySelectorAll('.med-row').forEach(row=>{
-    const m=row.querySelector('.med-select').value;
-    const q=parseInt(row.querySelector('.med-qte').value)||1;
-    if(m) meds.push({nom:m,qte:q});
-  });
+  let meds=[]; document.querySelectorAll('.med-row').forEach(row=>{ const m=row.querySelector('.med-select').value; const q=parseInt(row.querySelector('.med-qte').value)||1; if(m) meds.push({nom:m,qte:q}); });
   if(meds.length===0) return alert('Choisis au moins 1 médicament');
   const medsTexte=meds.map(m=>m.nom+' x'+m.qte).join(', ');
   const date=new Date().toLocaleDateString('fr-FR')+' '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
   DATA.patients.unshift({nom,adresse,sexe,age,plainte,diag,trait,meds,medoc:medsTexte,qte:meds.reduce((a,m)=>a+m.qte,0),prix,paye,tel,date});
-  // Enlève du stock chaque médicament
   meds.forEach(m=>{const s=DATA.stock.find(x=>x.nom===m.nom);if(s)s.qte=Math.max(0,s.qte-m.qte);});
   if(paye==='dette'){DATA.dettes.unshift({nom,medoc:trait+' - '+medsTexte,prix,tel,date});}
   ['tNom','tAdresse','tAge','tPlainte','tDiag','tTrait','tTel'].forEach(id=>document.getElementById(id).value='');
-  resetMeds();
-  sauvegarder();afficher();alert('Patient enregistré ✅ avec '+meds.length+' médicament(s) : '+medsTexte);
+  resetMeds(); sauvegarder(); afficher(); alert('Patient enregistré ✅ avec '+meds.length+' médicament(s) : '+medsTexte);
 }
+// === CORRIGÉ POUR TON PROBLÈME ===
 function ajouterStock(){
   if(ROLE!=='patron') return alert('Seul le Patron peut ajouter au stock');
-  const nom=document.getElementById('sNom').value.trim();const qte=parseInt(document.getElementById('sQte').value)||0;const achat=parseInt(document.getElementById('sAchat').value)||0;const vente=parseInt(document.getElementById('sVente').value)||0;const seuil=parseInt(document.getElementById('sSeuil').value)||5;
-  if(!nom)return alert('Nom du médicament');
-  const ex=DATA.stock.find(x=>x.nom.toLowerCase()===nom.toLowerCase());if(ex){ex.qte+=qte;ex.achat=achat;ex.vente=vente;ex.seuil=seuil;}else DATA.stock.push({nom,qte,achat,vente,seuil});
-  sauvegarder();afficher();
+  const nom=document.getElementById('sNom').value.trim();
+  const qte=parseInt(document.getElementById('sQte').value)||0;
+  const achat=parseInt(document.getElementById('sAchat').value)||0;
+  const vente=parseInt(document.getElementById('sVente').value)||0;
+  const seuil=parseInt(document.getElementById('sSeuil').value)||5;
+  if(!nom){ alert('Mets le nom du médicament'); return; }
+  if(qte<=0){ alert('Mets la quantité, ex: 160'); return; }
+  const ex=DATA.stock.find(x=>x.nom.toLowerCase()===nom.toLowerCase());
+  if(ex){ ex.qte+=qte; ex.achat=achat; ex.vente=vente; ex.seuil=seuil; }
+  else { DATA.stock.push({nom,qte,achat,vente,seuil}); }
+  // Sauvegarde IMMÉDIATEMENT + affiche
+  sauvegarder(); afficher();
+  // Vide le formulaire
+  document.getElementById('sNom').value=''; document.getElementById('sQte').value=''; document.getElementById('sAchat').value=''; document.getElementById('sVente').value=''; document.getElementById('sSeuil').value='5';
+  alert('✅ Médicament enregistré : '+nom+' - '+qte+' en stock');
+  // Descend pour voir le tableau
+  document.getElementById('cardStock').scrollIntoView({behavior:'smooth'});
 }
-function ajouterAchat(){const nom=document.getElementById('aNom').value.trim();const qte=parseInt(document.getElementById('aQte').value)||0;const prix=parseInt(document.getElementById('aPrix').value)||0;if(!nom)return alert('Nom');const date=new Date().toLocaleDateString('fr-FR');DATA.achats.unshift({nom,qte,prix,date});const ex=DATA.stock.find(x=>x.nom.toLowerCase()===nom.toLowerCase());if(ex)ex.qte+=qte;else DATA.stock.push({nom,qte,achat:0,vente:0,seuil:5});sauvegarder();afficher();}
+function ajouterAchat(){const nom=document.getElementById('aNom').value.trim();const qte=parseInt(document.getElementById('aQte').value)||0;const prix=parseInt(document.getElementById('aPrix').value)||0;if(!nom)return alert('Nom');const date=new Date().toLocaleDateString('fr-FR');DATA.achats.unshift({nom,qte,prix,date});const ex=DATA.stock.find(x=>x.nom.toLowerCase()===nom.toLowerCase());if(ex)ex.qte+=qte;else DATA.stock.push({nom,qte,achat:0,vente:0,seuil:5});sauvegarder();afficher();alert('Achat enregistré ✅');}
 function supprimerDette(i){if(confirm('Dette payée ? Supprimer ?')){const d=DATA.dettes[i];const p=DATA.patients.find(x=>x.nom===d.nom&&x.prix===d.prix);if(p)p.paye='paye';DATA.dettes.splice(i,1);sauvegarder();afficher();}}
 function supprimerTrait(i){if(confirm('Supprimer ce traitement ?')){DATA.patients.splice(i,1);sauvegarder();afficher();}}
 function supprimerStock(i){if(ROLE!=='patron')return;if(confirm('Supprimer ?')){DATA.stock.splice(i,1);sauvegarder();afficher();}}
@@ -180,15 +189,10 @@ function afficher(){
     document.getElementById('theadDettes').innerHTML='<tr><th>N°</th><th>Nom et Prénom</th><th>Date 📅</th><th>Médicament / Traitement</th><th>Payé ? X</th></tr>';
     document.getElementById('tbodyDettes').innerHTML=DATA.dettes.map((d,i)=>`<tr><td>${i+1}</td><td><b>${d.nom}</b></td><td>${d.date}</td><td>${d.medoc}</td><td><button class="xbtn" onclick="supprimerDette(${i})">X</button></td></tr>`).join('')||'<tr><td colspan="5">Aucune dette ✅</td></tr>';
   }
-  // Met à jour les listes de médicaments sans effacer les lignes
-  document.querySelectorAll('.med-select').forEach(sel=>{
-    let val=sel.value;
-    sel.innerHTML=medOptions();
-    if(val) sel.value=val;
-  });
+  document.querySelectorAll('.med-select').forEach(sel=>{ let val=sel.value; sel.innerHTML=medOptions(); if(val) sel.value=val; });
 }
-const saved=localStorage.getItem('pharma_data');if(saved){try{DATA=JSON.parse(saved);}catch(e){}}
-buildTabs();resetMeds();afficher();charger();setInterval(charger,4000);
+const saved=localStorage.getItem('pharma_data');if(saved){try{let ld=JSON.parse(saved); if(ld.stock) DATA=ld;}catch(e){}}
+buildTabs();resetMeds();afficher();charger();setInterval(charger,8000);
 </script>
 </body>
 </html>
