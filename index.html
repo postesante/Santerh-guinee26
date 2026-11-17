@@ -14,9 +14,9 @@
 .tabs button{flex:1;padding:12px;border:none;border-radius:10px;background:#ddd;font-weight:bold;cursor:pointer}
 .tabs button.active{background:#0b6e4f;color:#fff}
 .card{background:#fff;padding:15px;border-radius:12px;margin-bottom:10px}
-input,select,textarea{width:100%;padding:11px;margin:6px 0;border:1px solid #ccc;border-radius:8px;font-size:15px}
+input,select{width:100%;padding:11px;margin:6px 0;border:1px solid #ccc;border-radius:8px;font-size:15px}
 .btn{width:100%;padding:13px;border:none;border-radius:10px;font-weight:bold;font-size:16px;cursor:pointer}
-.btn-green{background:#0b6e4f;color:#fff}.btn-blue{background:#1a73e8;color:#fff}.btn-orange{background:#f39c12;color:#fff}
+.btn-green{background:#0b6e4f;color:#fff}.btn-blue{background:#1a73e8;color:#fff}
 .item{background:#f8f9fa;border-left:4px solid #0b6e4f;padding:10px;border-radius:8px;margin:8px 0}
 .item b{font-size:15px}.item small{color:#555}
 .badge{display:inline-block;padding:3px 8px;border-radius:20px;font-size:12px;color:#fff}
@@ -27,31 +27,10 @@ input,select,textarea{width:100%;padding:11px;margin:6px 0;border:1px solid #ccc
 </style>
 </head>
 <body>
+<div class="header"><h1>💊 SUIVI - BAKARY PHARMA</h1><p>Patients • Traitement • Médicaments • Dettes</p></div>
 
-<div class="header">
-<h1>💊 SUIVI - BAKARY PHARMA</h1>
-<p>Patients • Traitement • Médicaments • Dettes</p>
-</div>
-
-<div id="setup" class="card" style="display:none">
-<h2>🔑 1ère fois - Une seule fois</h2>
-<p><b>Toi Bakary :</b> Appuie sur CRÉER MA PHARMACIE, tu envoies le code à Issouf une fois.</p>
-<p><b>Issouf :</b> Il colle le code en bas et appuie sur REJOINDRE.</p>
-<button class="btn btn-green" onclick="creerPharmacie()">🏪 CRÉER MA PHARMACIE</button>
-<p style="text-align:center;margin:15px 0">--- OU ---</p>
-<input id="codeRejoindre" placeholder="Colle ici le code pharmacie reçu">
-<button class="btn btn-blue" onclick="rejoindre()">➡️ REJOINDRE LA PHARMACIE</button>
-</div>
-
-<div id="app" style="display:none">
-<div id="syncStatus" class="status off">● Hors ligne - En attente...</div>
-<div style="text-align:center;font-size:12px;color:#666">Code pharmacie : <b id="monCode"></b> <button onclick="copierCode()">Copier</button></div>
-
-<div class="kpi">
-<div><b id="kpiPatients">0</b><span>Patients</span></div>
-<div><b id="kpiVendu">0</b><span>GNF Vendu</span></div>
-<div><b id="kpiDettes">0</b><span>GNF Dettes</span></div>
-</div>
+<div id="syncStatus" class="status off">● Connexion...</div>
+<div class="kpi"><div><b id="kpiPatients">0</b><span>Patients</span></div><div><b id="kpiVendu">0</b><span>GNF Vendu</span></div><div><b id="kpiDettes">0</b><span>GNF Dettes</span></div></div>
 
 <div class="tabs">
 <button id="tab1" class="active" onclick="showTab('traitement')">🩺 TRAITEMENT</button>
@@ -59,100 +38,53 @@ input,select,textarea{width:100%;padding:11px;margin:6px 0;border:1px solid #ccc
 <button id="tab3" onclick="showTab('dettes')">💰 DETTES</button>
 </div>
 
-<!-- TRAITEMENT -->
 <div id="page-traitement">
-<div class="card">
-<h3>➕ Nouveau Patient / Traitement</h3>
+<div class="card"><h3>➕ Nouveau Patient / Traitement</h3>
 <input id="pNom" placeholder="Nom du patient">
 <input id="pMaladie" placeholder="Maladie / Symptômes ex: Palu, Fièvre">
 <select id="pMedoc"></select>
-<input id="pQte" type="number" value="1" placeholder="Quantité">
+<input id="pQte" type="number" value="1">
 <input id="pPrix" type="number" placeholder="Prix total GNF ex: 15000">
-<select id="pPaye">
-<option value="paye">✅ Payé</option>
-<option value="dette">❌ Pas payé - Dette</option>
-</select>
+<select id="pPaye"><option value="paye">✅ Payé</option><option value="dette">❌ Pas payé - Dette</option></select>
 <input id="pTel" placeholder="Téléphone (si dette)">
 <button class="btn btn-green" onclick="ajouterPatient()">✅ ENREGISTRER LE TRAITEMENT</button>
-<p style="font-size:12px;color:#666;text-align:center">Ça part automatiquement chez l'autre téléphone.</p>
-</div>
+<p style="font-size:12px;color:#666;text-align:center">Ça part automatiquement chez l'autre téléphone.</p></div>
 <div class="card"><h3>📋 Liste des traitements</h3><div id="listePatients"></div></div>
 </div>
 
-<!-- STOCK -->
 <div id="page-stock" style="display:none">
-<div class="card">
-<h3>➕ Ajouter un médicament au stock</h3>
-<input id="sNom" placeholder="Nom médicament ex: Paracétamol">
-<input id="sQte" type="number" placeholder="Quantité en stock">
-<input id="sPrix" type="number" placeholder="Prix de vente GNF">
-<button class="btn btn-blue" onclick="ajouterStock()">➕ AJOUTER AU STOCK</button>
-</div>
+<div class="card"><h3>➕ Ajouter médicament</h3>
+<input id="sNom" placeholder="Nom ex: Paracétamol"><input id="sQte" type="number" placeholder="Quantité"><input id="sPrix" type="number" placeholder="Prix GNF">
+<button class="btn btn-blue" onclick="ajouterStock()">➕ AJOUTER AU STOCK</button></div>
 <div class="card"><h3>💊 Mon Stock</h3><div id="listeStock"></div></div>
 </div>
 
-<!-- DETTES -->
-<div id="page-dettes" style="display:none">
-<div class="card"><h3>💰 Dettes non payées</h3><div id="listeDettes"></div></div>
-</div>
-</div>
+<div id="page-dettes" style="display:none"><div class="card"><h3>💰 Dettes non payées</h3><div id="listeDettes"></div></div></div>
 
 <script>
-let PANTRY_ID = localStorage.getItem('pharma_pantry') || '';
-let DATA = { patients:[], stock:[ {nom:'Paracétamol',qte:20,prix:5000}, {nom:'Amoxicilline',qte:15,prix:10000}, {nom:'Artemether',qte:10,prix:15000} ], dettes:[] };
-let syncEnCours = false;
-
-function apiUrl(){ return 'https://getpantry.cloud/apiv1/pantry/'+PANTRY_ID+'/basket/pharmacie'; }
-
-async function creerPharmacie(){
+// SANS CODE - Code déjà mis en cache, tu n'as rien à taper
+const CODE = 'BAKARY-PHARMA-2026';
+let DATA = { patients:[], stock:[ {nom:'Paracétamol',qte:20,prix:5000}, {nom:'Amoxicilline',qte:15,prix:10000}, {nom:'Artemether',qte:10,prix:15000} ], dettes:[], updated:0 };
+function apiUrl(){ return 'https://api.jsonstorage.net/v1/json/' + encodeURIComponent(CODE); }
+async function sauvegarder(){
+  DATA.updated = Date.now();
+  localStorage.setItem('pharma_data', JSON.stringify(DATA));
   try{
-    const r = await fetch('https://getpantry.cloud/apiv1/pantry', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
-    const j = await r.json();
-    PANTRY_ID = j.id;
-    localStorage.setItem('pharma_pantry', PANTRY_ID);
-    await sauvegarder(true);
-    demarrer();
-    alert('Pharmacie créée ! Code : '+PANTRY_ID+'\nEnvoie ce code à Issouf UNE SEULE FOIS.');
-  }catch(e){ alert('Pas de connexion. Réessaie avec internet.'); }
-}
-function rejoindre(){
-  const c = document.getElementById('codeRejoindre').value.trim();
-  if(!c) return alert('Colle le code pharmacie');
-  PANTRY_ID = c; localStorage.setItem('pharma_pantry', PANTRY_ID);
-  charger(); demarrer();
-}
-function copierCode(){ navigator.clipboard.writeText(PANTRY_ID); alert('Code copié : '+PANTRY_ID); }
-function demarrer(){
-  document.getElementById('setup').style.display='none';
-  document.getElementById('app').style.display='block';
-  document.getElementById('monCode').innerText = PANTRY_ID;
-  charger();
-  setInterval(charger, 5000);
-  afficher();
-}
-async function sauvegarder(force){
-  if(syncEnCours && !force) return;
-  syncEnCours = true;
-  try{
-    await fetch(apiUrl(), {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(DATA)});
+    await fetch(apiUrl(), {method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(DATA)});
     document.getElementById('syncStatus').innerText='● Connecté - Automatique ✅'; document.getElementById('syncStatus').className='status ok';
-  }catch(e){ document.getElementById('syncStatus').innerText='● Hors ligne - Sauvegardé sur ce téléphone'; document.getElementById('syncStatus').className='status off'; }
-  syncEnCours=false;
+  }catch(e){ document.getElementById('syncStatus').innerText='● Hors ligne - Sauvegardé ici'; document.getElementById('syncStatus').className='status off'; }
 }
 async function charger(){
-  if(!PANTRY_ID) return;
   try{
     const r = await fetch(apiUrl());
     if(!r.ok) return;
     const j = await r.json();
-    if(j && j.patients){ DATA = j; localStorage.setItem('pharma_data', JSON.stringify(DATA)); afficher(); }
+    if(j && j.patients && j.updated > DATA.updated){ DATA = j; localStorage.setItem('pharma_data', JSON.stringify(DATA)); afficher(); }
     document.getElementById('syncStatus').innerText='● Connecté - Automatique ✅'; document.getElementById('syncStatus').className='status ok';
   }catch(e){}
 }
 function showTab(t){
-  ['traitement','stock','dettes'].forEach(x=>{
-    document.getElementById('page-'+x).style.display = (x===t?'block':'none');
-  });
+  ['traitement','stock','dettes'].forEach(x=>{ document.getElementById('page-'+x).style.display = (x===t?'block':'none'); });
   ['tab1','tab2','tab3'].forEach((id,i)=>{ document.getElementById(id).className = (['traitement','stock','dettes'][i]===t?'active':''); });
   afficher();
 }
@@ -167,7 +99,6 @@ function ajouterPatient(){
   if(!nom||!medoc) return alert('Mets le nom du patient et le médicament');
   const date=new Date().toLocaleString('fr-FR');
   DATA.patients.unshift({nom,maladie,medoc,qte,prix,paye,tel,date});
-  // Enlever du stock
   const s=DATA.stock.find(x=>x.nom===medoc); if(s) s.qte=Math.max(0,s.qte-qte);
   if(paye==='dette'){ DATA.dettes.unshift({nom,medoc,prix,tel,date}); }
   document.getElementById('pNom').value=''; document.getElementById('pMaladie').value=''; document.getElementById('pTel').value='';
@@ -182,44 +113,21 @@ function ajouterStock(){
   if(ex){ ex.qte+=qte; ex.prix=prix; } else DATA.stock.push({nom,qte,prix});
   sauvegarder(); afficher();
 }
-function payerDette(i){
-  const d=DATA.dettes[i];
-  // Marquer comme payé dans patients
-  const p=DATA.patients.find(x=>x.nom===d.nom && x.prix===d.prix);
-  if(p) p.paye='paye';
-  DATA.dettes.splice(i,1);
-  sauvegarder(); afficher(); alert('Dette payée ✅');
-}
+function payerDette(i){ const d=DATA.dettes[i]; const p=DATA.patients.find(x=>x.nom===d.nom && x.prix===d.prix); if(p) p.paye='paye'; DATA.dettes.splice(i,1); sauvegarder(); afficher(); alert('Dette payée ✅'); }
 function supprimerPatient(i){ if(confirm('Supprimer ?')){ DATA.patients.splice(i,1); sauvegarder(); afficher(); } }
 function afficher(){
-  // Select medoc
   const sel=document.getElementById('pMedoc');
-  sel.innerHTML = DATA.stock.map(s=>`<option value="${s.nom}">${s.nom} - reste ${s.qte} - ${s.prix} GNF</option>`).join('');
-  // KPI
+  if(sel) sel.innerHTML = DATA.stock.map(s=>`<option value="${s.nom}">${s.nom} - reste ${s.qte} - ${s.prix} GNF</option>`).join('');
   document.getElementById('kpiPatients').innerText = DATA.patients.length;
   document.getElementById('kpiVendu').innerText = DATA.patients.filter(p=>p.paye==='paye').reduce((a,p)=>a+p.prix,0).toLocaleString();
   document.getElementById('kpiDettes').innerText = DATA.dettes.reduce((a,p)=>a+p.prix,0).toLocaleString();
-  // Patients
-  document.getElementById('listePatients').innerHTML = DATA.patients.length? DATA.patients.map((p,i)=>`
-    <div class="item"><button class="del" onclick="supprimerPatient(${i})">×</button>
-    <b>${p.nom}</b> - ${p.maladie}<br>
-    <small>💊 ${p.medoc} x${p.qte} - ${p.prix} GNF - ${p.date}</small><br>
-    <span class="badge ${p.paye==='paye'?'badge-pay':'badge-dette'}">${p.paye==='paye'?'PAYÉ':'DETTE'}</span>
-    </div>`).join('') : '<p>Aucun patient pour le moment.</p>';
-  // Stock
-  document.getElementById('listeStock').innerHTML = DATA.stock.map(s=>`
-    <div class="item"><b>${s.nom}</b> - Reste : <b style="color:${s.qte<=3?'red':'green'}">${s.qte}</b> - ${s.prix} GNF</div>`).join('');
-  // Dettes
-  document.getElementById('listeDettes').innerHTML = DATA.dettes.length? DATA.dettes.map((d,i)=>`
-    <div class="item"><b>${d.nom}</b> doit <b>${d.prix} GNF</b><br><small>${d.medoc} - ${d.tel||''} - ${d.date}</small><br>
-    <button class="btn btn-green" style="margin-top:8px" onclick="payerDette(${i})">✅ MARQUER PAYÉ</button></div>`).join('') : '<p>Aucune dette. Tout est payé ✅</p>';
+  document.getElementById('listePatients').innerHTML = DATA.patients.length? DATA.patients.map((p,i)=>`<div class="item"><button class="del" onclick="supprimerPatient(${i})">×</button><b>${p.nom}</b> - ${p.maladie}<br><small>💊 ${p.medoc} x${p.qte} - ${p.prix} GNF - ${p.date}</small><br><span class="badge ${p.paye==='paye'?'badge-pay':'badge-dette'}">${p.paye==='paye'?'PAYÉ':'DETTE'}</span></div>`).join('') : '<p>Aucun patient.</p>';
+  document.getElementById('listeStock').innerHTML = DATA.stock.map(s=>`<div class="item"><b>${s.nom}</b> - Reste : <b style="color:${s.qte<=3?'red':'green'}">${s.qte}</b> - ${s.prix} GNF</div>`).join('');
+  document.getElementById('listeDettes').innerHTML = DATA.dettes.length? DATA.dettes.map((d,i)=>`<div class="item"><b>${d.nom}</b> doit <b>${d.prix} GNF</b><br><small>${d.medoc} - ${d.tel||''} - ${d.date}</small><br><button class="btn btn-green" style="margin-top:8px" onclick="payerDette(${i})">✅ MARQUER PAYÉ</button></div>`).join('') : '<p>Aucune dette. Tout est payé ✅</p>';
 }
-// Démarrage
-if(PANTRY_ID){ demarrer(); } else { document.getElementById('setup').style.display='block'; }
-// Sauvegarde locale
 const saved = localStorage.getItem('pharma_data');
 if(saved){ try{ DATA = JSON.parse(saved); }catch(e){} }
-afficher();
+afficher(); charger(); setInterval(charger, 4000);
 </script>
 </body>
 </html>
