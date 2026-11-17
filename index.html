@@ -60,7 +60,13 @@ label{font-weight:bold;font-size:14px}
 </div>
 
 <div id="caisse" class="card hidden"><h2>💰 CAISSE DU JOUR</h2><div>Ventes aujourd'hui :</div><div class="big" id="totalVente">0 GNF</div><div>Médicaments consommés aujourd'hui :</div><div class="big" id="consoJour">0</div><div>Dépenses :</div><input type="number" id="dette" placeholder="Ex: 65000" oninput="calculCaisse()"><div>Caisse ce soir :</div><div class="big vert" id="caisseSoir">0 GNF</div><div>Bénéfice aujourd'hui :</div><div class="big" id="benefice">0 GNF</div><button class="btn" onclick="resetJour()">🌅 Nouveau Jour</button></div>
-<div id="dettes" class="card hidden"><h2>📒 Dettes</h2><button class="btn" style="background:#e53935;margin-bottom:10px" onclick="nettoyerDettes()">🗑️ EFFACER LES DETTES GÂTÉES (undefined)</button><div id="listeDettes"></div></div>
+
+<div id="dettes" class="card hidden">
+<h2>📒 Dettes</h2>
+<button class="btn" style="background:#e53935;margin-bottom:10px" onclick="nettoyerDettes()">🗑️ EFFACER LES DETTES GÂTÉES (undefined)</button>
+<div id="listeDettes" style="overflow-x:auto"></div>
+</div>
+
 <div id="carnet" class="card hidden"><h2>🤰 CARNET SUIVI</h2><label>Nom :</label><input id="cNom"><label>Type :</label><select id="cType"><option>Femme enceinte</option><option>Enfant</option></select><label>Note :</label><input id="cNote" placeholder="Ex: Rendez-vous"><button class="btn" onclick="ajoutCarnet()">➕ Ajouter</button><div id="listeCarnet" style="margin-top:10px"></div></div>
 <div id="achat" class="card hidden"><h2>🛒 LISTE D'ACHAT VILLE</h2><div id="listeAchat"></div></div>
 <div id="bilan" class="card hidden"><h2>📊 BILAN + CONSOMMATION</h2><div>Total ventes :</div><div class="big" id="totalMois">0 GNF</div><div>Total bénéfice :</div><div class="big vert" id="benefMois">0 GNF</div><div>Total médicaments consommés :</div><div class="big" id="consoTotal">0</div></div>
@@ -72,33 +78,37 @@ let ventes=JSON.parse(localStorage.getItem('ventes')||'[]');
 let dettesList=JSON.parse(localStorage.getItem('dettes')||'[]');
 let carnet=JSON.parse(localStorage.getItem('carnet')||'[]');
 let conso=parseInt(localStorage.getItem('conso')||'0');
-// Compatibilité avec ancien stock qui avait achat/vente
 stock.forEach(m=>{ if(!m.prix) m.prix=m.vente||m.achat||0; if(!m.vente) m.vente=m.prix; if(!m.achat) m.achat=m.prix; });
+// Réparer anciennes dettes sans date
+dettesList.forEach(d=>{ if(!d.date) d.date=new Date().toLocaleString('fr-FR'); if(!d.nom) d.nom=d.patient||d.name||'Patient'; if(!d.montant) d.montant=d.dette||d.amount||0; });
 function save(){localStorage.setItem('stock',JSON.stringify(stock));localStorage.setItem('ventes',JSON.stringify(ventes));localStorage.setItem('dettes',JSON.stringify(dettesList));localStorage.setItem('carnet',JSON.stringify(carnet));localStorage.setItem('seuil',seuil);localStorage.setItem('conso',conso);}
 function changerSeuil(){seuil=+document.getElementById('seuil').value||2;save();afficher();}
 function show(id){['vente','stock','caisse','dettes','carnet','achat','bilan','gps'].forEach(x=>document.getElementById(x).classList.add('hidden'));document.getElementById(id).classList.remove('hidden');afficher();window.scrollTo(0,300);}
 function nettoyerDettes(){if(confirm('Effacer toutes les dettes gâtées ?')){dettesList=[];save();afficher();alert('Nettoyé !');}}
 function afficher(){
  document.getElementById('seuil').value=seuil;
- // Choix médicaments pour patient - COMME TA PHOTO, prix unitaire
  if(stock.length==0){ document.getElementById('listeMedsChoix').innerHTML='<p>Aucun médicament - Ajoute d’abord dans STOCK PERMANENT</p>'; }
  else { document.getElementById('listeMedsChoix').innerHTML=stock.map((m,i)=>`<div class="med-row"><input type="checkbox" id="chk${i}"><b style="flex:1">${m.nom} - ${m.prix} GNF (Reste: ${m.qte})</b><span>Qté:</span><input type="number" id="qteMed${i}" value="1" min="1"></div>`).join(''); }
  let rupt=stock.filter(m=>m.qte==0);let bientot=stock.filter(m=>m.qte>0&&m.qte<=seuil);
  document.getElementById('zoneAlerte').innerHTML=(rupt.length||bientot.length)?`<div class="alerte">⛔ RUPTURE : ${rupt.map(m=>m.nom).join(', ')||'Aucune'}<br>⚠️ BIENTÔT FINI (≤ ${seuil}) : ${bientot.map(m=>m.nom+' ('+m.qte+')').join(', ')}<br>Il faut acheter ces médicaments vite !</div>`:'';
- // Tableau EXACTEMENT comme ta photo
  document.getElementById('listeStock').innerHTML='<table><tr><th>N°</th><th>Nom</th><th>Stock</th><th>Prix unitaire</th><th>Total de prix</th><th>X</th></tr>'+stock.map((m,i)=>`<tr class="${m.qte<=seuil?'rouge':''}"><td>${i+1}</td><td>${m.nom} ${m.qte<=seuil?'⚠️':''}</td><td><input type="number" value="${m.qte}" onchange="modifQte(${i},this.value)" style="width:55px"></td><td><input type="number" value="${m.prix}" onchange="modifPrix(${i},this.value)" style="width:70px"></td><td>${(m.qte*m.prix).toLocaleString()} GNF</td><td><button onclick="supp(${i})">X</button></td></tr>`).join('')+'</table>';
+ // DETTES - COMME TU VEUX : N° - Nom et Prénom - Somme - Date et Heure - X
  dettesList = dettesList.filter(d => d && (d.nom || d.patient || d.name) && (d.montant || d.dette || d.amount));
- dettesList.forEach(d=>{ if(!d.nom) d.nom=d.patient||d.name; if(!d.montant) d.montant=d.dette||d.amount||0; if(!d.med) d.med=d.medicament||d.médicament||''; });
- document.getElementById('listeDettes').innerHTML=dettesList.map((d,i)=>`• <b>${d.nom}</b> doit ${(d.montant||0).toLocaleString()} GNF - ${d.med||''} <button onclick="payeDette(${i})">Payé ✅</button><br>`).join('')||'Aucune dette - C’est propre !';
+ dettesList.forEach(d=>{ if(!d.nom) d.nom=d.patient||d.name; if(!d.montant) d.montant=d.dette||d.amount||0; if(!d.date) d.date=new Date().toLocaleString('fr-FR'); });
+ if(dettesList.length==0){ document.getElementById('listeDettes').innerHTML='<p>Aucune dette - C’est propre !</p>'; }
+ else {
+   let totalDette=dettesList.reduce((a,b)=>a+(+b.montant||0),0);
+   document.getElementById('listeDettes').innerHTML='<p><b>Total des dettes : '+totalDette.toLocaleString()+' GNF</b></p><table><tr><th>N°</th><th>Nom et Prénom</th><th>Somme</th><th>Date et Heure</th><th>X</th></tr>'+dettesList.map((d,i)=>`<tr><td>${i+1}</td><td><b>${d.nom}</b><br><small>${d.med||''}</small></td><td>${(+d.montant).toLocaleString()} GNF</td><td>${d.date}</td><td><button onclick="payeDette(${i})">X</button></td></tr>`).join('')+'</table>';
+ }
  document.getElementById('listeCarnet').innerHTML=carnet.map(c=>`• <b>${c.nom}</b> (${c.type}) - ${c.note}<br>`).join('')||'Aucun';
  let bas=stock.filter(m=>m.qte<=seuil);document.getElementById('listeAchat').innerHTML=bas.length?bas.map(m=>`🔴 <b>${m.nom}</b> - Reste ${m.qte}, acheter à Siguiri !<br>`).join(''):'✅ Tout va bien';
- document.getElementById('listePatients').innerHTML=ventes.map((v,i)=>`• <b>${v.nom||'Patient'}</b> - ${v.age||''} ans - ${v.sexe||''} - ${v.provenance||''}<br>Plainte: ${v.plainte||''} | Param: ${v.parametres||''}<br>Diag: ${v.diagnostic||''} | Trait: <b>${v.med||''}</b> - ${v.total||0} GNF<br><br>`).join('')||'Aucun patient pour le moment';
+ document.getElementById('listePatients').innerHTML=ventes.map((v,i)=>`• <b>${v.nom||'Patient'}</b> - ${v.age||''} ans - ${v.sexe||''} - ${v.provenance||''}<br>Plainte: ${v.plainte||''} | Param: ${v.parametres||''}<br>Diag: ${v.diagnostic||''} | Trait: <b>${v.med||''}</b> - ${v.total||0} GNF - ${v.date||''}<br><br>`).join('')||'Aucun patient pour le moment';
  calculCaisse();
 }
 function modifQte(i,v){stock[i].qte=+v;save();afficher();}
 function modifPrix(i,v){stock[i].prix=+v;stock[i].vente=+v;stock[i].achat=+v;save();afficher();}
 function supp(i){if(confirm('Supprimer '+stock[i].nom+' ?')){stock.splice(i,1);save();afficher();}}
-function payeDette(i){dettesList.splice(i,1);save();afficher();}
+function payeDette(i){if(confirm('Cette personne a payé ? Effacer la dette de '+dettesList[i].nom+' ?')){dettesList.splice(i,1);save();afficher();}}
 function ajoutMed(){let n=document.getElementById('nNom').value,p=+document.getElementById('nPrix').value,q=+document.getElementById('nQte').value||0;if(!n)return alert('Mets le nom');stock.push({nom:n,qte:q,prix:p,vente:p,achat:p});save();afficher();document.getElementById('nNom').value='';document.getElementById('nPrix').value='';document.getElementById('nQte').value='';alert('Ajouté !');}
 function vendre(){
   let nom=document.getElementById('nom').value||'Patient';
@@ -109,6 +119,7 @@ function vendre(){
   let parametres=document.getElementById('parametres').value||'';
   let diagnostic=document.getElementById('diagnostic').value||'';
   let detteP=+document.getElementById('dettePatient').value||0;
+  let dateHeure=new Date().toLocaleString('fr-FR');
   let choisis=[];
   stock.forEach((m,i)=>{
     let chk=document.getElementById('chk'+i);
@@ -128,10 +139,10 @@ function vendre(){
     medsTexte += c.med.nom + ' x' + c.qte + ' + ';
   });
   medsTexte = medsTexte.slice(0,-3);
-  ventes.push({total:total,benef:benef,qte:qTotal,nom:nom,age:age,sexe:sexe,provenance:provenance,plainte:plainte,parametres:parametres,diagnostic:diagnostic,med:medsTexte});
-  if(detteP>0)dettesList.push({nom:nom,montant:detteP,med:medsTexte});
+  ventes.push({total:total,benef:benef,qte:qTotal,nom:nom,age:age,sexe:sexe,provenance:provenance,plainte:plainte,parametres:parametres,diagnostic:diagnostic,med:medsTexte,date:dateHeure});
+  if(detteP>0)dettesList.push({nom:nom,montant:detteP,med:medsTexte,date:dateHeure});
   save();afficher();
-  document.getElementById('msgVente').innerHTML='✅ '+nom+' ('+age+' ans, '+sexe+') - '+diagnostic+' - '+medsTexte+' = '+total+' GNF';
+  document.getElementById('msgVente').innerHTML='✅ '+nom+' ('+age+' ans, '+sexe+') - '+diagnostic+' - '+medsTexte+' = '+total+' GNF - '+dateHeure;
   document.getElementById('nom').value='';document.getElementById('age').value='';document.getElementById('provenance').value='';document.getElementById('plainte').value='';document.getElementById('parametres').value='';document.getElementById('diagnostic').value='';document.getElementById('dettePatient').value='';
 }
 function calculCaisse(){let tot=ventes.reduce((a,b)=>a+b.total,0);let ben=ventes.reduce((a,b)=>a+b.benef,0);let qJour=ventes.reduce((a,b)=>a+(b.qte||0),0);let dette=+document.getElementById('dette').value||0;document.getElementById('totalVente').innerText=tot.toLocaleString()+' GNF';document.getElementById('benefice').innerText=ben.toLocaleString()+' GNF';document.getElementById('caisseSoir').innerText=(tot-dette).toLocaleString()+' GNF';document.getElementById('consoJour').innerText=qJour;document.getElementById('totalMois').innerText=tot.toLocaleString()+' GNF';document.getElementById('benefMois').innerText=ben.toLocaleString()+' GNF';document.getElementById('consoTotal').innerText=conso;}
