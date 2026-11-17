@@ -63,7 +63,8 @@ label{font-weight:bold;font-size:14px}
 
 <div id="dettes" class="card hidden">
 <h2>📒 Dettes</h2>
-<button class="btn" style="background:#e53935;margin-bottom:10px" onclick="nettoyerDettes()">🗑️ EFFACER LES DETTES GÂTÉES (undefined)</button>
+<p style="color:#666">N° - Nom et Prénom - Somme - Date et Heure - X</p>
+<button class="btn" style="background:#e53935;margin-bottom:10px" onclick="nettoyerDettes()">🗑️ EFFACER TOUTES LES DETTES GÂTÉES - Pour débloquer</button>
 <div id="listeDettes" style="overflow-x:auto"></div>
 </div>
 
@@ -72,43 +73,47 @@ label{font-weight:bold;font-size:14px}
 <div id="bilan" class="card hidden"><h2>📊 BILAN + CONSOMMATION</h2><div>Total ventes :</div><div class="big" id="totalMois">0 GNF</div><div>Total bénéfice :</div><div class="big vert" id="benefMois">0 GNF</div><div>Total médicaments consommés :</div><div class="big" id="consoTotal">0</div></div>
 <div id="gps" class="card hidden"><h2>📍 GPS</h2><p>Filanidialakoro - Poste Santé Brousse, Siguiri, Guinée</p></div>
 <script>
-let seuil=parseInt(localStorage.getItem('seuil')||'2');
-let stock=JSON.parse(localStorage.getItem('stock')||'[]');
-let ventes=JSON.parse(localStorage.getItem('ventes')||'[]');
-let dettesList=JSON.parse(localStorage.getItem('dettes')||'[]');
-let carnet=JSON.parse(localStorage.getItem('carnet')||'[]');
-let conso=parseInt(localStorage.getItem('conso')||'0');
-stock.forEach(m=>{ if(!m.prix) m.prix=m.vente||m.achat||0; if(!m.vente) m.vente=m.prix; if(!m.achat) m.achat=m.prix; });
-// Réparer anciennes dettes sans date
+function loadSafe(k,def){try{let v=JSON.parse(localStorage.getItem(k)||'');if(Array.isArray(def)&&!Array.isArray(v))return def;return v==null?def:v;}catch(e){return def;}}
+let seuil=parseInt(localStorage.getItem('seuil')||'2')||2;
+let stock=loadSafe('stock',[]);
+let ventes=loadSafe('ventes',[]);
+let dettesList=loadSafe('dettes',[]);
+let carnet=loadSafe('carnet',[]);
+let conso=parseInt(localStorage.getItem('conso')||'0')||0;
+if(!Array.isArray(stock))stock=[]; if(!Array.isArray(ventes))ventes=[]; if(!Array.isArray(dettesList))dettesList=[]; if(!Array.isArray(carnet))carnet=[];
+stock=stock.filter(m=>m&&typeof m==='object'); ventes=ventes.filter(v=>v&&typeof v==='object'); dettesList=dettesList.filter(d=>d&&typeof d==='object'); carnet=carnet.filter(c=>c&&typeof c==='object');
+stock.forEach(m=>{ if(!m.prix) m.prix=m.vente||m.achat||0; if(!m.vente) m.vente=m.prix; if(!m.achat) m.achat=m.prix; if(!m.nom) m.nom='Médicament'; if(m.qte==null) m.qte=0; });
 dettesList.forEach(d=>{ if(!d.date) d.date=new Date().toLocaleString('fr-FR'); if(!d.nom) d.nom=d.patient||d.name||'Patient'; if(!d.montant) d.montant=d.dette||d.amount||0; });
-function save(){localStorage.setItem('stock',JSON.stringify(stock));localStorage.setItem('ventes',JSON.stringify(ventes));localStorage.setItem('dettes',JSON.stringify(dettesList));localStorage.setItem('carnet',JSON.stringify(carnet));localStorage.setItem('seuil',seuil);localStorage.setItem('conso',conso);}
+function save(){try{localStorage.setItem('stock',JSON.stringify(stock));localStorage.setItem('ventes',JSON.stringify(ventes));localStorage.setItem('dettes',JSON.stringify(dettesList));localStorage.setItem('carnet',JSON.stringify(carnet));localStorage.setItem('seuil',seuil);localStorage.setItem('conso',conso);}catch(e){}}
 function changerSeuil(){seuil=+document.getElementById('seuil').value||2;save();afficher();}
-function show(id){['vente','stock','caisse','dettes','carnet','achat','bilan','gps'].forEach(x=>document.getElementById(x).classList.add('hidden'));document.getElementById(id).classList.remove('hidden');afficher();window.scrollTo(0,300);}
-function nettoyerDettes(){if(confirm('Effacer toutes les dettes gâtées ?')){dettesList=[];save();afficher();alert('Nettoyé !');}}
+function show(id){try{['vente','stock','caisse','dettes','carnet','achat','bilan','gps'].forEach(x=>{let el=document.getElementById(x);if(el)el.classList.add('hidden');});let target=document.getElementById(id);if(target)target.classList.remove('hidden');}catch(e){} try{afficher();}catch(e){} window.scrollTo(0,300);}
+function nettoyerDettes(){if(confirm('Effacer TOUTES les dettes pour débloquer ?')){dettesList=[];save();afficher();alert('Nettoyé ! Tu peux rentrer dans Dettes maintenant.');}}
 function afficher(){
+ try{
  document.getElementById('seuil').value=seuil;
  if(stock.length==0){ document.getElementById('listeMedsChoix').innerHTML='<p>Aucun médicament - Ajoute d’abord dans STOCK PERMANENT</p>'; }
  else { document.getElementById('listeMedsChoix').innerHTML=stock.map((m,i)=>`<div class="med-row"><input type="checkbox" id="chk${i}"><b style="flex:1">${m.nom} - ${m.prix} GNF (Reste: ${m.qte})</b><span>Qté:</span><input type="number" id="qteMed${i}" value="1" min="1"></div>`).join(''); }
  let rupt=stock.filter(m=>m.qte==0);let bientot=stock.filter(m=>m.qte>0&&m.qte<=seuil);
  document.getElementById('zoneAlerte').innerHTML=(rupt.length||bientot.length)?`<div class="alerte">⛔ RUPTURE : ${rupt.map(m=>m.nom).join(', ')||'Aucune'}<br>⚠️ BIENTÔT FINI (≤ ${seuil}) : ${bientot.map(m=>m.nom+' ('+m.qte+')').join(', ')}<br>Il faut acheter ces médicaments vite !</div>`:'';
  document.getElementById('listeStock').innerHTML='<table><tr><th>N°</th><th>Nom</th><th>Stock</th><th>Prix unitaire</th><th>Total de prix</th><th>X</th></tr>'+stock.map((m,i)=>`<tr class="${m.qte<=seuil?'rouge':''}"><td>${i+1}</td><td>${m.nom} ${m.qte<=seuil?'⚠️':''}</td><td><input type="number" value="${m.qte}" onchange="modifQte(${i},this.value)" style="width:55px"></td><td><input type="number" value="${m.prix}" onchange="modifPrix(${i},this.value)" style="width:70px"></td><td>${(m.qte*m.prix).toLocaleString()} GNF</td><td><button onclick="supp(${i})">X</button></td></tr>`).join('')+'</table>';
- // DETTES - COMME TU VEUX : N° - Nom et Prénom - Somme - Date et Heure - X
- dettesList = dettesList.filter(d => d && (d.nom || d.patient || d.name) && (d.montant || d.dette || d.amount));
- dettesList.forEach(d=>{ if(!d.nom) d.nom=d.patient||d.name; if(!d.montant) d.montant=d.dette||d.amount||0; if(!d.date) d.date=new Date().toLocaleString('fr-FR'); });
+ // DETTES - PROTEGEE, ne bloque plus
+ dettesList = dettesList.filter(d => d && typeof d==='object' && (d.nom || d.patient || d.name));
+ dettesList.forEach(d=>{ if(!d.nom) d.nom=d.patient||d.name||'Patient'; if(!d.montant && d.montant!==0) d.montant=d.dette||d.amount||0; if(!d.date) d.date=new Date().toLocaleString('fr-FR'); });
  if(dettesList.length==0){ document.getElementById('listeDettes').innerHTML='<p>Aucune dette - C’est propre !</p>'; }
  else {
    let totalDette=dettesList.reduce((a,b)=>a+(+b.montant||0),0);
-   document.getElementById('listeDettes').innerHTML='<p><b>Total des dettes : '+totalDette.toLocaleString()+' GNF</b></p><table><tr><th>N°</th><th>Nom et Prénom</th><th>Somme</th><th>Date et Heure</th><th>X</th></tr>'+dettesList.map((d,i)=>`<tr><td>${i+1}</td><td><b>${d.nom}</b><br><small>${d.med||''}</small></td><td>${(+d.montant).toLocaleString()} GNF</td><td>${d.date}</td><td><button onclick="payeDette(${i})">X</button></td></tr>`).join('')+'</table>';
+   document.getElementById('listeDettes').innerHTML='<p><b>Total des dettes : '+totalDette.toLocaleString()+' GNF</b></p><table><tr><th>N°</th><th>Nom et Prénom</th><th>Somme</th><th>Date et Heure</th><th>X</th></tr>'+dettesList.map((d,i)=>`<tr><td>${i+1}</td><td><b>${d.nom}</b><br><small>${d.med||''}</small></td><td>${(+d.montant||0).toLocaleString()} GNF</td><td>${d.date}</td><td><button onclick="payeDette(${i})">X</button></td></tr>`).join('')+'</table>';
  }
- document.getElementById('listeCarnet').innerHTML=carnet.map(c=>`• <b>${c.nom}</b> (${c.type}) - ${c.note}<br>`).join('')||'Aucun';
+ document.getElementById('listeCarnet').innerHTML=carnet.map(c=>`• <b>${c.nom||''}</b> (${c.type||''}) - ${c.note||''}<br>`).join('')||'Aucun';
  let bas=stock.filter(m=>m.qte<=seuil);document.getElementById('listeAchat').innerHTML=bas.length?bas.map(m=>`🔴 <b>${m.nom}</b> - Reste ${m.qte}, acheter à Siguiri !<br>`).join(''):'✅ Tout va bien';
  document.getElementById('listePatients').innerHTML=ventes.map((v,i)=>`• <b>${v.nom||'Patient'}</b> - ${v.age||''} ans - ${v.sexe||''} - ${v.provenance||''}<br>Plainte: ${v.plainte||''} | Param: ${v.parametres||''}<br>Diag: ${v.diagnostic||''} | Trait: <b>${v.med||''}</b> - ${v.total||0} GNF - ${v.date||''}<br><br>`).join('')||'Aucun patient pour le moment';
  calculCaisse();
+ }catch(e){ document.getElementById('listeDettes').innerHTML='<p style="color:red">Dettes bloquées, appuie sur EFFACER TOUTES LES DETTES GÂTÉES</p>'; }
 }
 function modifQte(i,v){stock[i].qte=+v;save();afficher();}
 function modifPrix(i,v){stock[i].prix=+v;stock[i].vente=+v;stock[i].achat=+v;save();afficher();}
 function supp(i){if(confirm('Supprimer '+stock[i].nom+' ?')){stock.splice(i,1);save();afficher();}}
-function payeDette(i){if(confirm('Cette personne a payé ? Effacer la dette de '+dettesList[i].nom+' ?')){dettesList.splice(i,1);save();afficher();}}
+function payeDette(i){if(confirm('Cette personne a payé ? Effacer la dette de '+(dettesList[i]&&dettesList[i].nom)+' ?')){dettesList.splice(i,1);save();afficher();}}
 function ajoutMed(){let n=document.getElementById('nNom').value,p=+document.getElementById('nPrix').value,q=+document.getElementById('nQte').value||0;if(!n)return alert('Mets le nom');stock.push({nom:n,qte:q,prix:p,vente:p,achat:p});save();afficher();document.getElementById('nNom').value='';document.getElementById('nPrix').value='';document.getElementById('nQte').value='';alert('Ajouté !');}
 function vendre(){
   let nom=document.getElementById('nom').value||'Patient';
@@ -145,7 +150,7 @@ function vendre(){
   document.getElementById('msgVente').innerHTML='✅ '+nom+' ('+age+' ans, '+sexe+') - '+diagnostic+' - '+medsTexte+' = '+total+' GNF - '+dateHeure;
   document.getElementById('nom').value='';document.getElementById('age').value='';document.getElementById('provenance').value='';document.getElementById('plainte').value='';document.getElementById('parametres').value='';document.getElementById('diagnostic').value='';document.getElementById('dettePatient').value='';
 }
-function calculCaisse(){let tot=ventes.reduce((a,b)=>a+b.total,0);let ben=ventes.reduce((a,b)=>a+b.benef,0);let qJour=ventes.reduce((a,b)=>a+(b.qte||0),0);let dette=+document.getElementById('dette').value||0;document.getElementById('totalVente').innerText=tot.toLocaleString()+' GNF';document.getElementById('benefice').innerText=ben.toLocaleString()+' GNF';document.getElementById('caisseSoir').innerText=(tot-dette).toLocaleString()+' GNF';document.getElementById('consoJour').innerText=qJour;document.getElementById('totalMois').innerText=tot.toLocaleString()+' GNF';document.getElementById('benefMois').innerText=ben.toLocaleString()+' GNF';document.getElementById('consoTotal').innerText=conso;}
+function calculCaisse(){try{let tot=ventes.reduce((a,b)=>a+(+b.total||0),0);let ben=ventes.reduce((a,b)=>a+(+b.benef||0),0);let qJour=ventes.reduce((a,b)=>a+(+b.qte||0),0);let dette=+document.getElementById('dette').value||0;document.getElementById('totalVente').innerText=tot.toLocaleString()+' GNF';document.getElementById('benefice').innerText=ben.toLocaleString()+' GNF';document.getElementById('caisseSoir').innerText=(tot-dette).toLocaleString()+' GNF';document.getElementById('consoJour').innerText=qJour;document.getElementById('totalMois').innerText=tot.toLocaleString()+' GNF';document.getElementById('benefMois').innerText=ben.toLocaleString()+' GNF';document.getElementById('consoTotal').innerText=conso;}catch(e){}}
 function resetJour(){if(confirm('Nouveau jour ?')){ventes=[];save();afficher();}}
 function ajoutCarnet(){let n=document.getElementById('cNom').value,t=document.getElementById('cType').value,nt=document.getElementById('cNote').value;if(!n)return alert('Mets le nom');carnet.push({nom:n,type:t,note:nt});save();afficher();}
 afficher();
