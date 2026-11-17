@@ -8,7 +8,7 @@ body{font-family:Arial;background:#f2f2f2;margin:0;padding:10px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
 .grid button{background:white;border:1px solid #ddd;padding:14px;border-radius:12px;font-weight:bold;font-size:14px;min-height:60px}
 .card{background:white;padding:14px;border-radius:14px;margin-bottom:12px}
-input,select{width:100%;padding:11px;margin:5px 0;border-radius:8px;border:1px solid #ccc;font-size:16px;box-sizing:border-box}
+input,select,textarea{width:100%;padding:11px;margin:5px 0;border-radius:8px;border:1px solid #ccc;font-size:16px;box-sizing:border-box}
 .btn{background:#0d6e3e;color:white;padding:12px;border:none;border-radius:10px;width:100%;font-size:17px;font-weight:bold}
 table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-bottom:1px solid #ddd;padding:7px;text-align:left}
 .big{font-size:24px;font-weight:bold;text-align:center}.vert{color:green}.hidden{display:none}
@@ -20,7 +20,7 @@ label{font-weight:bold;font-size:14px}
 .med-row input[type=number]{width:70px}
 table input{padding:8px;margin:0;font-size:14px}
 </style></head><body>
-<div class="top" id="topBar"><h2 id="titreTop">👑 PATRON - Bakary Sidibe</h2><p id="sousTitreTop">Chef de Poste de Santé de Filanidialakoro - Tu vois TOUT</p><div class="connect">✅ CONNECTÉ À FIREBASE</div></div>
+<div class="top" id="topBar"><h2 id="titreTop">👑 PATRON - Bakary Sidibe</h2><p id="sousTitreTop">Chef de Poste de Santé de Filanidialakoro - Tu vois TOUT</p><div class="connect">✅ CONNECTÉ</div></div>
 <div class="grid">
 <button onclick="show('vente')">💊 Médicaments<br><small>Patients à traiter</small></button>
 <button onclick="show('dettes')">📒 Dettes</button>
@@ -34,6 +34,13 @@ table input{padding:8px;margin:0;font-size:14px}
 
 <div id="vente" class="card">
 <h2>💊 Traiter un Patient</h2>
+<div id="zoneImportSuppleant" style="display:none;background:#fff3cd;padding:12px;border-radius:12px;border:2px dashed #ff9800;margin-bottom:10px">
+<b>📥 SUPPLÉANT - Reçois le Stock du Patron :</b><br>
+<label>Colle ici le CODE que Bakary t'a envoyé sur WhatsApp :</label>
+<textarea id="codeImport" rows="3" placeholder="Colle le code ici..."></textarea>
+<button class="btn" style="background:#ff9800" onclick="importerStock()">📥 IMPORTER LE STOCK DU PATRON</button>
+<p style="font-size:12px">Après ça, tu vas voir TOUS les médicaments de Bakary.</p>
+</div>
 <label>Nom et Prénom :</label><input id="nom" placeholder="Ex: Mamadou Diallo">
 <label>Âge :</label><input type="number" id="age" placeholder="Ex: 25">
 <label>Sexe :</label><select id="sexe"><option>Masculin</option><option>Féminin</option></select>
@@ -53,12 +60,18 @@ table input{padding:8px;margin:0;font-size:14px}
 
 <div id="stock" class="card hidden">
 <h2>📦 STOCK PERMANENT</h2>
+<div style="background:#e3f2fd;padding:12px;border-radius:12px;border:2px solid #1976d2;margin-bottom:10px">
+<b>📤 ENVOYER TON STOCK AU SUPPLÉANT :</b><br>
+<p style="font-size:13px">1. Appuie sur le bouton<br>2. Ça copie le CODE<br>3. Envoie le CODE au suppléant sur WhatsApp</p>
+<button class="btn" style="background:#1976d2" onclick="exporterStock()">📤 ENVOYER LE STOCK AU SUPPLÉANT</button>
+<textarea id="codeExport" rows="3" placeholder="Le code va s'afficher ici, tu le copies et tu l'envoies..." readonly></textarea>
+</div>
 <div style="display:flex;gap:6px;align-items:center"><span>⚠️ Alerter si stock ≤</span><input type="number" id="seuil" value="2" style="width:80px"><button class="btn" style="width:auto;background:#ff9800" onclick="changerSeuil()">Changer seuil</button></div>
 <div id="zoneAlerte" style="margin-top:10px"></div>
 <label>Nom nouveau médicament</label><input id="nNom" placeholder="Nom nouveau médicament">
-<label>Prix d'Achat - Combien tu as acheté à Siguiri ?</label><input type="number" id="nAchat" placeholder="Ex: 300">
-<label>Prix de Vente - Combien tu vends au patient ?</label><input type="number" id="nPrix" placeholder="Ex: 500">
-<label>Stock physique - Combien il reste ?</label><input type="number" id="nQte" placeholder="Ex: 20">
+<label>Prix d'Achat</label><input type="number" id="nAchat" placeholder="Ex: 300">
+<label>Prix de Vente</label><input type="number" id="nPrix" placeholder="Ex: 500">
+<label>Stock physique</label><input type="number" id="nQte" placeholder="Ex: 20">
 <button class="btn" style="background:#22a55b" onclick="ajoutMed()">AUGMENTER LA LISTE</button>
 <div id="listeStock" style="margin-top:10px;overflow-x:auto"></div>
 <p><b>Bénéfice Total du Stock : <span id="benefTotalStock">0 GNF</span></b></p>
@@ -107,6 +120,7 @@ if(isSuppleant){
   document.getElementById('topBar').style.background='#ff9800';
   document.querySelectorAll('.patron-only').forEach(e=>e.style.display='none');
   document.querySelectorAll('.patron-only-btn').forEach(e=>e.style.display='none');
+  document.getElementById('zoneImportSuppleant').style.display='block';
 }
 function loadSafe(k,def){try{let v=JSON.parse(localStorage.getItem(k)||'');if(Array.isArray(def)&&!Array.isArray(v))return def;return v==null?def:v;}catch(e){return def;}}
 let seuil=parseInt(localStorage.getItem('seuil')||'2')||2;
@@ -114,16 +128,31 @@ let stock=loadSafe('stock',[]);let ventes=loadSafe('ventes',[]);let dettesList=l
 let consoList=loadSafe('consoList',[]);
 if(!Array.isArray(stock))stock=[]; if(!Array.isArray(ventes))ventes=[]; if(!Array.isArray(dettesList))dettesList=[]; if(!Array.isArray(carnet))carnet=[]; if(!Array.isArray(consoList))consoList=[];
 stock=stock.filter(m=>m&&typeof m==='object'); ventes=ventes.filter(v=>v&&typeof v==='object'); dettesList=dettesList.filter(d=>d&&typeof d==='object'); carnet=carnet.filter(c=>c&&typeof c==='object'); consoList=consoList.filter(c=>c&&typeof c==='object');
-stock.forEach(m=>{ 
-  if(m.prix==null) m.prix=m.vente||m.achat||0;
-  if(m.vente==null) m.vente=m.prix||0;
-  if(m.achat==null) m.achat=m.prix||0;
-  if(!m.nom) m.nom='Médicament'; if(m.qte==null) m.qte=0;
-  m.achat=+m.achat||0; m.vente=+m.vente||0; m.prix=m.vente;
-});
+stock.forEach(m=>{ if(m.prix==null) m.prix=m.vente||m.achat||0; if(m.vente==null) m.vente=m.prix||0; if(m.achat==null) m.achat=m.prix||0; if(!m.nom) m.nom='Médicament'; if(m.qte==null) m.qte=0; m.achat=+m.achat||0; m.vente=+m.vente||0; m.prix=m.vente; });
 dettesList.forEach(d=>{ if(!d.date) d.date=new Date().toLocaleString('fr-FR'); if(!d.nom) d.nom=d.patient||d.name||'Patient'; if(!d.montant) d.montant=d.dette||d.amount||0; });
 ventes.forEach(v=>{ if(!v.medDetail) v.medDetail=v.med||''; if(!v.total) v.total=0; });
 function save(){try{localStorage.setItem('stock',JSON.stringify(stock));localStorage.setItem('ventes',JSON.stringify(ventes));localStorage.setItem('dettes',JSON.stringify(dettesList));localStorage.setItem('carnet',JSON.stringify(carnet));localStorage.setItem('seuil',seuil);localStorage.setItem('conso',conso);localStorage.setItem('consoList',JSON.stringify(consoList));}catch(e){}}
+// === TRANSFERT STOCK PATRON -> SUPPLEANT ===
+function exporterStock(){
+  if(stock.length==0) return alert('Ton stock est vide ! Ajoute d’abord des médicaments.');
+  let code = btoa(unescape(encodeURIComponent(JSON.stringify(stock))));
+  let el=document.getElementById('codeExport'); el.value=code; el.select();
+  try{ navigator.clipboard.writeText(code); }catch(e){}
+  alert('✅ CODE COPIÉ ! Envoie-le au suppléant sur WhatsApp.\nIl a '+stock.length+' médicaments.');
+}
+function importerStock(){
+  let code=document.getElementById('codeImport').value.trim();
+  if(!code) return alert('Colle d’abord le CODE que Bakary t’a envoyé !');
+  try{
+    let nouveau = JSON.parse(decodeURIComponent(escape(atob(code))));
+    if(!Array.isArray(nouveau) || nouveau.length==0) return alert('Code vide ou faux !');
+    stock = nouveau;
+    stock.forEach(m=>{ if(m.prix==null) m.prix=m.vente||m.achat||0; if(m.vente==null) m.vente=m.prix||0; if(m.achat==null) m.achat=m.prix||0; m.achat=+m.achat||0; m.vente=+m.vente||0; m.prix=m.vente; });
+    save(); afficher();
+    alert('✅ BRAVO ! Tu as reçu '+stock.length+' médicaments du Patron Bakary. Tu peux maintenant traiter les patients !');
+    document.getElementById('codeImport').value='';
+  }catch(e){ alert('❌ Code faux ! Demande à Bakary de renvoyer le code.'); }
+}
 function changerSeuil(){seuil=+document.getElementById('seuil').value||2;save();afficher();}
 function show(id){
   if(isSuppleant && !['vente','dettes'].includes(id)){ alert('⛔ Tu es Suppléant. Tu peux voir SEULEMENT Médicaments + Dettes.'); return; }
@@ -134,7 +163,7 @@ function ajoutDetteManuelle(){let nom=document.getElementById('dNom').value.trim
 function suppPatient(i){if(confirm('Supprimer ce patient ? '+(ventes[i]&&ventes[i].nom))){ventes.splice(i,1);save();afficher();}}
 function afficher(){try{
  document.getElementById('seuil').value=seuil;
- if(stock.length==0){ document.getElementById('listeMedsChoix').innerHTML='<p>Aucun médicament - Ajoute d’abord dans STOCK PERMANENT</p>'; }
+ if(stock.length==0){ document.getElementById('listeMedsChoix').innerHTML='<p>Aucun médicament - Demande au Patron Bakary de t’envoyer le CODE du stock (voir en haut 📥)</p>'; }
  else { document.getElementById('listeMedsChoix').innerHTML=stock.map((m,i)=>`<div class="med-row"><input type="checkbox" id="chk${i}"><b style="flex:1">${m.nom} - Vente: ${m.vente} GNF (Reste: ${m.qte})</b><span>Qté:</span><input type="number" id="qteMed${i}" value="1" min="1"></div>`).join(''); }
  let rupt=stock.filter(m=>m.qte==0);let bientot=stock.filter(m=>m.qte>0&&m.qte<=seuil);
  document.getElementById('zoneAlerte').innerHTML=(rupt.length||bientot.length)?`<div class="alerte">⛔ RUPTURE : ${rupt.map(m=>m.nom).join(', ')||'Aucune'}<br>⚠️ BIENTÔT FINI (≤ ${seuil}) : ${bientot.map(m=>m.nom+' ('+m.qte+')').join(', ')}<br>Il faut acheter ces médicaments vite !</div>`:'';
@@ -164,7 +193,6 @@ function afficher(){try{
      return `<tr><td>${i+1}</td><td><b>${v.nom||'Patient'}</b><br><small>${v.provenance||''} - ${v.date||''}</small></td><td>${v.age||''}</td><td>${v.sexe||''}</td><td>${v.plainte||''}<br><small>Param: ${v.parametres||''}</small></td><td>${v.diagnostic||''}</td><td>${medDetail}</td><td><b>${(+v.total||0).toLocaleString()} GNF</b></td><td><button onclick="suppPatient(${i})">X</button></td></tr>`;
    }).join('');
  }
- // === BILAN : Médicaments Consommés groupés par nom ===
  let groupe={};
  consoList.forEach(c=>{
    let key=c.nom;
@@ -180,7 +208,7 @@ function afficher(){try{
    totVenteBilan+=tV; totAchatBilan+=tA; totBenefBilan+=b; totQteBilan+=g.qte;
  });
  if(lignes.length==0){
-   document.getElementById('listeConsoBilan').innerHTML='<tr><td colspan="8">Aucun médicament consommé pour le moment - Vends d’abord un médicament dans Médicaments</td></tr>';
+   document.getElementById('listeConsoBilan').innerHTML='<tr><td colspan="8">Aucun médicament consommé pour le moment</td></tr>';
  } else {
    document.getElementById('listeConsoBilan').innerHTML=lignes.map((g,i)=>{
      let tV=g.qte*g.vente; let tA=g.qte*g.achat; let b=tV-tA;
@@ -188,14 +216,12 @@ function afficher(){try{
    }).join('');
  }
  document.getElementById('benefConsoBilan').innerText=totBenefBilan.toLocaleString()+' GNF';
- // Si pas encore de consoList (anciennes ventes), on prend les ventes
  let totVentes = ventes.reduce((a,b)=>a+(+b.total||0),0);
  let totBenefVentes = ventes.reduce((a,b)=>a+(+b.benef||0),0);
  document.getElementById('totalMois').innerText=(totVenteBilan||totVentes).toLocaleString()+' GNF';
  document.getElementById('totalAchatBilan').innerText=totAchatBilan.toLocaleString()+' GNF';
  document.getElementById('benefMois').innerText=(totBenefBilan||totBenefVentes).toLocaleString()+' GNF';
  document.getElementById('consoTotal').innerText=totQteBilan||conso;
- // Dettes dans Bilan
  document.getElementById('totalDetteBilan').innerText=totalDette.toLocaleString()+' GNF';
  document.getElementById('totalDetteBilan2').innerText=totalDette.toLocaleString()+' GNF';
  if(dettesList.length==0){ document.getElementById('listeDettesBilan').innerHTML='<tr><td colspan="4">Aucune dette - C’est propre !</td></tr>'; }
@@ -233,7 +259,6 @@ function vendre(){
     total += sousTotal; benef += c.qte * (prixVente - prixAchat);
     medsTexte += c.med.nom + ' x' + c.qte + ' + ';
     medDetail += c.med.nom + ' x' + c.qte + ' = ' + sousTotal.toLocaleString() + ' GNF<br>';
-    // Pour le Bilan
     consoList.push({nom:c.med.nom,qte:c.qte,achat:prixAchat,vente:prixVente,date:dateHeure});
   });
   medsTexte = medsTexte.slice(0,-3);
