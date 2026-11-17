@@ -19,34 +19,17 @@ label{font-weight:bold;font-size:14px}
 .med-row input[type=checkbox]{width:22px;height:22px}
 .med-row input[type=number]{width:70px}
 table input{padding:8px;margin:0;font-size:14px}
-.login{position:fixed;top:0;left:0;right:0;bottom:0;background:#1976d2;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;color:white;text-align:center}
-.loginBox{background:white;color:#333;padding:20px;border-radius:16px;width:100%;max-width:360px}
 </style></head><body>
-
-<div id="loginScreen" class="login">
-<h1>🏥 Poste de Santé<br>Filanidialakoro</h1>
-<p>Bonjour, c'est qui ?</p>
-<div class="loginBox">
-<button class="btn" style="background:#1976d2;margin-bottom:8px" onclick="choisirPatron()">👑 Moi Bakary Sidibe<br><small>PATRON - Je vois TOUT</small></button>
-<div id="codePatron" class="hidden">
-<label>Code Patron :</label><input type="password" id="inputCode" placeholder="Code : 1234" inputmode="numeric">
-<button class="btn" onclick="verifierCode()">✅ Entrer comme Patron</button>
-<p style="font-size:12px;color:#888">Code pour le moment : 1234 - Dis-moi si tu veux changer</p>
-</div>
-<button class="btn" style="background:#ff9800" onclick="loginSuppleant()">🧑‍⚕️ Suppléant<br><small>Je vois SEULEMENT Médicaments + Dettes</small></button>
-</div>
-</div>
-
-<div class="top"><h2>👑 PATRON - Bakary Sidibe</h2><p id="quiConnecte">Chef de Poste de Santé de Filanidialakoro</p><div class="connect" id="statutConnect">✅ CONNECTÉ À FIREBASE</div><button onclick="deconnecter()" style="margin-top:8px;background:white;color:#1976d2;border:none;padding:7px 12px;border-radius:8px;font-weight:bold">🚪 Changer de personne / Déconnexion</button></div>
+<div class="top" id="topBar"><h2 id="titreTop">👑 PATRON - Bakary Sidibe</h2><p id="sousTitreTop">Chef de Poste de Santé de Filanidialakoro - Tu vois TOUT</p><div class="connect">✅ CONNECTÉ À FIREBASE</div></div>
 <div class="grid">
-<button id="btn-vente" onclick="show('vente')">💊 Médicaments<br><small>Patients à traiter</small></button>
-<button id="btn-dettes" onclick="show('dettes')">📒 Dettes</button>
-<button id="btn-carnet" class="patron-only" onclick="show('carnet')">🤰 CARNET SUIVI</button>
-<button id="btn-achat" class="patron-only" onclick="show('achat')">🛒 LISTE D'ACHAT VILLE</button>
-<button id="btn-bilan" class="patron-only" onclick="show('bilan')">📊 BILAN + CONSOMMATION</button>
-<button id="btn-caisse" class="patron-only" onclick="show('caisse')">💰 CAISSE DU JOUR</button>
-<button id="btn-stock" class="patron-only" onclick="show('stock')">📦 STOCK PERMANENT</button>
-<button id="btn-gps" class="patron-only" onclick="show('gps')">📍 GPS</button>
+<button onclick="show('vente')">💊 Médicaments<br><small>Patients à traiter</small></button>
+<button onclick="show('dettes')">📒 Dettes</button>
+<button class="patron-only" onclick="show('carnet')">🤰 CARNET SUIVI</button>
+<button class="patron-only" onclick="show('achat')">🛒 LISTE D'ACHAT VILLE</button>
+<button class="patron-only" onclick="show('bilan')">📊 BILAN + CONSOMMATION</button>
+<button class="patron-only" onclick="show('caisse')">💰 CAISSE DU JOUR</button>
+<button class="patron-only" onclick="show('stock')">📦 STOCK PERMANENT</button>
+<button class="patron-only" onclick="show('gps')">📍 GPS</button>
 </div>
 
 <div id="vente" class="card">
@@ -82,22 +65,12 @@ table input{padding:8px;margin:0;font-size:14px}
 <div id="dettes" class="card hidden">
 <h2>📒 Dettes</h2>
 <p><b>Total des dettes : <span id="totalDetteTop">0 GNF</span></b></p>
-<div style="overflow-x:auto">
-<table>
-<tr><th>N°</th><th>Nom et Prénom</th><th>Somme</th><th>Date et Heure</th><th>X</th></tr>
-<tr style="background:#fff3cd">
-<td>✍️</td>
-<td><input id="dNom" placeholder="Nom et Prénom"></td>
-<td><input type="number" id="dSomme" placeholder="Somme"></td>
-<td style="font-size:12px;color:#666">Auto<br>maintenant</td>
-<td><button onclick="ajoutDetteManuelle()" style="background:#ff9800;color:white;border:none;padding:10px;border-radius:8px;font-weight:bold">➕</button></td>
-</tr>
+<div style="overflow-x:auto"><table><tr><th>N°</th><th>Nom et Prénom</th><th>Somme</th><th>Date et Heure</th><th>X</th></tr>
+<tr style="background:#fff3cd"><td>✍️</td><td><input id="dNom" placeholder="Nom et Prénom"></td><td><input type="number" id="dSomme" placeholder="Somme"></td><td style="font-size:12px;color:#666">Auto<br>maintenant</td><td><button onclick="ajoutDetteManuelle()" style="background:#ff9800;color:white;border:none;padding:10px;border-radius:8px;font-weight:bold">➕</button></td></tr>
 <tr><td colspan="5"><input id="dMotif" placeholder="Pour quoi ? Ex: 2 boîtes Amoxicilline (facultatif)" style="background:#fff8e1"></td></tr>
-<tbody id="listeDettesBody"></tbody>
-</table>
-</div>
+<tbody id="listeDettesBody"></tbody></table></div>
 <p style="font-size:12px;color:#666">X = Supprimer - Quand la personne a payé, appuie sur X</p>
-<button class="btn" style="background:#e53935;margin-top:10px" onclick="nettoyerDettes()">🗑️ EFFACER TOUTES LES DETTES</button>
+<button class="btn patron-only-btn" style="background:#e53935;margin-top:10px" onclick="nettoyerDettes()">🗑️ EFFACER TOUTES LES DETTES</button>
 </div>
 
 <div id="carnet" class="card hidden"><h2>🤰 CARNET SUIVI</h2><label>Nom :</label><input id="cNom"><label>Type :</label><select id="cType"><option>Femme enceinte</option><option>Enfant</option></select><label>Note :</label><input id="cNote" placeholder="Ex: Rendez-vous"><button class="btn" onclick="ajoutCarnet()">➕ Ajouter</button><div id="listeCarnet" style="margin-top:10px"></div></div>
@@ -105,62 +78,34 @@ table input{padding:8px;margin:0;font-size:14px}
 <div id="bilan" class="card hidden"><h2>📊 BILAN + CONSOMMATION</h2><div>Total ventes :</div><div class="big" id="totalMois">0 GNF</div><div>Total bénéfice :</div><div class="big vert" id="benefMois">0 GNF</div><div>Total médicaments consommés :</div><div class="big" id="consoTotal">0</div></div>
 <div id="gps" class="card hidden"><h2>📍 GPS</h2><p>Filanidialakoro - Poste Santé Brousse, Siguiri, Guinée</p></div>
 <script>
-let role = localStorage.getItem('role') || '';
-function choisirPatron(){document.getElementById('codePatron').classList.remove('hidden');}
-function verifierCode(){
-  let c=document.getElementById('inputCode').value;
-  if(c=='1234'){ role='patron'; localStorage.setItem('role','patron'); appliquerRole(); }
-  else alert('Code faux ! Demande à Chef Bakary.');
-}
-function loginSuppleant(){ role='suppleant'; localStorage.setItem('role','suppleant'); appliquerRole(); }
-function deconnecter(){ localStorage.removeItem('role'); role=''; document.getElementById('loginScreen').style.display='flex'; }
-function appliquerRole(){
-  document.getElementById('loginScreen').style.display='none';
-  if(role=='patron'){
-    document.getElementById('quiConnecte').innerText='👑 Connecté comme : Bakary Sidibe - PATRON - Tu vois TOUT';
-    document.querySelectorAll('.patron-only').forEach(e=>e.style.display='');
-    show('vente');
-  } else if(role=='suppleant'){
-    document.getElementById('quiConnecte').innerText='🧑‍⚕️ Connecté comme : Suppléant - Tu vois SEULEMENT Médicaments + Dettes';
-    document.querySelectorAll('.patron-only').forEach(e=>e.style.display='none');
-    // Cacher les pages patron si il essaie
-    ['stock','caisse','carnet','achat','bilan','gps'].forEach(x=>{let el=document.getElementById(x); if(el) el.classList.add('hidden');});
-    show('vente');
-  }
+// === QUI EST CONNECTÉ ? ===
+// Si le lien finit par ?suppleant -> c'est le Suppléant, il voit SEULEMENT Médicaments + Dettes
+// Sinon -> c'est Bakary, il voit TOUT
+let isSuppleant = window.location.search.includes('suppleant') || window.location.hash.includes('suppleant');
+if(isSuppleant){
+  document.getElementById('titreTop').innerText='🧑‍⚕️ SUPPLÉANT';
+  document.getElementById('sousTitreTop').innerText='Poste de Santé de Filanidialakoro - Tu vois SEULEMENT Médicaments + Dettes';
+  document.getElementById('topBar').style.background='#ff9800';
+  document.querySelectorAll('.patron-only').forEach(e=>e.style.display='none');
+  document.querySelectorAll('.patron-only-btn').forEach(e=>e.style.display='none');
 }
 function loadSafe(k,def){try{let v=JSON.parse(localStorage.getItem(k)||'');if(Array.isArray(def)&&!Array.isArray(v))return def;return v==null?def:v;}catch(e){return def;}}
 let seuil=parseInt(localStorage.getItem('seuil')||'2')||2;
-let stock=loadSafe('stock',[]);
-let ventes=loadSafe('ventes',[]);
-let dettesList=loadSafe('dettes',[]);
-let carnet=loadSafe('carnet',[]);
-let conso=parseInt(localStorage.getItem('conso')||'0')||0;
+let stock=loadSafe('stock',[]);let ventes=loadSafe('ventes',[]);let dettesList=loadSafe('dettes',[]);let carnet=loadSafe('carnet',[]);let conso=parseInt(localStorage.getItem('conso')||'0')||0;
 if(!Array.isArray(stock))stock=[]; if(!Array.isArray(ventes))ventes=[]; if(!Array.isArray(dettesList))dettesList=[]; if(!Array.isArray(carnet))carnet=[];
 stock=stock.filter(m=>m&&typeof m==='object'); ventes=ventes.filter(v=>v&&typeof v==='object'); dettesList=dettesList.filter(d=>d&&typeof d==='object'); carnet=carnet.filter(c=>c&&typeof c==='object');
 stock.forEach(m=>{ if(!m.prix) m.prix=m.vente||m.achat||0; if(!m.vente) m.vente=m.prix; if(!m.achat) m.achat=m.prix; if(!m.nom) m.nom='Médicament'; if(m.qte==null) m.qte=0; });
 dettesList.forEach(d=>{ if(!d.date) d.date=new Date().toLocaleString('fr-FR'); if(!d.nom) d.nom=d.patient||d.name||'Patient'; if(!d.montant) d.montant=d.dette||d.amount||0; });
 function save(){try{localStorage.setItem('stock',JSON.stringify(stock));localStorage.setItem('ventes',JSON.stringify(ventes));localStorage.setItem('dettes',JSON.stringify(dettesList));localStorage.setItem('carnet',JSON.stringify(carnet));localStorage.setItem('seuil',seuil);localStorage.setItem('conso',conso);}catch(e){}}
-function changerSeuil(){if(role!='patron') return alert('Seul le Patron Bakary peut changer ça.'); seuil=+document.getElementById('seuil').value||2;save();afficher();}
+function changerSeuil(){seuil=+document.getElementById('seuil').value||2;save();afficher();}
 function show(id){
-  if(role=='suppleant' && !['vente','dettes'].includes(id)){ alert('⛔ Tu es Suppléant. Tu peux voir SEULEMENT Médicaments + Dettes. Demande à Chef Bakary.'); return; }
+  if(isSuppleant && !['vente','dettes'].includes(id)){ alert('⛔ Tu es Suppléant. Tu peux voir SEULEMENT Médicaments + Dettes.'); return; }
   try{['vente','stock','caisse','dettes','carnet','achat','bilan','gps'].forEach(x=>{let el=document.getElementById(x);if(el)el.classList.add('hidden');});let target=document.getElementById(id);if(target)target.classList.remove('hidden');}catch(e){} try{afficher();}catch(e){} window.scrollTo(0,300);}
 function nettoyerDettes(){if(confirm('Effacer TOUTES les dettes ?')){dettesList=[];save();afficher();alert('Nettoyé !');}}
-function ajoutDetteManuelle(){
-  let nom=document.getElementById('dNom').value.trim();
-  let somme=+document.getElementById('dSomme').value||0;
-  let motif=document.getElementById('dMotif').value||'';
-  if(!nom) return alert('Écris d’abord le Nom et Prénom dans le tableau !');
-  if(!somme) return alert('Écris la Somme dans le tableau ! Ex: 15000');
-  let dateHeure=new Date().toLocaleString('fr-FR');
-  dettesList.push({nom:nom,montant:somme,med:motif,date:dateHeure});
-  save();afficher();
-  document.getElementById('dNom').value='';document.getElementById('dSomme').value='';document.getElementById('dMotif').value='';
-  alert('Dette ajoutée : '+nom+' doit '+somme+' GNF');
-}
-function afficher(){
- try{
+function ajoutDetteManuelle(){let nom=document.getElementById('dNom').value.trim();let somme=+document.getElementById('dSomme').value||0;let motif=document.getElementById('dMotif').value||'';if(!nom) return alert('Écris d’abord le Nom et Prénom dans le tableau !');if(!somme) return alert('Écris la Somme dans le tableau ! Ex: 15000');let dateHeure=new Date().toLocaleString('fr-FR');dettesList.push({nom:nom,montant:somme,med:motif,date:dateHeure});save();afficher();document.getElementById('dNom').value='';document.getElementById('dSomme').value='';document.getElementById('dMotif').value='';alert('Dette ajoutée : '+nom+' doit '+somme+' GNF');}
+function afficher(){try{
  document.getElementById('seuil').value=seuil;
- if(stock.length==0){ document.getElementById('listeMedsChoix').innerHTML='<p>Aucun médicament - Demande au Patron d’ajouter dans STOCK</p>'; }
+ if(stock.length==0){ document.getElementById('listeMedsChoix').innerHTML='<p>Aucun médicament - Demande au Patron Bakary d’ajouter dans STOCK</p>'; }
  else { document.getElementById('listeMedsChoix').innerHTML=stock.map((m,i)=>`<div class="med-row"><input type="checkbox" id="chk${i}"><b style="flex:1">${m.nom} - ${m.prix} GNF (Reste: ${m.qte})</b><span>Qté:</span><input type="number" id="qteMed${i}" value="1" min="1"></div>`).join(''); }
  let rupt=stock.filter(m=>m.qte==0);let bientot=stock.filter(m=>m.qte>0&&m.qte<=seuil);
  document.getElementById('zoneAlerte').innerHTML=(rupt.length||bientot.length)?`<div class="alerte">⛔ RUPTURE : ${rupt.map(m=>m.nom).join(', ')||'Aucune'}<br>⚠️ BIENTÔT FINI (≤ ${seuil}) : ${bientot.map(m=>m.nom+' ('+m.qte+')').join(', ')}<br>Il faut acheter ces médicaments vite !</div>`:'';
@@ -170,48 +115,24 @@ function afficher(){
  let totalDette=dettesList.reduce((a,b)=>a+(+b.montant||0),0);
  document.getElementById('totalDetteTop').innerText=totalDette.toLocaleString()+' GNF';
  if(dettesList.length==0){ document.getElementById('listeDettesBody').innerHTML='<tr><td colspan="5">Aucune dette - C’est propre !</td></tr>'; }
- else {
-   document.getElementById('listeDettesBody').innerHTML=dettesList.map((d,i)=>`<tr><td>${i+1}</td><td><b>${d.nom}</b><br><small>${d.med||''}</small></td><td>${(+d.montant||0).toLocaleString()} GNF</td><td>${d.date}</td><td><button onclick="payeDette(${i})">X</button></td></tr>`).join('');
- }
+ else { document.getElementById('listeDettesBody').innerHTML=dettesList.map((d,i)=>`<tr><td>${i+1}</td><td><b>${d.nom}</b><br><small>${d.med||''}</small></td><td>${(+d.montant||0).toLocaleString()} GNF</td><td>${d.date}</td><td><button onclick="payeDette(${i})">X</button></td></tr>`).join(''); }
  document.getElementById('listeCarnet').innerHTML=carnet.map(c=>`• <b>${c.nom||''}</b> (${c.type||''}) - ${c.note||''}<br>`).join('')||'Aucun';
  let bas=stock.filter(m=>m.qte<=seuil);document.getElementById('listeAchat').innerHTML=bas.length?bas.map(m=>`🔴 <b>${m.nom}</b> - Reste ${m.qte}, acheter à Siguiri !<br>`).join(''):'✅ Tout va bien';
  document.getElementById('listePatients').innerHTML=ventes.map((v,i)=>`• <b>${v.nom||'Patient'}</b> - ${v.age||''} ans - ${v.sexe||''} - ${v.provenance||''}<br>Plainte: ${v.plainte||''} | Param: ${v.parametres||''}<br>Diag: ${v.diagnostic||''} | Trait: <b>${v.med||''}</b> - ${v.total||0} GNF - ${v.date||''}<br><br>`).join('')||'Aucun patient pour le moment';
  calculCaisse();
- }catch(e){}
-}
-function modifQte(i,v){if(role!='patron') return alert('Seul le Patron peut modifier le Stock.'); stock[i].qte=+v;save();afficher();}
-function modifPrix(i,v){if(role!='patron') return alert('Seul le Patron peut modifier le Stock.'); stock[i].prix=+v;stock[i].vente=+v;stock[i].achat=+v;save();afficher();}
-function supp(i){if(role!='patron') return alert('Seul le Patron peut supprimer.'); if(confirm('Supprimer '+stock[i].nom+' ?')){stock.splice(i,1);save();afficher();}}
+ }catch(e){}}
+function modifQte(i,v){stock[i].qte=+v;save();afficher();}
+function modifPrix(i,v){stock[i].prix=+v;stock[i].vente=+v;stock[i].achat=+v;save();afficher();}
+function supp(i){if(confirm('Supprimer '+stock[i].nom+' ?')){stock.splice(i,1);save();afficher();}}
 function payeDette(i){if(confirm('Cette personne a payé ? Effacer la dette de '+(dettesList[i]&&dettesList[i].nom)+' ?')){dettesList.splice(i,1);save();afficher();}}
-function ajoutMed(){if(role!='patron') return alert('Seul le Patron peut ajouter.'); let n=document.getElementById('nNom').value,p=+document.getElementById('nPrix').value,q=+document.getElementById('nQte').value||0;if(!n)return alert('Mets le nom');stock.push({nom:n,qte:q,prix:p,vente:p,achat:p});save();afficher();document.getElementById('nNom').value='';document.getElementById('nPrix').value='';document.getElementById('nQte').value='';alert('Ajouté !');}
+function ajoutMed(){let n=document.getElementById('nNom').value,p=+document.getElementById('nPrix').value,q=+document.getElementById('nQte').value||0;if(!n)return alert('Mets le nom');stock.push({nom:n,qte:q,prix:p,vente:p,achat:p});save();afficher();document.getElementById('nNom').value='';document.getElementById('nPrix').value='';document.getElementById('nQte').value='';alert('Ajouté !');}
 function vendre(){
-  let nom=document.getElementById('nom').value||'Patient';
-  let age=document.getElementById('age').value||'';
-  let sexe=document.getElementById('sexe').value||'';
-  let provenance=document.getElementById('provenance').value||'';
-  let plainte=document.getElementById('plainte').value||'';
-  let parametres=document.getElementById('parametres').value||'';
-  let diagnostic=document.getElementById('diagnostic').value||'';
-  let detteP=+document.getElementById('dettePatient').value||0;
-  let dateHeure=new Date().toLocaleString('fr-FR');
-  let choisis=[];
-  stock.forEach((m,i)=>{
-    let chk=document.getElementById('chk'+i);
-    if(chk && chk.checked){
-      let q=+document.getElementById('qteMed'+i).value||1;
-      choisis.push({index:i, med:m, qte:q});
-    }
-  });
+  let nom=document.getElementById('nom').value||'Patient';let age=document.getElementById('age').value||'';let sexe=document.getElementById('sexe').value||'';let provenance=document.getElementById('provenance').value||'';let plainte=document.getElementById('plainte').value||'';let parametres=document.getElementById('parametres').value||'';let diagnostic=document.getElementById('diagnostic').value||'';let detteP=+document.getElementById('dettePatient').value||0;let dateHeure=new Date().toLocaleString('fr-FR');let choisis=[];
+  stock.forEach((m,i)=>{let chk=document.getElementById('chk'+i);if(chk && chk.checked){let q=+document.getElementById('qteMed'+i).value||1;choisis.push({index:i, med:m, qte:q});}});
   if(choisis.length==0) return alert('Coche au moins 1 médicament pour ce patient !');
   for(let c of choisis){ if(c.med.qte < c.qte) return alert('Pas assez de '+c.med.nom+' ! Reste : '+c.med.qte); }
   let total=0, benef=0, qTotal=0, medsTexte='';
-  choisis.forEach(c=>{
-    stock[c.index].qte -= c.qte;
-    conso += c.qte; qTotal += c.qte;
-    total += c.qte * c.med.prix;
-    benef += c.qte * c.med.prix;
-    medsTexte += c.med.nom + ' x' + c.qte + ' + ';
-  });
+  choisis.forEach(c=>{stock[c.index].qte -= c.qte;conso += c.qte; qTotal += c.qte;total += c.qte * c.med.prix;benef += c.qte * c.med.prix;medsTexte += c.med.nom + ' x' + c.qte + ' + ';});
   medsTexte = medsTexte.slice(0,-3);
   ventes.push({total:total,benef:benef,qte:qTotal,nom:nom,age:age,sexe:sexe,provenance:provenance,plainte:plainte,parametres:parametres,diagnostic:diagnostic,med:medsTexte,date:dateHeure});
   if(detteP>0)dettesList.push({nom:nom,montant:detteP,med:medsTexte,date:dateHeure});
@@ -220,8 +141,7 @@ function vendre(){
   document.getElementById('nom').value='';document.getElementById('age').value='';document.getElementById('provenance').value='';document.getElementById('plainte').value='';document.getElementById('parametres').value='';document.getElementById('diagnostic').value='';document.getElementById('dettePatient').value='';
 }
 function calculCaisse(){try{let tot=ventes.reduce((a,b)=>a+(+b.total||0),0);let ben=ventes.reduce((a,b)=>a+(+b.benef||0),0);let qJour=ventes.reduce((a,b)=>a+(+b.qte||0),0);let dette=+document.getElementById('dette').value||0;document.getElementById('totalVente').innerText=tot.toLocaleString()+' GNF';document.getElementById('benefice').innerText=ben.toLocaleString()+' GNF';document.getElementById('caisseSoir').innerText=(tot-dette).toLocaleString()+' GNF';document.getElementById('consoJour').innerText=qJour;document.getElementById('totalMois').innerText=tot.toLocaleString()+' GNF';document.getElementById('benefMois').innerText=ben.toLocaleString()+' GNF';document.getElementById('consoTotal').innerText=conso;}catch(e){}}
-function resetJour(){if(role!='patron') return alert('Seul le Patron peut faire Nouveau Jour.'); if(confirm('Nouveau jour ?')){ventes=[];save();afficher();}}
-function ajoutCarnet(){if(role!='patron') return alert('Seul le Patron peut.'); let n=document.getElementById('cNom').value,t=document.getElementById('cType').value,nt=document.getElementById('cNote').value;if(!n)return alert('Mets le nom');carnet.push({nom:n,type:t,note:nt});save();afficher();}
-if(role) appliquerRole(); else document.getElementById('loginScreen').style.display='flex';
+function resetJour(){if(confirm('Nouveau jour ?')){ventes=[];save();afficher();}}
+function ajoutCarnet(){let n=document.getElementById('cNom').value,t=document.getElementById('cType').value,nt=document.getElementById('cNote').value;if(!n)return alert('Mets le nom');carnet.push({nom:n,type:t,note:nt});save();afficher();}
 afficher();
 </script></body></html>
