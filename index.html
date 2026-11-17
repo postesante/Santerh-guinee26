@@ -18,6 +18,7 @@ label{font-weight:bold;font-size:14px}
 .med-row{display:flex;gap:6px;align-items:center;background:#f9f9f9;padding:8px;border-radius:8px;margin:4px 0}
 .med-row input[type=checkbox]{width:22px;height:22px}
 .med-row input[type=number]{width:70px}
+table input{padding:8px;margin:0;font-size:14px}
 </style></head><body>
 <div class="top"><h2>👑 PATRON - Bakary Sidibe</h2><p>Chef de Poste de Santé de Filanidialakoro</p><div class="connect">✅ CONNECTÉ À FIREBASE</div></div>
 <div class="grid">
@@ -63,9 +64,22 @@ label{font-weight:bold;font-size:14px}
 
 <div id="dettes" class="card hidden">
 <h2>📒 Dettes</h2>
-<p style="color:#666">N° - Nom et Prénom - Somme - Date et Heure - X</p>
-<button class="btn" style="background:#e53935;margin-bottom:10px" onclick="nettoyerDettes()">🗑️ EFFACER TOUTES LES DETTES GÂTÉES - Pour débloquer</button>
-<div id="listeDettes" style="overflow-x:auto"></div>
+<p><b>Total des dettes : <span id="totalDetteTop">0 GNF</span></b></p>
+<div style="overflow-x:auto">
+<table>
+<tr><th>N°</th><th>Nom et Prénom</th><th>Somme</th><th>Date et Heure</th><th>X</th></tr>
+<tr style="background:#fff3cd">
+<td>✍️</td>
+<td><input id="dNom" placeholder="Nom et Prénom"></td>
+<td><input type="number" id="dSomme" placeholder="Somme"></td>
+<td style="font-size:12px;color:#666">Auto<br>maintenant</td>
+<td><button onclick="ajoutDetteManuelle()" style="background:#ff9800;color:white;border:none;padding:10px;border-radius:8px;font-weight:bold">➕</button></td>
+</tr>
+<tr><td colspan="5"><input id="dMotif" placeholder="Pour quoi ? Ex: 2 boîtes Amoxicilline (facultatif)" style="background:#fff8e1"></td></tr>
+<tbody id="listeDettesBody"></tbody>
+</table>
+</div>
+<button class="btn" style="background:#e53935;margin-top:10px" onclick="nettoyerDettes()">🗑️ EFFACER TOUTES LES DETTES</button>
 </div>
 
 <div id="carnet" class="card hidden"><h2>🤰 CARNET SUIVI</h2><label>Nom :</label><input id="cNom"><label>Type :</label><select id="cType"><option>Femme enceinte</option><option>Enfant</option></select><label>Note :</label><input id="cNote" placeholder="Ex: Rendez-vous"><button class="btn" onclick="ajoutCarnet()">➕ Ajouter</button><div id="listeCarnet" style="margin-top:10px"></div></div>
@@ -87,7 +101,19 @@ dettesList.forEach(d=>{ if(!d.date) d.date=new Date().toLocaleString('fr-FR'); i
 function save(){try{localStorage.setItem('stock',JSON.stringify(stock));localStorage.setItem('ventes',JSON.stringify(ventes));localStorage.setItem('dettes',JSON.stringify(dettesList));localStorage.setItem('carnet',JSON.stringify(carnet));localStorage.setItem('seuil',seuil);localStorage.setItem('conso',conso);}catch(e){}}
 function changerSeuil(){seuil=+document.getElementById('seuil').value||2;save();afficher();}
 function show(id){try{['vente','stock','caisse','dettes','carnet','achat','bilan','gps'].forEach(x=>{let el=document.getElementById(x);if(el)el.classList.add('hidden');});let target=document.getElementById(id);if(target)target.classList.remove('hidden');}catch(e){} try{afficher();}catch(e){} window.scrollTo(0,300);}
-function nettoyerDettes(){if(confirm('Effacer TOUTES les dettes pour débloquer ?')){dettesList=[];save();afficher();alert('Nettoyé ! Tu peux rentrer dans Dettes maintenant.');}}
+function nettoyerDettes(){if(confirm('Effacer TOUTES les dettes ?')){dettesList=[];save();afficher();alert('Nettoyé !');}}
+function ajoutDetteManuelle(){
+  let nom=document.getElementById('dNom').value.trim();
+  let somme=+document.getElementById('dSomme').value||0;
+  let motif=document.getElementById('dMotif').value||'';
+  if(!nom) return alert('Écris d’abord le Nom et Prénom dans le tableau !');
+  if(!somme) return alert('Écris la Somme dans le tableau ! Ex: 15000');
+  let dateHeure=new Date().toLocaleString('fr-FR');
+  dettesList.push({nom:nom,montant:somme,med:motif,date:dateHeure});
+  save();afficher();
+  document.getElementById('dNom').value='';document.getElementById('dSomme').value='';document.getElementById('dMotif').value='';
+  alert('Dette ajoutée : '+nom+' doit '+somme+' GNF');
+}
 function afficher(){
  try{
  document.getElementById('seuil').value=seuil;
@@ -96,19 +122,19 @@ function afficher(){
  let rupt=stock.filter(m=>m.qte==0);let bientot=stock.filter(m=>m.qte>0&&m.qte<=seuil);
  document.getElementById('zoneAlerte').innerHTML=(rupt.length||bientot.length)?`<div class="alerte">⛔ RUPTURE : ${rupt.map(m=>m.nom).join(', ')||'Aucune'}<br>⚠️ BIENTÔT FINI (≤ ${seuil}) : ${bientot.map(m=>m.nom+' ('+m.qte+')').join(', ')}<br>Il faut acheter ces médicaments vite !</div>`:'';
  document.getElementById('listeStock').innerHTML='<table><tr><th>N°</th><th>Nom</th><th>Stock</th><th>Prix unitaire</th><th>Total de prix</th><th>X</th></tr>'+stock.map((m,i)=>`<tr class="${m.qte<=seuil?'rouge':''}"><td>${i+1}</td><td>${m.nom} ${m.qte<=seuil?'⚠️':''}</td><td><input type="number" value="${m.qte}" onchange="modifQte(${i},this.value)" style="width:55px"></td><td><input type="number" value="${m.prix}" onchange="modifPrix(${i},this.value)" style="width:70px"></td><td>${(m.qte*m.prix).toLocaleString()} GNF</td><td><button onclick="supp(${i})">X</button></td></tr>`).join('')+'</table>';
- // DETTES - PROTEGEE, ne bloque plus
  dettesList = dettesList.filter(d => d && typeof d==='object' && (d.nom || d.patient || d.name));
  dettesList.forEach(d=>{ if(!d.nom) d.nom=d.patient||d.name||'Patient'; if(!d.montant && d.montant!==0) d.montant=d.dette||d.amount||0; if(!d.date) d.date=new Date().toLocaleString('fr-FR'); });
- if(dettesList.length==0){ document.getElementById('listeDettes').innerHTML='<p>Aucune dette - C’est propre !</p>'; }
+ let totalDette=dettesList.reduce((a,b)=>a+(+b.montant||0),0);
+ document.getElementById('totalDetteTop').innerText=totalDette.toLocaleString()+' GNF';
+ if(dettesList.length==0){ document.getElementById('listeDettesBody').innerHTML='<tr><td colspan="5">Aucune dette - C’est propre !</td></tr>'; }
  else {
-   let totalDette=dettesList.reduce((a,b)=>a+(+b.montant||0),0);
-   document.getElementById('listeDettes').innerHTML='<p><b>Total des dettes : '+totalDette.toLocaleString()+' GNF</b></p><table><tr><th>N°</th><th>Nom et Prénom</th><th>Somme</th><th>Date et Heure</th><th>X</th></tr>'+dettesList.map((d,i)=>`<tr><td>${i+1}</td><td><b>${d.nom}</b><br><small>${d.med||''}</small></td><td>${(+d.montant||0).toLocaleString()} GNF</td><td>${d.date}</td><td><button onclick="payeDette(${i})">X</button></td></tr>`).join('')+'</table>';
+   document.getElementById('listeDettesBody').innerHTML=dettesList.map((d,i)=>`<tr><td>${i+1}</td><td><b>${d.nom}</b><br><small>${d.med||''}</small></td><td>${(+d.montant||0).toLocaleString()} GNF</td><td>${d.date}</td><td><button onclick="payeDette(${i})">X</button></td></tr>`).join('');
  }
  document.getElementById('listeCarnet').innerHTML=carnet.map(c=>`• <b>${c.nom||''}</b> (${c.type||''}) - ${c.note||''}<br>`).join('')||'Aucun';
  let bas=stock.filter(m=>m.qte<=seuil);document.getElementById('listeAchat').innerHTML=bas.length?bas.map(m=>`🔴 <b>${m.nom}</b> - Reste ${m.qte}, acheter à Siguiri !<br>`).join(''):'✅ Tout va bien';
  document.getElementById('listePatients').innerHTML=ventes.map((v,i)=>`• <b>${v.nom||'Patient'}</b> - ${v.age||''} ans - ${v.sexe||''} - ${v.provenance||''}<br>Plainte: ${v.plainte||''} | Param: ${v.parametres||''}<br>Diag: ${v.diagnostic||''} | Trait: <b>${v.med||''}</b> - ${v.total||0} GNF - ${v.date||''}<br><br>`).join('')||'Aucun patient pour le moment';
  calculCaisse();
- }catch(e){ document.getElementById('listeDettes').innerHTML='<p style="color:red">Dettes bloquées, appuie sur EFFACER TOUTES LES DETTES GÂTÉES</p>'; }
+ }catch(e){}
 }
 function modifQte(i,v){stock[i].qte=+v;save();afficher();}
 function modifPrix(i,v){stock[i].prix=+v;stock[i].vente=+v;stock[i].achat=+v;save();afficher();}
