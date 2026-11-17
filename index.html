@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Stock + Traitement - Poste Santé Bakary</title>
+<title>Stock + Traitement + Dette + Caisse - Bakary</title>
 <style>
 *{box-sizing:border-box} body{font-family:Arial,sans-serif;background:#f0f2f5;margin:0;padding:10px}
 .header{background:#0b6e4f;color:#fff;padding:15px;border-radius:12px;text-align:center}
@@ -25,62 +25,80 @@ tfoot td{background:#eafaf1;font-weight:bold;font-size:14px}
 .kpi b{font-size:18px;display:block}.kpi span{font-size:11px;color:#666}
 .ligne-med{display:flex;gap:6px;align-items:center} .ligne-med select{flex:2} .ligne-med input{flex:1}
 .trait-item{background:#f8f9fa;border:1px solid #eee;border-radius:12px;padding:10px;margin:6px 0}
-.tabs{display:flex;gap:8px;margin:10px 0} .tabs button{flex:1;padding:13px;border:none;border-radius:10px;font-weight:bold;font-size:15px;cursor:pointer;background:#ddd} .tabs button.active{background:#0b6e4f;color:#fff}
+.tabs{display:flex;gap:6px;margin:10px 0;flex-wrap:wrap} .tabs button{flex:1;padding:12px;border:none;border-radius:10px;font-weight:bold;font-size:13px;cursor:pointer;background:#ddd;min-width:110px} .tabs button.active{background:#0b6e4f;color:#fff}
+.dette-item{background:#fff3cd;border:1px solid #f39c12;border-radius:12px;padding:10px;margin:6px 0}
+.caisse-box{background:#eafaf1;border:2px solid #0b6e4f;border-radius:12px;padding:12px;text-align:center}
 </style>
 </head>
 <body>
 <div id="msgBox"></div>
-<div class="header"><h1>💊 POSTE SANTÉ BAKARY</h1><p>Chef : Bakary Sidibe | ÉTAPE 2 : STOCK + TRAITEMENT</p></div>
-<div class="tabs"><button id="tabStockBtn" class="active" onclick="showTab('stock')">💊 STOCK</button><button id="tabTraitBtn" onclick="showTab('trait')">🧑‍⚕️ PATIENT + TRAITEMENT</button></div>
+<div class="header"><h1>💊 POSTE SANTÉ BAKARY</h1><p>Chef : Bakary Sidibe | ÉTAPE 3 : STOCK + TRAITEMENT + DETTE + CAISSE</p></div>
+<div class="tabs">
+<button id="tabStockBtn" class="active" onclick="showTab('stock')">💊 STOCK</button>
+<button id="tabTraitBtn" onclick="showTab('trait')">🧑‍⚕️ TRAITEMENT</button>
+<button id="tabCaisseBtn" onclick="showTab('caisse')">💰 CAISSE + DETTE</button>
+</div>
 
-<!-- ============ STOCK ============ -->
+<!-- STOCK -->
 <div id="pageStock">
-<div class="kpi"><div><b id="nbTotal">0</b><span>Médicaments</span></div><div><b id="totalBenefKpi">0</b><span>GNF Total Bénéfice</span></div><div><b id="nbRupture">0</b><span>En Rupture</span></div></div>
-<div class="card"><h3>➕ Ajouter un médicament au Stock</h3>
+<div class="kpi"><div><b id="nbTotal">0</b><span>Médicaments</span></div><div><b id="totalBenefKpi">0</b><span>GNF Bénéfice Stock</span></div><div><b id="nbRupture">0</b><span>En Rupture</span></div></div>
+<div class="card"><h3>➕ Ajouter un médicament</h3>
 <input id="sNom" placeholder="Nom ex: Ceftriaxone 1g">
 <input id="sQte" type="number" placeholder="Stock Disponible ex: 20">
 <input id="sPhysique" type="number" placeholder="Stock Physique (armoire) ex: 20">
 <input id="sAchat" type="number" placeholder="Prix d'achat 1 pièce GNF ex: 6500">
 <input id="sVente" type="number" placeholder="Prix de vente 1 pièce GNF ex: 10000">
-<input id="sSeuil" type="number" value="5" placeholder="Seuil alerte ex: 5">
+<input id="sSeuil" type="number" value="5">
 <button class="btn btn-green" onclick="ajouterStock()">✅ ENREGISTRER DANS LE STOCK</button>
 <p id="msgAchat" style="text-align:center;font-weight:bold;color:#0b6e4f"></p></div>
 <div class="card"><h3>💊 Tableau Stock Permanent</h3>
 <input id="searchStock" placeholder="🔍 Chercher..." oninput="afficherStock()">
-<div style="overflow-x:auto"><table><thead><tr><th>N°</th><th>Nom</th><th>Stock Disponible</th><th>Stock Physique</th><th>Prix d'Achat</th><th>Prix de Vente</th><th>Bénéfice / 1</th><th>Total Bénéfice</th><th>État</th><th></th></tr></thead><tbody id="tbodyStock"></tbody><tfoot><tr><td colspan="7" style="text-align:right">TOTAL BÉNÉFICE STOCK :</td><td id="totalBenef">0 GNF</td><td colspan="2"></td></tr></tfoot></table></div>
+<div style="overflow-x:auto"><table><thead><tr><th>N°</th><th>Nom</th><th>Stock Dispo.</th><th>Stock Phys.</th><th>Prix Achat</th><th>Prix Vente</th><th>Bénéfice / 1</th><th>Total Bénéfice</th><th>État</th><th></th></tr></thead><tbody id="tbodyStock"></tbody><tfoot><tr><td colspan="7" style="text-align:right">TOTAL BÉNÉFICE STOCK :</td><td id="totalBenef">0 GNF</td><td colspan="2"></td></tr></tfoot></table></div>
+<button class="btn btn-orange" onclick="corrigerTousSeuils()">✅ Mettre tous les Seuils à 5</button>
 <button class="btn btn-orange" onclick="reparerStock()">🔄 Si tu ne vois rien, appuie ici</button></div>
 </div>
 
-<!-- ============ TRAITEMENT ============ -->
+<!-- TRAITEMENT -->
 <div id="pageTrait" style="display:none">
-<div class="kpi"><div><b id="nbPatients">0</b><span>Patients Traités</span></div><div><b id="totalVenteTrait">0</b><span>GNF Total Ventes Traitement</span></div><div><b id="totalBenefTrait">0</b><span>GNF Bénéfice Traitement</span></div></div>
+<div class="kpi"><div><b id="nbPatients">0</b><span>Patients</span></div><div><b id="totalVenteTrait">0</b><span>GNF Total Traitements</span></div><div><b id="totalBenefTrait">0</b><span>GNF Bénéfice Trait.</span></div></div>
 <div class="card"><h3>🧑‍⚕️ Nouveau Patient + Traitement</h3>
 <input id="pNom" placeholder="Nom du patient ex: Mamadou Diallo">
 <input id="pAge" type="number" placeholder="Âge ex: 25">
-<input id="pSympt" placeholder="Signes / Maladie ex: Fièvre, Palu, Maux de tête">
-<p style="font-weight:bold;margin:8px 0 2px">💊 Médicaments prescrits (plusieurs) :</p>
+<input id="pSympt" placeholder="Signes / Maladie ex: Fièvre, Palu">
+<p style="font-weight:bold">💊 Médicaments prescrits (plusieurs) :</p>
 <div id="lignesMeds"></div>
 <button class="btn btn-blue" onclick="ajouterLigneMed()">➕ + Ajouter un autre médicament</button>
-<p style="text-align:right;font-weight:bold;font-size:16px;margin:10px 0">Total à payer : <span id="totalTrait">0 GNF</span></p>
-<button class="btn btn-green" onclick="validerTraitement()">✅ VALIDER TRAITEMENT - Retirer du Stock</button>
+<p style="text-align:right;font-weight:bold;font-size:16px">Total à payer : <span id="totalTrait">0 GNF</span></p>
+<hr>
+<p style="font-weight:bold">💰 Combien le patient paie maintenant ?</p>
+<input id="pPaye" type="number" placeholder="Montant payé ex: 20000 - Mets 0 s'il ne paie rien" oninput="calculReste()">
+<p style="font-weight:bold">Reste / Dette : <span id="resteTrait" style="color:#c0392b">0 GNF</span></p>
+<button class="btn btn-green" onclick="validerTraitement()">✅ VALIDER TRAITEMENT - Retirer du Stock + Caisse / Dette</button>
 <p id="msgTrait" style="text-align:center;font-weight:bold;color:#0b6e4f"></p>
-<p style="font-size:12px;color:#666">⚠️ Quand tu cliques VALIDER, ça retire DIRECTEMENT dans le Stock Disponible. Ex: Si tu donnes Ceftriaxone x2, le Stock passe de 20 à 18.</p>
-</div>
+<p style="font-size:12px;color:#666">⚠️ Quand tu valides, ça retire du Stock, ça met l'argent payé dans la Caisse, et le reste va en Dette.</p></div>
 <div class="card"><h3>📋 Liste des Traitements</h3>
 <input id="searchTrait" placeholder="🔍 Chercher un patient..." oninput="afficherTrait()">
-<div id="listeTrait"></div>
+<div id="listeTrait"></div></div>
 </div>
+
+<!-- CAISSE + DETTE -->
+<div id="pageCaisse" style="display:none">
+<div class="card"><div class="caisse-box"><h3 style="margin:0">💰 CAISSE DU JOUR / TOTALE</h3><h1 id="caisseTotal" style="margin:5px 0;color:#0b6e4f">0 GNF</h1><p style="margin:0">Argent encaissé (Traitement + Dettes payées)</p></div></div>
+<div class="kpi"><div><b id="totalDetteKpi">0</b><span>GNF Total Dettes</span></div><div><b id="nbDetteKpi">0</b><span>Personnes qui doivent</span></div><div><b id="totalTraitCaisse">0</b><span>GNF Total Traitements</span></div></div>
+<div class="card"><h3>⚠️ Dettes - Ceux qui n'ont pas tout payé</h3>
+<input id="searchDette" placeholder="🔍 Chercher un débiteur..." oninput="afficherDettes()">
+<div id="listeDettes"></div></div>
+<div class="card"><h3>📋 Historique Caisse</h3><div id="listeCaisse"></div></div>
 </div>
 
 <script>
 let DEFAULT_STOCK=[{nom:'Paracétamol',qte:20,physique:20,achat:3000,vente:5000,seuil:5},{nom:'Amoxicilline',qte:15,physique:15,achat:7000,vente:10000,seuil:5},{nom:'Artemether',qte:10,physique:10,achat:10000,vente:15000,seuil:3}];
 let STOCK=JSON.parse(JSON.stringify(DEFAULT_STOCK));
-let TRAITEMENTS=[];
+let TRAITEMENTS=[]; let CAISSE=[]; // {patient, montant, date, type}
 function showMsg(t){let b=document.getElementById('msgBox');b.innerText=t;b.style.display='block';setTimeout(()=>{b.style.display='none';},3500);}
-function showTab(t){document.getElementById('pageStock').style.display=t==='stock'?'block':'none';document.getElementById('pageTrait').style.display=t==='trait'?'block':'none';document.getElementById('tabStockBtn').className=t==='stock'?'active':'';document.getElementById('tabTraitBtn').className=t==='trait'?'active':'';}
-function sauvegarder(){try{localStorage.setItem('bakary_stock_v1',JSON.stringify(STOCK));localStorage.setItem('bakary_trait_v1',JSON.stringify(TRAITEMENTS));}catch(e){}}
-function charger(){try{let l=localStorage.getItem('bakary_stock_v1');if(l){let d=JSON.parse(l);if(d&&d.length>0)STOCK=d;}let t=localStorage.getItem('bakary_trait_v1');if(t)TRAITEMENTS=JSON.parse(t)||[];}catch(e){}}
-// STOCK
+function showTab(t){['stock','trait','caisse'].forEach(x=>{document.getElementById('page'+x.charAt(0).toUpperCase()+x.slice(1)).style.display=t===x?'block':'none';});document.getElementById('tabStockBtn').className=t==='stock'?'active':'';document.getElementById('tabTraitBtn').className=t==='trait'?'active':'';document.getElementById('tabCaisseBtn').className=t==='caisse'?'active':'';}
+function sauvegarder(){try{localStorage.setItem('bakary_stock_v1',JSON.stringify(STOCK));localStorage.setItem('bakary_trait_v1',JSON.stringify(TRAITEMENTS));localStorage.setItem('bakary_caisse_v1',JSON.stringify(CAISSE));}catch(e){}}
+function charger(){try{let l=localStorage.getItem('bakary_stock_v1');if(l){let d=JSON.parse(l);if(d&&d.length>0)STOCK=d;}let t=localStorage.getItem('bakary_trait_v1');if(t)TRAITEMENTS=JSON.parse(t)||[];let c=localStorage.getItem('bakary_caisse_v1');if(c)CAISSE=JSON.parse(c)||[];}catch(e){}}
 function ajouterStock(){
   let nom=document.getElementById('sNom').value.trim();let qte=parseInt(document.getElementById('sQte').value)||0;let physique=parseInt(document.getElementById('sPhysique').value)||0;let achat=parseInt(document.getElementById('sAchat').value)||0;let vente=parseInt(document.getElementById('sVente').value)||0;let seuil=parseInt(document.getElementById('sSeuil').value)||5;
   if(!nom){alert('Mets le nom');return;} if(qte<=0){alert('Mets la quantité');return;} if(physique===0)physique=qte;
@@ -92,6 +110,7 @@ function ajouterStock(){
 }
 function supprimerStock(i){if(confirm('Supprimer ?')){STOCK.splice(i,1);sauvegarder();afficherStock();}}
 function corrigerPhysique(i){let nv=prompt('Combien dans l\'armoire pour '+STOCK[i].nom+' ?',STOCK[i].physique);if(nv===null)return;nv=parseInt(nv)||0;STOCK[i].physique=nv;STOCK[i].qte=nv;sauvegarder();afficherStock();showMsg('✅ Corrigé : '+STOCK[i].nom+' = '+nv);}
+function corrigerTousSeuils(){STOCK.forEach(s=>{s.seuil=5;});sauvegarder();afficherStock();showMsg('✅ Tous les seuils mis à 5');}
 function reparerStock(){if(confirm('Remettre les médicaments de base ?')){DEFAULT_STOCK.forEach(d=>{if(!STOCK.find(s=>s.nom.toLowerCase()===d.nom.toLowerCase()))STOCK.push(d);});if(STOCK.length===0)STOCK=JSON.parse(JSON.stringify(DEFAULT_STOCK));sauvegarder();afficherStock();showMsg('Stock réparé ✅');}}
 function afficherStock(){
   let search=(document.getElementById('searchStock').value||'').toLowerCase();
@@ -103,52 +122,34 @@ function afficherStock(){
   document.getElementById('totalBenefKpi').innerText=totalBenef.toLocaleString();
   document.getElementById('tbodyStock').innerHTML=filtered.map((s,idx)=>{let i=STOCK.indexOf(s);let benef=s.vente-s.achat;let total=benef*s.qte;let alerte=s.qte===0?'<span class="alert">RUPTURE !</span>':s.qte<=s.seuil?'<span class="warn">⚠️ BIENTÔT FINI</span>':'<span class="ok-stock">DISPONIBLE</span>';let diff=s.qte!==s.physique?' <span style="color:#c0392b;font-weight:bold">⚠️ Diff!</span>':'';return `<tr><td><b>${idx+1}</b></td><td><b>${s.nom}</b></td><td><b>${s.qte}</b>${diff}</td><td>${s.physique}</td><td>${s.achat.toLocaleString()} GNF</td><td>${s.vente.toLocaleString()} GNF</td><td>${benef.toLocaleString()} GNF</td><td><b>${total.toLocaleString()} GNF</b></td><td>${alerte}</td><td><button class="editbtn" onclick="corrigerPhysique(${i})">📦 Corriger</button> <button class="xbtn" onclick="supprimerStock(${i})">X</button></td></tr>`;}).join('');
 }
-// TRAITEMENT - plusieurs médicaments
-function optionsMeds(selected){
-  return `<option value="">-- Choisir médicament --</option>`+STOCK.map(s=>`<option value="${s.nom}" ${s.nom===selected?'selected':''}>${s.nom} - Stock: ${s.qte} - ${s.vente} GNF</option>`).join('');
-}
-function ajouterLigneMed(){
-  let div=document.createElement('div');div.className='ligne-med';
-  div.innerHTML=`<select class="medNom" onchange="calculTotal()">${optionsMeds('')}</select><input class="medQte" type="number" value="1" min="1" oninput="calculTotal()" placeholder="Qté"><button type="button" class="xbtn" onclick="this.parentElement.remove();calculTotal()">X</button>`;
-  document.getElementById('lignesMeds').appendChild(div);calculTotal();
-}
-function calculTotal(){
-  let total=0;
-  document.querySelectorAll('#lignesMeds .ligne-med').forEach(row=>{
-    let nom=row.querySelector('.medNom').value;let qte=parseInt(row.querySelector('.medQte').value)||0;
-    let med=STOCK.find(s=>s.nom===nom); if(med) total+=med.vente*qte;
-  });
-  document.getElementById('totalTrait').innerText=total.toLocaleString()+' GNF';return total;
-}
+function optionsMeds(selected){return `<option value="">-- Choisir médicament --</option>`+STOCK.map(s=>`<option value="${s.nom}" ${s.nom===selected?'selected':''}>${s.nom} - Stock: ${s.qte} - ${s.vente} GNF</option>`).join('');}
+function ajouterLigneMed(){let div=document.createElement('div');div.className='ligne-med';div.innerHTML=`<select class="medNom" onchange="calculTotal()">${optionsMeds('')}</select><input class="medQte" type="number" value="1" min="1" oninput="calculTotal()" placeholder="Qté"><button type="button" class="xbtn" onclick="this.parentElement.remove();calculTotal()">X</button>`;document.getElementById('lignesMeds').appendChild(div);calculTotal();}
+function calculTotal(){let total=0;document.querySelectorAll('#lignesMeds .ligne-med').forEach(row=>{let nom=row.querySelector('.medNom').value;let qte=parseInt(row.querySelector('.medQte').value)||0;let med=STOCK.find(s=>s.nom===nom);if(med)total+=med.vente*qte;});document.getElementById('totalTrait').innerText=total.toLocaleString()+' GNF';calculReste();return total;}
+function calculReste(){let total=calculTotalSansReste();let paye=parseInt(document.getElementById('pPaye').value)||0;let reste=total-paye;if(reste<0)reste=0;document.getElementById('resteTrait').innerText=reste.toLocaleString()+' GNF';return reste;}
+function calculTotalSansReste(){let total=0;document.querySelectorAll('#lignesMeds .ligne-med').forEach(row=>{let nom=row.querySelector('.medNom').value;let qte=parseInt(row.querySelector('.medQte').value)||0;let med=STOCK.find(s=>s.nom===nom);if(med)total+=med.vente*qte;});return total;}
 function validerTraitement(){
   let nom=document.getElementById('pNom').value.trim();let age=document.getElementById('pAge').value||'';let sympt=document.getElementById('pSympt').value.trim();
   if(!nom){alert('Mets le nom du patient');return;}
-  let lignes=[];
-  let ok=true;
-  document.querySelectorAll('#lignesMeds .ligne-med').forEach(row=>{
-    let medNom=row.querySelector('.medNom').value;let qte=parseInt(row.querySelector('.medQte').value)||0;
-    if(!medNom||qte<=0)return;
-    let med=STOCK.find(s=>s.nom===medNom);
-    if(!med){ok=false;return;}
-    if(med.qte<qte){alert('⚠️ Pas assez de stock pour '+medNom+' ! Stock = '+med.qte+' mais tu veux '+qte);ok=false;return;}
-    lignes.push({nom:medNom,qte:qte,prix:med.vente,achat:med.achat});
-  });
-  if(!ok)return;
-  if(lignes.length===0){alert('Choisis au moins 1 médicament');return;}
-  // RETIRER DU STOCK DIRECTEMENT
-  lignes.forEach(l=>{let med=STOCK.find(s=>s.nom===l.nom);med.qte-=l.qte;med.physique-=l.qte;if(med.physique<0)med.physique=0;});
+  let lignes=[];let ok=true;
+  document.querySelectorAll('#lignesMeds .ligne-med').forEach(row=>{let medNom=row.querySelector('.medNom').value;let qte=parseInt(row.querySelector('.medQte').value)||0;if(!medNom||qte<=0)return;let med=STOCK.find(s=>s.nom===medNom);if(!med){ok=false;return;}if(med.qte<qte){alert('⚠️ Pas assez de stock pour '+medNom+' ! Stock = '+med.qte);ok=false;return;}lignes.push({nom:medNom,qte:qte,prix:med.vente,achat:med.achat});});
+  if(!ok)return; if(lignes.length===0){alert('Choisis au moins 1 médicament');return;}
   let total=lignes.reduce((a,l)=>a+l.prix*l.qte,0);
+  let paye=parseInt(document.getElementById('pPaye').value)||0;
+  if(paye>total){alert('Il paie plus que le total ! Total = '+total+' GNF');return;}
+  let reste=total-paye;
+  lignes.forEach(l=>{let med=STOCK.find(s=>s.nom===l.nom);med.qte-=l.qte;med.physique-=l.qte;if(med.physique<0)med.physique=0;});
   let benef=lignes.reduce((a,l)=>a+(l.prix-l.achat)*l.qte,0);
   let date=new Date().toLocaleString('fr-FR');
-  TRAITEMENTS.unshift({nom,age,sympt,lignes,total,benef,date});
-  sauvegarder();afficherStock();afficherTrait();
-  // Reset
-  document.getElementById('pNom').value='';document.getElementById('pAge').value='';document.getElementById('pSympt').value='';document.getElementById('lignesMeds').innerHTML='';ajouterLigneMed();calculTotal();
-  showMsg('✅ Traitement validé pour '+nom+' - '+total.toLocaleString()+' GNF - Stock retiré !');
-  document.getElementById('msgTrait').innerText='✅ Traitement validé pour '+nom+' - Stock retiré !';
-  showTab('stock');
+  TRAITEMENTS.unshift({nom,age,sympt,lignes,total,paye,reste,benef,date});
+  if(paye>0) CAISSE.unshift({patient:nom,montant:paye,date:date,type:'Traitement - '+nom});
+  sauvegarder();afficherStock();afficherTrait();afficherDettes();afficherCaisse();
+  document.getElementById('pNom').value='';document.getElementById('pAge').value='';document.getElementById('pSympt').value='';document.getElementById('pPaye').value='';document.getElementById('lignesMeds').innerHTML='';ajouterLigneMed();calculTotal();
+  if(reste>0) showMsg('✅ Traitement validé ! Payé '+paye.toLocaleString()+' - Dette '+reste.toLocaleString()+' GNF');
+  else showMsg('✅ Traitement validé ! Payé en totalité - Caisse +'+paye.toLocaleString());
+  document.getElementById('msgTrait').innerText=reste>0?('✅ Validé ! Dette : '+reste.toLocaleString()+' GNF'):('✅ Validé ! Payé en totalité');
+  showTab('caisse');
 }
-function supprimerTrait(i){if(confirm('Supprimer ce traitement ? Le stock ne sera PAS remis. Tu veux remettre le stock aussi ?')){let t=TRAITEMENTS[i];t.lignes.forEach(l=>{let med=STOCK.find(s=>s.nom===l.nom);if(med){med.qte+=l.qte;med.physique+=l.qte;}});TRAITEMENTS.splice(i,1);sauvegarder();afficherStock();afficherTrait();}else if(confirm('Supprimer sans remettre le stock ?')){TRAITEMENTS.splice(i,1);sauvegarder();afficherTrait();}}
+function supprimerTrait(i){if(confirm('Supprimer ce traitement ? Le stock sera remis, la caisse ne sera pas changée.')){let t=TRAITEMENTS[i];t.lignes.forEach(l=>{let med=STOCK.find(s=>s.nom===l.nom);if(med){med.qte+=l.qte;med.physique+=l.qte;}});TRAITEMENTS.splice(i,1);sauvegarder();afficherStock();afficherTrait();afficherDettes();afficherCaisse();}}
 function afficherTrait(){
   let search=(document.getElementById('searchTrait').value||'').toLowerCase();
   let filtered=TRAITEMENTS.filter(t=>t.nom.toLowerCase().includes(search));
@@ -156,10 +157,41 @@ function afficherTrait(){
   let tv=TRAITEMENTS.reduce((a,t)=>a+t.total,0);let tb=TRAITEMENTS.reduce((a,t)=>a+t.benef,0);
   document.getElementById('totalVenteTrait').innerText=tv.toLocaleString();
   document.getElementById('totalBenefTrait').innerText=tb.toLocaleString();
+  document.getElementById('totalTraitCaisse').innerText=tv.toLocaleString();
   if(filtered.length===0){document.getElementById('listeTrait').innerHTML='<p style="text-align:center;color:#666">Aucun traitement pour le moment.</p>';return;}
-  document.getElementById('listeTrait').innerHTML=filtered.map(t=>{let idx=TRAITEMENTS.indexOf(t);let meds=t.lignes.map(l=>`${l.nom} x${l.qte} = ${(l.prix*l.qte).toLocaleString()} GNF`).join('<br>');return `<div class="trait-item"><b>🧑 ${t.nom} (${t.age||'?'} ans)</b> - <small>${t.date}</small><br><small>Signes : ${t.sympt||'-'}</small><br><small>${meds}</small><br><b>Total : ${t.total.toLocaleString()} GNF | Bénéfice : ${t.benef.toLocaleString()} GNF</b><br><button class="btn btn-red" style="padding:8px;margin-top:6px" onclick="supprimerTrait(${idx})">Supprimer</button></div>`;}).join('');
+  document.getElementById('listeTrait').innerHTML=filtered.map(t=>{let idx=TRAITEMENTS.indexOf(t);let meds=t.lignes.map(l=>`${l.nom} x${l.qte} = ${(l.prix*l.qte).toLocaleString()} GNF`).join('<br>');let statut=t.reste>0?`<span style="color:#c0392b;font-weight:bold">⚠️ Dette : ${t.reste.toLocaleString()} GNF</span>`:`<span style="color:#0b6e4f;font-weight:bold">✅ Payé en totalité</span>`;return `<div class="trait-item"><b>🧑 ${t.nom} (${t.age||'?'} ans)</b> - <small>${t.date}</small><br><small>Signes : ${t.sympt||'-'}</small><br><small>${meds}</small><br><b>Total : ${t.total.toLocaleString()} GNF | Payé : ${(t.paye||0).toLocaleString()} GNF</b><br>${statut}<br><button class="btn btn-red" style="padding:8px;margin-top:6px" onclick="supprimerTrait(${idx})">Supprimer</button></div>`;}).join('');
 }
-charger();afficherStock();afficherTrait();ajouterLigneMed();
+// DETTES + CAISSE
+function payerDette(idx){
+  let t=TRAITEMENTS[idx];
+  if(!t||t.reste<=0) return;
+  let montant=prompt('Combien '+t.nom+' paie maintenant ? Dette = '+t.reste.toLocaleString()+' GNF', t.reste);
+  if(montant===null) return; montant=parseInt(montant)||0;
+  if(montant<=0){alert('Mets un montant');return;}
+  if(montant>t.reste){alert('Il ne doit que '+t.reste+' GNF');return;}
+  t.paye+=montant; t.reste-=montant;
+  let date=new Date().toLocaleString('fr-FR');
+  CAISSE.unshift({patient:t.nom,montant:montant,date:date,type:'Paiement Dette - '+t.nom});
+  sauvegarder();afficherTrait();afficherDettes();afficherCaisse();
+  if(t.reste===0) showMsg('✅ Dette soldée pour '+t.nom+' !');
+  else showMsg('✅ '+montant.toLocaleString()+' GNF reçu. Reste '+t.reste.toLocaleString()+' GNF');
+}
+function afficherDettes(){
+  let search=(document.getElementById('searchDette').value||'').toLowerCase();
+  let dettes=TRAITEMENTS.filter(t=>t.reste>0 && t.nom.toLowerCase().includes(search));
+  let totalDette=TRAITEMENTS.reduce((a,t)=>a+(t.reste||0),0);
+  document.getElementById('totalDetteKpi').innerText=totalDette.toLocaleString();
+  document.getElementById('nbDetteKpi').innerText=TRAITEMENTS.filter(t=>t.reste>0).length;
+  if(dettes.length===0){document.getElementById('listeDettes').innerHTML='<p style="text-align:center;color:#0b6e4f;font-weight:bold">✅ Aucune dette. Tout le monde a payé !</p>';return;}
+  document.getElementById('listeDettes').innerHTML=dettes.map(t=>{let idx=TRAITEMENTS.indexOf(t);let meds=t.lignes.map(l=>`${l.nom} x${l.qte}`).join(', ');return `<div class="dette-item"><b>🧑 ${t.nom}</b> - <small>${t.date}</small><br><small>${meds} | Signes: ${t.sympt||'-'}</small><br><b>Total : ${t.total.toLocaleString()} GNF | Déjà payé : ${t.paye.toLocaleString()} GNF</b><br><b style="color:#c0392b;font-size:16px">Reste à payer : ${t.reste.toLocaleString()} GNF</b><br><button class="btn btn-green" style="padding:10px;margin-top:6px" onclick="payerDette(${idx})">💰 PAYER DETTE</button></div>`;}).join('');
+}
+function afficherCaisse(){
+  let totalCaisse=CAISSE.reduce((a,c)=>a+c.montant,0);
+  document.getElementById('caisseTotal').innerText=totalCaisse.toLocaleString()+' GNF';
+  if(CAISSE.length===0){document.getElementById('listeCaisse').innerHTML='<p style="text-align:center;color:#666">Aucun argent encaissé pour le moment.</p>';return;}
+  document.getElementById('listeCaisse').innerHTML=CAISSE.slice(0,50).map(c=>`<div class="trait-item"><b>${c.montant.toLocaleString()} GNF</b> - ${c.type}<br><small>${c.date}</small></div>`).join('');
+}
+charger();afficherStock();afficherTrait();afficherDettes();afficherCaisse();ajouterLigneMed();
 </script>
 </body>
 </html>
