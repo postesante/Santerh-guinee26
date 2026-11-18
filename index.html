@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Poste Santé Bakary</title><style>
+<title>Poste Santé Bakary - Simple</title><style>
 *{box-sizing:border-box}body{font-family:Arial;background:#f0f2f5;margin:0;padding:10px}
 .header{background:#0b6e4f;color:#fff;padding:15px;border-radius:12px;text-align:center}
 .header.suppleant{background:#1a73e8}.header h1{margin:0;font-size:19px}.header p{margin:4px 0 0;font-size:12px}
 .card{background:#fff;padding:12px;border-radius:12px;margin-bottom:10px}
 input,select{width:100%;padding:11px;margin:5px 0;border:1px solid #ccc;border-radius:8px}
 .btn{width:100%;padding:13px;border:none;border-radius:10px;font-weight:bold;cursor:pointer}
-.g{background:#0b6e4f;color:#fff}.o{background:#f39c12;color:#fff;margin-top:8px}.b{background:#1a73e8;color:#fff}.r{background:#c0392b;color:#fff}.p{background:#7d3cff;color:#fff}
+.g{background:#0b6e4f;color:#fff}.o{background:#f39c12;color:#fff;margin-top:8px}.b{background:#1a73e8;color:#fff}.p{background:#7d3cff;color:#fff}
 table{width:100%;border-collapse:collapse;font-size:13px}th{background:#0b6e4f;color:#fff;padding:8px;text-align:left}td{padding:8px;border-bottom:1px solid #eee}
 .xbtn{background:#c0392b;color:#fff;border:none;border-radius:50%;width:28px;height:28px;font-weight:bold}
 .ebtn{background:#1a73e8;color:#fff;border:none;border-radius:8px;padding:5px 8px;font-size:12px}
@@ -19,11 +19,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th{background:#0b6e4f;c
 .bilan-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #eee}
 </style></head><body>
 <div id="msgBox"></div>
-<div id="headerBox" class="header"><h1 id="titreRole">💊 POSTE SANTÉ BAKARY</h1><p id="sousTitre">Chargement...</p><p id="syncEtat" style="font-size:11px">🔄 Connexion Firebase...</p>
-<button id="btnEnvoyerPatron" class="btn o" onclick="sauvegarder(true)" style="margin-top:8px">📤 ENVOYER VERS SUPPLÉANT</button>
-<button id="btnRecevoirSupp" class="btn b" onclick="recevoirStockPatron()" style="margin-top:8px;display:none">🔄 RECEVOIR DU PATRON</button>
-<button class="btn p" onclick="verifierNuage()" style="margin-top:8px">🔍 VÉRIFIER LE NUAGE</button>
-</div>
+<div id="headerBox" class="header"><h1 id="titreRole">💊 POSTE SANTÉ BAKARY</h1><p id="sousTitre">Chargement...</p><p id="syncEtat" style="font-size:12px">🔄 Connexion...</p></div>
 <div class="tabs">
 <button id="tabStockBtn" class="active" onclick="showTab('stock')">💊 STOCK</button>
 <button id="tabTraitBtn" onclick="showTab('trait')">🧑‍⚕️ MÉDICAMENT</button>
@@ -50,7 +46,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th{background:#0b6e4f;c
 <p><b>💰 Combien il paie ?</b></p><input id="pPaye" type="number" placeholder="Montant payé - Mets 0 s'il ne paie rien" oninput="calculReste()">
 <p><b>Reste / Dette : <span id="resteTrait" style="color:#c0392b">0 GNF</span></b></p>
 <button class="btn g" onclick="validerTraitement()">✅ VALIDER - Retirer du Stock</button></div>
-<div class="card" id="cardListeTrait"><h3>📋 Liste Traitements - <span id="compteurTrait" style="color:#0b6e4f">0 patient(s)</span></h3><input id="searchTrait" placeholder="🔍 Chercher patient..." oninput="afficherTrait()"><button class="btn o" onclick="document.getElementById('searchTrait').value='';afficherTrait();showMsg('🔍 Recherche effacée - Tous les patients affichés')">🔍 Voir TOUS les patients</button><div id="listeTrait"></div></div>
+<div class="card" id="cardListeTrait"><h3>📋 Liste Traitements - <span id="compteurTrait" style="color:#0b6e4f">0 patient(s)</span></h3><input id="searchTrait" placeholder="🔍 Chercher patient..." oninput="afficherTrait()"><div id="listeTrait"></div></div>
 </div>
 
 <div id="pageCaisse" style="display:none">
@@ -77,52 +73,30 @@ table{width:100%;border-collapse:collapse;font-size:13px}th{background:#0b6e4f;c
 <p style="text-align:right;font-weight:bold">Total : <span id="totalAchatCalc">0 GNF</span></p>
 <button class="btn o" onclick="validerAchat()">✅ VALIDER ACHAT</button></div>
 <div class="card"><h3>📋 Historique Achats</h3><div id="listeAchats"></div></div>
-<div class="card"><h3>📍 GPS Poste</h3><button class="btn p" onclick="prendreGPSPoste()">📍 Prendre ma position</button><p id="gpsPoste" style="text-align:center;font-weight:bold"></p><div id="listeGPS"></div></div>
+<div class="card"><h3>📍 GPS Poste</h3><button class="btn p" onclick="prendreGPSPoste()">📍 Prendre ma position</button><p id="gpsPoste" style="text-align:center;font-weight:bold"></p></div>
 </div>
 
 <script>
 let params=new URLSearchParams(location.search);let ROLE=(params.get('role')||'patron').toLowerCase();let EST_PATRON=!(ROLE==='suppleant');let EST_SUPPLEANT=!EST_PATRON;
-function showMsg(t){let b=document.getElementById('msgBox');b.innerText=t;b.style.display='block';setTimeout(()=>b.style.display='none',5000);}
-function appliquerRole(){if(EST_PATRON){document.getElementById('titreRole').innerText='💊 POSTE SANTÉ - 👑 PATRON';document.getElementById('sousTitre').innerText='👑 PATRON - Tout voir | Bakary Sidibe';document.getElementById('btnRecevoirSupp').style.display='none';document.getElementById('btnEnvoyerPatron').style.display='block';}else{document.getElementById('headerBox').className='header suppleant';document.getElementById('titreRole').innerText='💊 POSTE SANTÉ - 👤 SUPPLÉANT';document.getElementById('sousTitre').innerText='👤 SUPPLÉANT - Médicament + Dette seulement';document.getElementById('btnEnvoyerPatron').style.display='none';document.getElementById('btnRecevoirSupp').style.display='block';['tabStockBtn','tabBilanBtn','caisseBoxPatron','kpiDettePatron','historiqueCaissePatron','kpiTraitPatron','kpiStockPatron','formAjoutStock'].forEach(id=>{let e=document.getElementById(id);if(e)e.style.display='none';});document.getElementById('tabTraitBtn').innerText='💊 MÉDICAMENT';document.getElementById('tabCaisseBtn').innerText='⚠️ DETTE';document.getElementById('titreTableauStock').innerText='💊 Médicaments disponibles';}}
+function showMsg(t){let b=document.getElementById('msgBox');b.innerText=t;b.style.display='block';setTimeout(()=>b.style.display='none',4000);}
+function appliquerRole(){if(EST_PATRON){document.getElementById('titreRole').innerText='💊 POSTE SANTÉ - 👑 PATRON';document.getElementById('sousTitre').innerText='👑 PATRON - Bakary Sidibe';}else{document.getElementById('headerBox').className='header suppleant';document.getElementById('titreRole').innerText='💊 POSTE SANTÉ - 👤 SUPPLÉANT';document.getElementById('sousTitre').innerText='👤 SUPPLÉANT';['tabStockBtn','tabBilanBtn','caisseBoxPatron','kpiDettePatron','historiqueCaissePatron','kpiTraitPatron','kpiStockPatron','formAjoutStock'].forEach(id=>{let e=document.getElementById(id);if(e)e.style.display='none';});document.getElementById('tabTraitBtn').innerText='💊 MÉDICAMENT';document.getElementById('tabCaisseBtn').innerText='⚠️ DETTE';document.getElementById('titreTableauStock').innerText='💊 Médicaments disponibles';}}
 function showTab(t){if(EST_SUPPLEANT&&(t==='stock'||t==='bilan')){showMsg('⛔ Interdit Suppléant');return;}['stock','trait','caisse','bilan'].forEach(x=>{let e=document.getElementById('page'+x.charAt(0).toUpperCase()+x.slice(1));if(e)e.style.display=t===x?'block':'none';});['tabStockBtn','tabTraitBtn','tabCaisseBtn','tabBilanBtn'].forEach(id=>{let b=document.getElementById(id);if(b)b.className='';});let m={stock:'tabStockBtn',trait:'tabTraitBtn',caisse:'tabCaisseBtn',bilan:'tabBilanBtn'};document.getElementById(m[t]).className='active';if(t==='bilan'&&EST_PATRON)afficherBilan();}
 const FIREBASE_URL="https://filanidialakoro-default-rtdb.firebaseio.com/santerh_bakary.json";
-let enTrainDeSauver=false; let STOCK=[],TRAITEMENTS=[],CAISSE=[],ACHATS=[],POSTE_GPS='';
+let STOCK=[],TRAITEMENTS=[],CAISSE=[],ACHATS=[],POSTE_GPS='', enTrain=false;
 function sauvegarderLocal(){try{localStorage.setItem('bakary_stock_v1',JSON.stringify(STOCK));localStorage.setItem('bakary_trait_v1',JSON.stringify(TRAITEMENTS));localStorage.setItem('bakary_caisse_v1',JSON.stringify(CAISSE));localStorage.setItem('bakary_achats_v1',JSON.stringify(ACHATS));localStorage.setItem('bakary_poste_gps',POSTE_GPS);}catch(e){}}
-async function sauvegarder(manuel){
-  sauvegarderLocal(); afficherTrait(); afficherStock();
-  if(enTrainDeSauver) return; enTrainDeSauver=true;
-  document.getElementById('syncEtat').innerText='🔄 Envoi en cours...';
-  try{
-    let r0 = await fetch(FIREBASE_URL); let cloud = await r0.json();
-    if(cloud){
-      let mapT = {}; (cloud.TRAITEMENTS||[]).forEach(t=>mapT[t.id]=t); TRAITEMENTS.forEach(t=>mapT[t.id]=t);
-      TRAITEMENTS = Object.values(mapT).sort((a,b)=>b.id-a.id);
-      let mapC = {}; (cloud.CAISSE||[]).forEach(c=>mapC[c.detail+'|'+c.date+'|'+c.montant]=c); CAISSE.forEach(c=>mapC[c.detail+'|'+c.date+'|'+c.montant]=c);
-      CAISSE = Object.values(mapC);
-      let mapA = {}; (cloud.ACHATS||[]).forEach(a=>mapA[a.nom+'|'+a.date]=a); ACHATS.forEach(a=>mapA[a.nom+'|'+a.date]=a);
-      ACHATS = Object.values(mapA);
-      if(cloud.STOCK && cloud.STOCK.length>0){
-        let mapS={}; cloud.STOCK.forEach(s=>mapS[s.nom.toLowerCase()]=s);
-        STOCK.forEach(s=>{ let k=s.nom.toLowerCase(); if(mapS[k]){ mapS[k].qte=Math.min(mapS[k].qte,s.qte); mapS[k].physique=Math.min(mapS[k].physique||s.qte,s.physique||s.qte); } else { mapS[k]=s; } });
-        STOCK = Object.values(mapS);
-      }
-      sauvegarderLocal();
-    }
-    await fetch(FIREBASE_URL,{method:'PUT',body:JSON.stringify({STOCK,TRAITEMENTS,CAISSE,ACHATS,POSTE_GPS,date:new Date().toLocaleString('fr-FR')})});
-    document.getElementById('syncEtat').innerText='✅ Synchronisé - '+new Date().toLocaleTimeString('fr-FR');
-    if(manuel) showMsg('✅ Envoyé ! '+TRAITEMENTS.length+' patients dans le nuage');
-    afficherTrait(); afficherStock(); afficherDettes(); afficherCaisse(); afficherBilan();
-  }catch(e){document.getElementById('syncEtat').innerText='⚠️ Pas internet - Local seulement'; if(manuel) showMsg('⚠️ Pas internet, vérifie ta 4G');}
-  enTrainDeSauver=false;
+// VERSION SIMPLE COMME AVANT : on envoie tout, tout de suite, sans demander
+async function sauvegarder(){
+  sauvegarderLocal(); afficherTout();
+  if(enTrain) return; enTrain=true;
+  try{ await fetch(FIREBASE_URL,{method:'PUT',body:JSON.stringify({STOCK,TRAITEMENTS,CAISSE,ACHATS,POSTE_GPS,date:new Date().toLocaleString('fr-FR')})}); document.getElementById('syncEtat').innerText='✅ Connecté - Tout est partagé'; }catch(e){ document.getElementById('syncEtat').innerText='⚠️ Pas internet - Sauvé dans ton téléphone'; }
+  enTrain=false;
 }
 function chargerLocal(){try{STOCK=JSON.parse(localStorage.getItem('bakary_stock_v1')||'[]');TRAITEMENTS=JSON.parse(localStorage.getItem('bakary_trait_v1')||'[]');CAISSE=JSON.parse(localStorage.getItem('bakary_caisse_v1')||'[]');ACHATS=JSON.parse(localStorage.getItem('bakary_achats_v1')||'[]');POSTE_GPS=localStorage.getItem('bakary_poste_gps')||'';}catch(e){STOCK=[];TRAITEMENTS=[];CAISSE=[];ACHATS=[];}}
-async function chargerDepuisFirebase(){try{let r=await fetch(FIREBASE_URL);let d=await r.json();if(d && (d.STOCK||d.TRAITEMENTS)){ if(d.STOCK) STOCK=d.STOCK; if(d.TRAITEMENTS) TRAITEMENTS=d.TRAITEMENTS; if(d.CAISSE) CAISSE=d.CAISSE; if(d.ACHATS) ACHATS=d.ACHATS; if(d.POSTE_GPS) POSTE_GPS=d.POSTE_GPS; sauvegarderLocal(); document.getElementById('syncEtat').innerText='✅ Connecté au nuage'; return true;}}catch(e){document.getElementById('syncEtat').innerText='⚠️ Pas internet';}return false;}
-async function recevoirStockPatron(){showMsg('🔄 Je cherche...');let ok=await chargerDepuisFirebase(); if(ok){afficherStock();afficherTrait();afficherDettes();afficherCaisse();afficherBilan();afficherAchats(); showMsg('✅ Reçu ! '+STOCK.length+' médicaments, '+TRAITEMENTS.length+' patients');}else{showMsg('⚠️ Pas internet');}}
-async function verifierNuage(){showMsg('🔍 Je regarde dans le nuage...');try{let r=await fetch(FIREBASE_URL);let d=await r.json(); if(!d||(!d.STOCK&&!d.TRAITEMENTS)){showMsg('⚠️ Nuage VIDE'); return;} showMsg('☁️ Nuage : '+(d.STOCK?d.STOCK.length:0)+' médic, '+(d.TRAITEMENTS?d.TRAITEMENTS.length:0)+' patients. Ton téléphone : '+STOCK.length+' médic, '+TRAITEMENTS.length+' patients'); }catch(e){showMsg('⚠️ Pas internet');}}
-function ajouterStock(){let nom=document.getElementById('sNom').value.trim();let qte=parseInt(document.getElementById('sQte').value)||0;let phys=parseInt(document.getElementById('sPhysique').value);if(isNaN(phys))phys=qte;let achat=parseInt(document.getElementById('sAchat').value)||0;let vente=parseInt(document.getElementById('sVente').value)||0;let seuil=parseInt(document.getElementById('sSeuil').value)||5;if(!nom||qte<=0){showMsg('⚠️ Mets nom + quantité');return;}let ex=STOCK.find(s=>s.nom.toLowerCase()===nom.toLowerCase());if(ex){ex.qte+=qte;ex.physique=(ex.physique||0)+phys;ex.achat=achat;ex.vente=vente;ex.seuil=seuil;}else{STOCK.push({nom,qte,physique:phys,achat,vente,seuil});}['sNom','sQte','sPhysique','sAchat','sVente'].forEach(id=>document.getElementById(id).value='');document.getElementById('sSeuil').value=5;sauvegarder();afficherStock();afficherBilan();showMsg('✅ '+nom+' enregistré');}
+function afficherTout(){afficherStock();afficherTrait();afficherDettes();afficherCaisse();afficherBilan();afficherAchats();}
+function ajouterStock(){let nom=document.getElementById('sNom').value.trim();let qte=parseInt(document.getElementById('sQte').value)||0;let phys=parseInt(document.getElementById('sPhysique').value);if(isNaN(phys))phys=qte;let achat=parseInt(document.getElementById('sAchat').value)||0;let vente=parseInt(document.getElementById('sVente').value)||0;let seuil=parseInt(document.getElementById('sSeuil').value)||5;if(!nom||qte<=0){showMsg('⚠️ Mets nom + quantité');return;}let ex=STOCK.find(s=>s.nom.toLowerCase()===nom.toLowerCase());if(ex){ex.qte+=qte;ex.physique=(ex.physique||0)+phys;ex.achat=achat;ex.vente=vente;ex.seuil=seuil;}else{STOCK.push({nom,qte,physique:phys,achat,vente,seuil});}['sNom','sQte','sPhysique','sAchat','sVente'].forEach(id=>document.getElementById(id).value='');document.getElementById('sSeuil').value=5;sauvegarder();showMsg('✅ '+nom+' enregistré - Déjà chez le Suppléant');}
 function afficherStock(){let f=(document.getElementById('searchStock').value||'').toLowerCase();let liste=STOCK.filter(s=>s.nom.toLowerCase().includes(f));let th=document.getElementById('theadStock'),tb=document.getElementById('tbodyStock'),tf=document.getElementById('tfootStock');if(EST_PATRON){th.innerHTML='<th>Médicament</th><th>Dispo</th><th>Physique</th><th>État</th><th>Achat</th><th>Vente</th><th>Benef</th><th>Seuil</th><th>Action</th>';}else{th.innerHTML='<th>Médicament</th><th>Dispo</th><th>État</th>';}tb.innerHTML='';let totA=0,totV=0,totB=0,r=0;liste.forEach((s)=>{let vrai=STOCK.indexOf(s);let etat='';if(s.qte<=0){etat='<span style="background:#c0392b;color:#fff;padding:3px 8px;border-radius:20px;font-size:11px">RUPTURE</span>';r++;}else if(s.qte<=s.seuil){etat='<span style="background:#f39c12;color:#fff;padding:3px 8px;border-radius:20px;font-size:11px">FAIBLE</span>';}else{etat='<span style="background:#0b6e4f;color:#fff;padding:3px 8px;border-radius:20px;font-size:11px">OK</span>';}if(EST_PATRON){tb.innerHTML+='<tr><td>'+s.nom+'</td><td>'+s.qte+'</td><td>'+s.physique+'</td><td>'+etat+'</td><td>'+s.achat.toLocaleString()+'</td><td>'+s.vente.toLocaleString()+'</td><td>'+((s.vente-s.achat)*s.qte).toLocaleString()+'</td><td>'+s.seuil+'</td><td><button class="ebtn" onclick="modifierStock('+vrai+')">✏️</button> <button class="xbtn" onclick="supprimerStock('+vrai+')">X</button></td></tr>';}else{tb.innerHTML+='<tr><td>'+s.nom+'</td><td>'+s.qte+'</td><td>'+etat+'</td></tr>';}totA+=s.achat*s.qte;totV+=s.vente*s.qte;totB+=(s.vente-s.achat)*s.qte;});if(EST_PATRON){tf.innerHTML='<td><b>TOTAL</b></td><td></td><td></td><td></td><td><b>'+totA.toLocaleString()+'</b></td><td><b>'+totV.toLocaleString()+'</b></td><td><b>'+totB.toLocaleString()+'</b></td><td></td><td></td>';document.getElementById('nbTotal').innerText=STOCK.length;document.getElementById('totalBenefKpi').innerText=totB.toLocaleString()+' GNF';document.getElementById('nbRupture').innerText=r;}else{tf.innerHTML='';}}
-function supprimerStock(i){if(!EST_PATRON)return;if(!confirm('Supprimer '+STOCK[i].nom+' ?'))return;STOCK.splice(i,1);sauvegarder();afficherStock();}
-function modifierStock(i){if(!EST_PATRON)return;let s=STOCK[i];let nq=prompt('Nouvelle quantité pour '+s.nom,s.qte);if(nq===null)return;s.qte=parseInt(nq)||0;s.physique=s.qte;sauvegarder();afficherStock();}
+function supprimerStock(i){if(!EST_PATRON)return;if(!confirm('Supprimer '+STOCK[i].nom+' ?'))return;STOCK.splice(i,1);sauvegarder();}
+function modifierStock(i){if(!EST_PATRON)return;let s=STOCK[i];let nq=prompt('Nouvelle quantité pour '+s.nom,s.qte);if(nq===null)return;s.qte=parseInt(nq)||0;s.physique=s.qte;sauvegarder();}
 function ajouterLigneMed(){let div=document.createElement('div');div.className='ligne-med';let opts=STOCK.map(s=>'<option value="'+s.nom+'">'+s.nom+' - '+s.qte+' dispo - '+(EST_PATRON?s.vente.toLocaleString()+' GNF':'')+'</option>').join('');div.innerHTML='<select class="medNom" onchange="calculTotalTrait()"><option value="">-- Choisir --</option>'+opts+'</select><input class="medQte" type="number" value="1" min="1" oninput="calculTotalTrait()"><button class="xbtn" onclick="this.parentElement.remove();calculTotalTrait()">X</button>';document.getElementById('lignesMeds').appendChild(div);calculTotalTrait();}
 function calculTotalTrait(){let total=0;document.querySelectorAll('.ligne-med').forEach(l=>{let nom=l.querySelector('.medNom').value;let q=parseInt(l.querySelector('.medQte').value)||0;let s=STOCK.find(x=>x.nom===nom);if(s)total+=s.vente*q;});document.getElementById('totalTrait').innerText=total.toLocaleString()+' GNF';calculReste();return total;}
 function calculReste(){let total=0;document.querySelectorAll('.ligne-med').forEach(l=>{let nom=l.querySelector('.medNom').value;let q=parseInt(l.querySelector('.medQte').value)||0;let s=STOCK.find(x=>x.nom===nom);if(s)total+=s.vente*q;});let paye=parseInt(document.getElementById('pPaye').value)||0;document.getElementById('resteTrait').innerText=Math.max(0,total-paye).toLocaleString()+' GNF';}
@@ -135,29 +109,26 @@ function validerTraitement(){
   meds.forEach(m=>{let s=STOCK.find(x=>x.nom===m.nom);s.qte-=m.qte;s.physique-=m.qte;});
   let t={id:Date.now(),patient:nom,age:document.getElementById('pAge').value,sympt:document.getElementById('pSympt').value,tel:document.getElementById('pTel').value,quartier:document.getElementById('pQuartier').value,gps:document.getElementById('pGPS').value,meds,total,paye,reste,date:new Date().toLocaleString('fr-FR'),par:EST_PATRON?'Patron':'Suppléant'};
   TRAITEMENTS.unshift(t);CAISSE.unshift({type:'Traitement',detail:nom+' - '+meds.map(m=>m.nom+' x'+m.qte).join(', '),montant:paye,date:t.date});
-  // CORRECTION IMPORTANTE : on efface la recherche pour que le patient soit visible tout de suite
   document.getElementById('searchTrait').value='';
-  sauvegarder();
   ['pNom','pAge','pSympt','pTel','pQuartier','pGPS','pPaye'].forEach(id=>document.getElementById(id).value='');document.getElementById('lignesMeds').innerHTML='';ajouterLigneMed();calculTotalTrait();
-  afficherStock();afficherTrait();afficherDettes();afficherCaisse();afficherBilan();
-  showMsg('✅ '+nom+' enregistré ! Descends en bas, tu vas le voir');
-  // On descend tout seul vers la liste pour te montrer ton patient
+  sauvegarder(); // part tout seul, comme avant
+  showMsg('✅ '+nom+' enregistré - Déjà chez ton collègue');
   setTimeout(()=>{ document.getElementById('cardListeTrait').scrollIntoView({behavior:'smooth'}); }, 500);
 }
 function afficherTrait(){
   let f=(document.getElementById('searchTrait').value||'').toLowerCase();
   let div=document.getElementById('listeTrait');div.innerHTML='';
   let fil=TRAITEMENTS.filter(t=> (t.patient||'').toLowerCase().includes(f));
-  let c=document.getElementById('compteurTrait'); if(c) c.innerText=TRAITEMENTS.length+' patient(s) - Affichés : '+fil.length;
-  if(fil.length===0){div.innerHTML='<p style="text-align:center;color:#888">Aucun traitement pour "'+f+'" - Appuie sur "Voir TOUS les patients"</p>';}
+  let c=document.getElementById('compteurTrait'); if(c) c.innerText=TRAITEMENTS.length+' patient(s)';
+  if(fil.length===0){div.innerHTML='<p style="text-align:center;color:#888">Aucun patient</p>';}
   fil.forEach(t=>{let medsTxt=t.meds.map(m=>m.nom+' x'+m.qte+(EST_PATRON?' - '+(m.prix*m.qte).toLocaleString()+' GNF':'')).join('<br>');div.innerHTML+='<div class="trait-item"><b>🧑 '+t.patient+'</b> - '+t.age+' ans - '+t.date+' <span style="font-size:11px;background:#eee;padding:2px 6px;border-radius:10px">'+t.par+'</span><br>🩺 '+t.sympt+' | 📍 '+(t.quartier||'')+' | 📱 '+(t.tel||'')+' | '+t.gps+'<br>💊 '+medsTxt+'<br>'+(EST_PATRON?'<b>Total: '+t.total.toLocaleString()+' GNF | Payé: '+t.paye.toLocaleString()+' | Reste: '+t.reste.toLocaleString()+'</b> | <button class="xbtn" onclick="supprimerTrait('+t.id+')">X</button>':'<b>Payé: '+t.paye.toLocaleString()+' GNF | Reste: '+t.reste.toLocaleString()+' GNF</b>')+'</div>';});
   let nb=TRAITEMENTS.length;let totV=TRAITEMENTS.reduce((a,t)=>a+t.total,0);let totB=TRAITEMENTS.reduce((a,t)=>a+t.meds.reduce((b,m)=>b+(m.prix-m.achat)*m.qte,0),0);if(EST_PATRON){document.getElementById('nbPatients').innerText=nb;document.getElementById('totalVenteTrait').innerText=totV.toLocaleString()+' GNF';document.getElementById('totalBenefTrait').innerText=totB.toLocaleString()+' GNF';}
 }
-function supprimerTrait(id){if(!EST_PATRON)return;if(!confirm('Supprimer ce traitement ?'))return;let t=TRAITEMENTS.find(x=>x.id===id);if(t){t.meds.forEach(m=>{let s=STOCK.find(x=>x.nom===m.nom);if(s){s.qte+=m.qte;s.physique+=m.qte;}});}TRAITEMENTS=TRAITEMENTS.filter(x=>x.id!==id);sauvegarder();afficherStock();afficherTrait();afficherDettes();afficherCaisse();afficherBilan();}
+function supprimerTrait(id){if(!EST_PATRON)return;if(!confirm('Supprimer ce traitement ?'))return;let t=TRAITEMENTS.find(x=>x.id===id);if(t){t.meds.forEach(m=>{let s=STOCK.find(x=>x.nom===m.nom);if(s){s.qte+=m.qte;s.physique+=m.qte;}});}TRAITEMENTS=TRAITEMENTS.filter(x=>x.id!==id);sauvegarder();}
 function afficherDettes(){let f=(document.getElementById('searchDette').value||'').toLowerCase();let div=document.getElementById('listeDettes');div.innerHTML='';let dettes=TRAITEMENTS.filter(t=>t.reste>0&&t.patient.toLowerCase().includes(f));if(dettes.length===0){div.innerHTML='<p style="text-align:center;color:#0b6e4f;font-weight:bold">✅ Aucune dette</p>';}dettes.forEach(t=>{div.innerHTML+='<div class="dette-item"><b>🧑 '+t.patient+'</b> - '+t.tel+' - '+t.quartier+'<br>💊 '+t.meds.map(m=>m.nom+' x'+m.qte).join(', ')+'<br><b style="color:#c0392b">Reste à payer: '+t.reste.toLocaleString()+' GNF</b> - Total: '+t.total.toLocaleString()+' - Payé: '+t.paye.toLocaleString()+'<br><div style="display:flex;gap:6px;margin-top:6px"><input id="pay_'+t.id+'" type="number" placeholder="Montant qu\'il paie" style="flex:1"><button class="btn g" style="width:120px;padding:10px" onclick="payerDette('+t.id+')">💰 Payer</button></div></div>';});let totD=dettes.reduce((a,t)=>a+t.reste,0);if(EST_PATRON){document.getElementById('totalDetteKpi').innerText=totD.toLocaleString()+' GNF';document.getElementById('nbDetteKpi').innerText=dettes.length;document.getElementById('totalTraitCaisse').innerText=TRAITEMENTS.reduce((a,t)=>a+t.total,0).toLocaleString()+' GNF';}}
-function payerDette(id){let inp=document.getElementById('pay_'+id);let mont=parseInt(inp.value)||0;if(mont<=0){showMsg('⚠️ Mets le montant');return;}let t=TRAITEMENTS.find(x=>x.id===id);if(!t)return;let payer=Math.min(mont,t.reste);t.paye+=payer;t.reste-=payer;CAISSE.unshift({type:'Dette payée',detail:t.patient+' a payé sa dette',montant:payer,date:new Date().toLocaleString('fr-FR')});sauvegarder();afficherTrait();afficherDettes();afficherCaisse();afficherBilan();showMsg('✅ '+payer.toLocaleString()+' GNF reçu de '+t.patient);}
+function payerDette(id){let inp=document.getElementById('pay_'+id);let mont=parseInt(inp.value)||0;if(mont<=0){showMsg('⚠️ Mets le montant');return;}let t=TRAITEMENTS.find(x=>x.id===id);if(!t)return;let payer=Math.min(mont,t.reste);t.paye+=payer;t.reste-=payer;CAISSE.unshift({type:'Dette payée',detail:t.patient+' a payé sa dette',montant:payer,date:new Date().toLocaleString('fr-FR')});sauvegarder();showMsg('✅ '+payer.toLocaleString()+' GNF reçu de '+t.patient);}
 function afficherCaisse(){let tot=CAISSE.reduce((a,c)=>a+c.montant,0);if(EST_PATRON){document.getElementById('caisseTotal').innerText=tot.toLocaleString()+' GNF';document.getElementById('caisseDetail').innerText=CAISSE.length+' opérations';let div=document.getElementById('listeCaisse');div.innerHTML='';CAISSE.slice(0,30).forEach(c=>{div.innerHTML+='<div style="padding:8px;border-bottom:1px solid #eee;display:flex;justify-content:space-between"><span>'+c.type+' - '+c.detail+'<br><small>'+c.date+'</small></span><b>+'+c.montant.toLocaleString()+'</b></div>';});}}
-function validerAchat(){if(!EST_PATRON){showMsg('⛔ Seul Patron');return;}let four=document.getElementById('aFournisseur').value.trim()||'Marché';let nom=document.getElementById('aNom').value.trim();let qte=parseInt(document.getElementById('aQte').value)||0;let achat=parseInt(document.getElementById('aAchat').value)||0;let vente=parseInt(document.getElementById('aVente').value)||0;if(!nom||qte<=0){showMsg('⚠️ Mets nom + quantité');return;}let ex=STOCK.find(s=>s.nom.toLowerCase()===nom.toLowerCase());if(ex){ex.qte+=qte;ex.physique+=qte;ex.achat=achat;ex.vente=vente;}else{STOCK.push({nom,qte,physique:qte,achat,vente,seuil:5});}let total=qte*achat;ACHATS.unshift({four,nom,qte,achat,vente,total,date:new Date().toLocaleString('fr-FR')});CAISSE.unshift({type:'Achat',detail:four+' - '+nom+' x'+qte,montant:-total,date:new Date().toLocaleString('fr-FR')});['aFournisseur','aNom','aQte','aAchat','aVente'].forEach(id=>document.getElementById(id).value='');sauvegarder();afficherStock();afficherCaisse();afficherBilan();afficherAchats();showMsg('✅ Achat ajouté');}
+function validerAchat(){if(!EST_PATRON){showMsg('⛔ Seul Patron');return;}let four=document.getElementById('aFournisseur').value.trim()||'Marché';let nom=document.getElementById('aNom').value.trim();let qte=parseInt(document.getElementById('aQte').value)||0;let achat=parseInt(document.getElementById('aAchat').value)||0;let vente=parseInt(document.getElementById('aVente').value)||0;if(!nom||qte<=0){showMsg('⚠️ Mets nom + quantité');return;}let ex=STOCK.find(s=>s.nom.toLowerCase()===nom.toLowerCase());if(ex){ex.qte+=qte;ex.physique+=qte;ex.achat=achat;ex.vente=vente;}else{STOCK.push({nom,qte,physique:qte,achat,vente,seuil:5});}let total=qte*achat;ACHATS.unshift({four,nom,qte,achat,vente,total,date:new Date().toLocaleString('fr-FR')});CAISSE.unshift({type:'Achat',detail:four+' - '+nom+' x'+qte,montant:-total,date:new Date().toLocaleString('fr-FR')});['aFournisseur','aNom','aQte','aAchat','aVente'].forEach(id=>document.getElementById(id).value='');sauvegarder();showMsg('✅ Achat ajouté');}
 function afficherAchats(){let div=document.getElementById('listeAchats');if(!div)return;div.innerHTML='';if(ACHATS.length===0){div.innerHTML='<p style="text-align:center;color:#888">Aucun achat</p>';}ACHATS.forEach(a=>{div.innerHTML+='<div style="padding:8px;border-bottom:1px solid #eee"><b>'+a.nom+'</b> x'+a.qte+' - '+a.four+'<br>Total: '+a.total.toLocaleString()+' GNF - '+a.date+'</div>';});}
 function afficherBilan(){if(!EST_PATRON)return;let totV=TRAITEMENTS.reduce((a,t)=>a+t.total,0);let totEnc=CAISSE.filter(c=>c.montant>0).reduce((a,c)=>a+c.montant,0);let totDet=TRAITEMENTS.reduce((a,t)=>a+t.reste,0);let totAch=ACHATS.reduce((a,x)=>a+x.total,0);let caisseNette=CAISSE.reduce((a,c)=>a+c.montant,0);let benef=TRAITEMENTS.reduce((a,t)=>a+t.meds.reduce((b,m)=>b+(m.prix-m.achat)*m.qte,0),0);let valStock=STOCK.reduce((a,s)=>a+s.achat*s.qte,0);document.getElementById('bTotalVente').innerText=totV.toLocaleString()+' GNF';document.getElementById('bTotalEncaisse').innerText=totEnc.toLocaleString()+' GNF';document.getElementById('bTotalDette').innerText=totDet.toLocaleString()+' GNF';document.getElementById('bTotalAchat').innerText=totAch.toLocaleString()+' GNF';document.getElementById('bCaisseNette').innerText=caisseNette.toLocaleString()+' GNF';document.getElementById('bBenefTrait').innerText=benef.toLocaleString()+' GNF';document.getElementById('bValeurStock').innerText=valStock.toLocaleString()+' GNF';document.getElementById('bNbPatients').innerText=TRAITEMENTS.length;}
 function partagerBilan(){let txt='📊 BILAN POSTE SANTÉ BAKARY\nVentes: '+TRAITEMENTS.reduce((a,t)=>a+t.total,0).toLocaleString()+' GNF\nDettes: '+TRAITEMENTS.reduce((a,t)=>a+t.reste,0).toLocaleString()+' GNF\nPatients: '+TRAITEMENTS.length;window.open('https://wa.me/?text='+encodeURIComponent(txt));}
@@ -166,7 +137,27 @@ function prendreGPSPoste(){if(!navigator.geolocation){showMsg('GPS non dispo');r
 document.getElementById('aQte').addEventListener('input',()=>{let q=parseInt(document.getElementById('aQte').value)||0;let a=parseInt(document.getElementById('aAchat').value)||0;document.getElementById('totalAchatCalc').innerText=(q*a).toLocaleString()+' GNF';});
 document.getElementById('aAchat').addEventListener('input',()=>{let q=parseInt(document.getElementById('aQte').value)||0;let a=parseInt(document.getElementById('aAchat').value)||0;document.getElementById('totalAchatCalc').innerText=(q*a).toLocaleString()+' GNF';});
 appliquerRole();chargerLocal();if(EST_PATRON)showTab('stock');else showTab('trait');
-afficherStock();afficherTrait();afficherDettes();afficherCaisse();afficherBilan();afficherAchats();ajouterLigneMed();
-chargerDepuisFirebase().then((ok)=>{afficherStock();afficherTrait();afficherDettes();afficherCaisse();afficherBilan();afficherAchats();if(POSTE_GPS)document.getElementById('gpsPoste').innerText='📍 Poste: '+POSTE_GPS;});
-setInterval(async()=>{ if(enTrainDeSauver) return; try{let r=await fetch(FIREBASE_URL);let d=await r.json();if(d&&(d.STOCK||d.TRAITEMENTS)){let nouv=JSON.stringify(d.TRAITEMENTS||[]);if(nouv!==JSON.stringify(TRAITEMENTS)||JSON.stringify(d.STOCK||[])!==JSON.stringify(STOCK)){STOCK=d.STOCK||STOCK;TRAITEMENTS=d.TRAITEMENTS||TRAITEMENTS;CAISSE=d.CAISSE||CAISSE;ACHATS=d.ACHATS||ACHATS;POSTE_GPS=d.POSTE_GPS||POSTE_GPS;sauvegarderLocal();afficherStock();afficherTrait();afficherDettes();afficherCaisse();afficherBilan();afficherAchats();showMsg('🔄 Nouveau reçu du collègue');}}}catch(e){}},8000);
+afficherTout();ajouterLigneMed();
+// COMME AVANT : on regarde le nuage toutes les 3 secondes, sans rien appuyer
+async function syncAuto(){
+  if(enTrain) return;
+  try{
+    let r=await fetch(FIREBASE_URL);let d=await r.json();
+    if(d && (d.STOCK||d.TRAITEMENTS)){
+      let nouveau = JSON.stringify(d.TRAITEMENTS||[])+JSON.stringify(d.STOCK||[]);
+      let ancien = JSON.stringify(TRAITEMENTS)+JSON.stringify(STOCK);
+      if(nouveau!==ancien){
+        // On garde les 6 patients + les nouveaux, on ne perd rien
+        let map={}; (d.TRAITEMENTS||[]).forEach(t=>map[t.id]=t); TRAITEMENTS.forEach(t=>map[t.id]=t);
+        TRAITEMENTS=Object.values(map).sort((a,b)=>b.id-a.id);
+        if(d.STOCK) STOCK=d.STOCK;
+        if(d.CAISSE) CAISSE=d.CAISSE;
+        if(d.ACHATS) ACHATS=d.ACHATS;
+        sauvegarderLocal(); afficherTout();
+        document.getElementById('syncEtat').innerText='✅ Connecté - Tout est partagé';
+      }
+    }
+  }catch(e){}
+}
+syncAuto(); setInterval(syncAuto, 3000);
 </script></body></html>
