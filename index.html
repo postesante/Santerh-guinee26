@@ -84,7 +84,6 @@ function showTab(t){if(EST_SUPPLEANT&&(t==='stock'||t==='bilan')){showMsg('⛔ I
 const FIREBASE_URL="https://filanidialakoro-default-rtdb.firebaseio.com/santerh_bakary.json";
 let STOCK=[],TRAITEMENTS=[],CAISSE=[],ACHATS=[],POSTE_GPS='', enTrain=false;
 function sauvegarderLocal(){try{localStorage.setItem('bakary_stock_v1',JSON.stringify(STOCK));localStorage.setItem('bakary_trait_v1',JSON.stringify(TRAITEMENTS));localStorage.setItem('bakary_caisse_v1',JSON.stringify(CAISSE));localStorage.setItem('bakary_achats_v1',JSON.stringify(ACHATS));localStorage.setItem('bakary_poste_gps',POSTE_GPS);}catch(e){}}
-// VERSION SIMPLE COMME AVANT : on envoie tout, tout de suite, sans demander
 async function sauvegarder(){
   sauvegarderLocal(); afficherTout();
   if(enTrain) return; enTrain=true;
@@ -111,7 +110,7 @@ function validerTraitement(){
   TRAITEMENTS.unshift(t);CAISSE.unshift({type:'Traitement',detail:nom+' - '+meds.map(m=>m.nom+' x'+m.qte).join(', '),montant:paye,date:t.date});
   document.getElementById('searchTrait').value='';
   ['pNom','pAge','pSympt','pTel','pQuartier','pGPS','pPaye'].forEach(id=>document.getElementById(id).value='');document.getElementById('lignesMeds').innerHTML='';ajouterLigneMed();calculTotalTrait();
-  sauvegarder(); // part tout seul, comme avant
+  sauvegarder();
   showMsg('✅ '+nom+' enregistré - Déjà chez ton collègue');
   setTimeout(()=>{ document.getElementById('cardListeTrait').scrollIntoView({behavior:'smooth'}); }, 500);
 }
@@ -138,7 +137,6 @@ document.getElementById('aQte').addEventListener('input',()=>{let q=parseInt(doc
 document.getElementById('aAchat').addEventListener('input',()=>{let q=parseInt(document.getElementById('aQte').value)||0;let a=parseInt(document.getElementById('aAchat').value)||0;document.getElementById('totalAchatCalc').innerText=(q*a).toLocaleString()+' GNF';});
 appliquerRole();chargerLocal();if(EST_PATRON)showTab('stock');else showTab('trait');
 afficherTout();ajouterLigneMed();
-// COMME AVANT : on regarde le nuage toutes les 3 secondes, sans rien appuyer
 async function syncAuto(){
   if(enTrain) return;
   try{
@@ -147,7 +145,6 @@ async function syncAuto(){
       let nouveau = JSON.stringify(d.TRAITEMENTS||[])+JSON.stringify(d.STOCK||[]);
       let ancien = JSON.stringify(TRAITEMENTS)+JSON.stringify(STOCK);
       if(nouveau!==ancien){
-        // On garde les 6 patients + les nouveaux, on ne perd rien
         let map={}; (d.TRAITEMENTS||[]).forEach(t=>map[t.id]=t); TRAITEMENTS.forEach(t=>map[t.id]=t);
         TRAITEMENTS=Object.values(map).sort((a,b)=>b.id-a.id);
         if(d.STOCK) STOCK=d.STOCK;
