@@ -3,162 +3,148 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Présence 600K - Filanidialakoro</title>
+<title>Filanidialakoro - Complète</title>
 <style>
-  *{box-sizing:border-box;font-family:Arial,sans-serif}
-  body{margin:0;background:#f1f5f9;padding:12px}
-  .header{background:#0f766e;color:#fff;padding:16px;border-radius:12px;text-align:center}
-  .header h1{margin:0;font-size:20px}
-  .header p{margin:5px 0 0;font-size:13px;opacity:.9}
-  .rules{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}
-  .card{flex:1;min-width:140px;background:#fff;padding:12px;border-radius:10px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.1)}
-  .card b{display:block;font-size:15px}
-  .card span{font-size:12px;color:#475569}
-  .green{border-top:4px solid #16a34a}
-  .orange{border-top:4px solid #ea580c}
-  .red{border-top:4px solid #dc2626}
-  .form{background:#fff;padding:14px;border-radius:12px;margin-bottom:12px}
-  .form h3{margin:0 0 10px;font-size:16px}
-  .row{display:flex;gap:8px;flex-wrap:wrap}
-  input,select{flex:1;min-width:130px;padding:10px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px}
-  button{width:100%;margin-top:10px;padding:12px;background:#0f766e;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:bold;cursor:pointer}
-  button:active{opacity:.85}
-  .table-box{background:#fff;border-radius:12px;overflow:hidden}
-  .table-box h3{padding:12px;margin:0;font-size:16px}
-  table{width:100%;border-collapse:collapse;font-size:13px}
-  th{background:#0f766e;color:#fff;padding:10px 6px;text-align:left}
-  td{padding:10px 6px;border-bottom:1px solid #e2e8f0}
-  .badge{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:bold;color:#fff}
-  .a-lheure{background:#16a34a}
-  .retard{background:#ea580c}
-  .absence{background:#dc2626}
-  .total{background:#0f172a;color:#fff;padding:14px;border-radius:12px;margin-top:12px;text-align:center}
-  .total b{font-size:22px}
-  .delete{color:red;background:none;border:none;font-size:18px;cursor:pointer;width:auto;padding:0}
-  .footer{text-align:center;font-size:12px;color:#64748b;margin-top:10px}
+*{box-sizing:border-box;font-family:Arial,sans-serif}
+body{margin:0;background:#f1f5f9;padding-bottom:70px}
+.header{background:#0f766e;color:#fff;padding:16px;text-align:center;position:sticky;top:0;z-index:10}
+.header h1{margin:0;font-size:19px}.header p{margin:4px 0 0;font-size:12px;opacity:.9}
+.menu{display:flex;overflow-x:auto;background:#fff;padding:8px;gap:6px;position:sticky;top:62px;z-index:9}
+.menu button{white-space:nowrap;padding:9px 14px;border:none;border-radius:20px;background:#e2e8f0;font-weight:bold}
+.menu button.active{background:#0f766e;color:#fff}
+.page{display:none;padding:12px}.page.active{display:block}
+.card{background:#fff;padding:14px;border-radius:12px;margin-bottom:12px}
+.card h3{margin:0 0 8px}
+.rules{display:flex;gap:8px;flex-wrap:wrap}.mini{flex:1;min-width:110px;background:#fff;padding:10px;border-radius:10px;text-align:center;border-top:4px solid #16a34a}.mini b{display:block}.mini span{font-size:12px;color:#475569}
+input,select{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:8px;margin-bottom:8px;font-size:15px}
+input[readonly]{background:#f0fdf4;border-color:#16a34a;font-weight:bold}
+.btn{width:100%;padding:13px;background:#0f766e;color:#fff;border:none;border-radius:10px;font-weight:bold;font-size:16px}
+.btn-blue{background:#2563eb}
+table{width:100%;border-collapse:collapse;font-size:13px;background:#fff}th{background:#0f766e;color:#fff;padding:9px 6px;text-align:left}td{padding:9px 6px;border-bottom:1px solid #e2e8f0}
+.badge{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:bold;color:#fff}.green{background:#16a34a}.orange{background:#ea580c}.red{background:#dc2626}
+.total{background:#0f172a;color:#fff;padding:14px;border-radius:12px;text-align:center;margin-top:12px}
+.auto-label{font-size:12px;color:#16a34a;font-weight:bold;margin:4px 0}
+.footer{position:fixed;bottom:0;left:0;right:0;background:#0f766e;color:#fff;text-align:center;padding:10px;font-size:12px}
 </style>
 </head>
 <body>
 
-<div class="header">
-  <h1>PRÉSENCE - 600 000 GNF</h1>
-  <p>Poste de Santé - Filanidialakoro | Calcul sur 30 jours</p>
+<div class="header"><h1>POSTE DE SANTÉ - FILANIDIALAKORO</h1><p>Patron : Bakary Sidibe | Heure automatique</p></div>
+
+<div class="menu" id="menu">
+<button class="active" onclick="show('accueil',this)">🏠 ACCUEIL</button>
+<button onclick="show('presence',this)">📍 PRÉSENCE 600K</button>
+<button onclick="show('stock',this)">💊 STOCK</button>
+<button onclick="show('dettes',this)">💰 DETTES</button>
+<button onclick="show('primes',this)">🎁 PRIMES</button>
+<button onclick="show('suivi',this)">📡 SUIVI LIVE</button>
+<button onclick="show('observation',this)">👁️ OBSERVATION</button>
+<button onclick="show('gps',this)">🛰️ GPS</button>
 </div>
 
+<div id="accueil" class="page active">
+<div class="card"><h3>Bienvenue Chef 👋</h3><p>Toutes tes applications sont ici. L'heure d'arrivée vient maintenant <b>automatiquement</b>.</p></div>
+<div class="card" onclick="show('presence',document.querySelectorAll('.menu button')[1])"><h3>📍 PRÉSENCE 600K →</h3><p>08h00 = 0 GNF | 08h01 = -5 000 | Absence = -20 000 | Départ 17h20</p></div>
+<div class="card"><h3>💊 STOCK / 💰 DETTES / 🎁 PRIMES / 📡 SUIVI LIVE / 👁️ OBSERVATION / 🛰️ GPS</h3><p>Clique en haut sur le menu pour voir.</p></div>
+</div>
+
+<!-- PRESENCE AVEC HEURE AUTOMATIQUE -->
+<div id="presence" class="page">
 <div class="rules">
-  <div class="card green"><b>08h00</b><span>À l'heure<br>0 GNF</span></div>
-  <div class="card orange"><b>08h01</b><span>Retard<br>- 5 000 GNF</span></div>
-  <div class="card red"><b>Absence</b><span>Chômé<br>- 20 000 GNF</span></div>
-  <div class="card"><b>17h20</b><span>Heure de départ<br>Fin journée</span></div>
+<div class="mini"><b>08h00</b><span>À l'heure<br>0 GNF</span></div>
+<div class="mini" style="border-color:#ea580c"><b>08h01</b><span>Retard<br>-5 000 GNF</span></div>
+<div class="mini" style="border-color:#dc2626"><b>Absence</b><span>-20 000 GNF</span></div>
+<div class="mini" style="border-color:#2563eb"><b>17h20</b><span>Départ</span></div>
 </div>
 
-<div class="form">
-  <h3>➕ Ajouter une présence</h3>
-  <div class="row">
-    <input type="text" id="nom" placeholder="Nom et Prénom * Ex: Moussa Camara">
-    <input type="date" id="date">
-  </div>
-  <div class="row" style="margin-top:8px">
-    <select id="arrivee">
-      <option value="">Heure d'arrivée</option>
-      <option value="08:00">08h00 - À l'heure</option>
-      <option value="08:01">08h01 - Retard</option>
-      <option value="08:05">08h05 - Retard</option>
-      <option value="08:15">08h15 - Retard</option>
-      <option value="08:30">08h30 - Retard</option>
-      <option value="Absent">Absent</option>
-    </select>
-    <select id="depart">
-      <option value="17:20">Heure de départ : 17h20</option>
-      <option value="Avant 17:20">Avant 17h20</option>
-      <option value="Absent">Absent</option>
-    </select>
-  </div>
-  <button onclick="ajouter()">ENREGISTRER PRÉSENCE</button>
+<div class="card">
+<h3>➕ Nouvelle Présence</h3>
+<p class="auto-label">✅ Tu écris SEULEMENT le nom. La date et l'heure viennent seules.</p>
+<input id="nom" placeholder="Nom et Prénom * Ex: Moussa Camara">
+
+<label style="font-size:13px">Date du jour - automatique</label>
+<input id="dateP" type="text" readonly>
+
+<label style="font-size:13px">Heure d'arrivée - automatique (tu peux changer si tu veux aider quelqu'un)</label>
+<input id="heureArr" type="time" value="08:00">
+
+<select id="statutManuel">
+<option value="auto">-- Laisser l'application décider : À l'heure / Retard --</option>
+<option value="absence">Marquer ABSENT - 20 000 GNF</option>
+<option value="aide">Je veux aider quelqu'un - je change l'heure à la main</option>
+</select>
+
+<button class="btn" onclick="pointerArrivee()">📍 POINTER ARRIVÉE MAINTENANT</button>
+<button class="btn btn-blue" style="margin-top:8px" onclick="pointerDepart()">🏠 POINTER DÉPART - 17h20</button>
+<p style="font-size:12px;color:#64748b;text-align:center">Si tu cliques sur POINTER, l'heure du téléphone est prise. Tu ne peux pas tricher.</p>
 </div>
 
-<div class="table-box">
-  <h3>📋 Tableau de Présence</h3>
-  <div style="overflow-x:auto">
-  <table>
-    <thead>
-      <tr>
-        <th>Nom et Prénom</th>
-        <th>Date</th>
-        <th>Heure d'arrivée</th>
-        <th>Heure de départ</th>
-        <th>Statut</th>
-        <th>Retenue</th>
-        <th>Reste à payer</th>
-        <th>X</th>
-      </tr>
-    </thead>
-    <tbody id="liste">
-      <tr>
-        <td><b>Moussa Camara</b></td><td>03/11/2026</td><td>07h58</td><td>17h20</td><td><span class="badge a-lheure">À L'HEURE</span></td><td>0 GNF</td><td>600 000 GNF</td><td><button class="delete" onclick="this.closest('tr').remove();calculer()">×</button></td>
-      </tr>
-      <tr>
-        <td><b>Aïcha Diallo</b></td><td>03/11/2026</td><td>08h05</td><td>17h20</td><td><span class="badge retard">RETARD</span></td><td>- 5 000 GNF</td><td>595 000 GNF</td><td><button class="delete" onclick="this.closest('tr').remove();calculer()">×</button></td>
-      </tr>
-      <tr>
-        <td><b>Ibrahima Condé</b></td><td>03/11/2026</td><td>Absent</td><td>Absent</td><td><span class="badge absence">ABSENCE</span></td><td>- 20 000 GNF</td><td>580 000 GNF</td><td><button class="delete" onclick="this.closest('tr').remove();calculer()">×</button></td>
-      </tr>
-    </tbody>
-  </table>
-  </div>
+<div style="overflow-x:auto"><table><thead><tr><th>Nom et Prénom</th><th>Date</th><th>Heure d'arrivée</th><th>Heure de départ</th><th>Statut</th><th>Retenue</th><th>Reste à payer</th></tr></thead>
+<tbody id="listeP">
+<tr><td><b>Moussa Camara</b></td><td>21/11/2026</td><td>07h58</td><td>17h20</td><td><span class="badge green">À L'HEURE</span></td><td>0 GNF</td><td>600 000 GNF</td></tr>
+<tr><td><b>Aïcha Diallo</b></td><td>21/11/2026</td><td>08h05</td><td>17h20</td><td><span class="badge orange">RETARD</span></td><td>- 5 000 GNF</td><td>595 000 GNF</td></tr>
+<tr><td><b>Ibrahima Condé</b></td><td>21/11/2026</td><td>Absent</td><td>Absent</td><td><span class="badge red">ABSENCE</span></td><td>- 20 000 GNF</td><td>580 000 GNF</td></tr>
+</tbody></table></div>
+<div class="total">Total à mettre dans les enveloppes : <b>1 775 000 GNF</b></div>
 </div>
 
-<div class="total" id="totalBox">
-  Total Retenues du Mois : <b id="totalRetenue">25 000 GNF</b><br>
-  <span style="font-size:13px">Total à mettre dans les enveloppes : <b id="totalEnveloppe">1 775 000 GNF</b></span>
-</div>
+<div id="stock" class="page"><div class="card"><h3>💊 STOCK</h3><input placeholder="Nom médicament"><input type="number" placeholder="Quantité"><input type="number" placeholder="Prix GNF - Jamais 0"><button class="btn">AJOUTER AU STOCK</button></div><div style="overflow-x:auto"><table><thead><tr><th>Médicament</th><th>Qté</th><th>Prix</th></tr></thead><tbody><tr><td>Amoxicilline</td><td>50</td><td>5 000 GNF</td></tr></tbody></table></div></div>
+<div id="dettes" class="page"><div class="card"><h3>💰 DETTES</h3><input placeholder="Nom et Prénom du patient"><input type="number" placeholder="Montant GNF"><select><option>Dettes Non Payées</option><option>Dettes Payées</option></select><button class="btn">ENREGISTRER DETTE</button></div></div>
+<div id="primes" class="page"><div class="card"><h3>🎁 PRIMES</h3><p>Prime = 600 000 - Retards (5 000) - Absences (20 000)</p></div></div>
+<div id="suivi" class="page"><div class="card"><h3>📡 SUIVI LIVE</h3><p>🟢 Moussa - Présent | 🟠 Aïcha - Retard | 🔴 Ibrahima - Absent</p></div></div>
+<div id="observation" class="page"><div class="card"><h3>👁️ OBSERVATION</h3><input placeholder="Nom"><input placeholder="Observation..."><button class="btn">ENREGISTRER</button></div></div>
+<div id="gps" class="page"><div class="card"><h3>🛰️ GPS</h3><p>Tu dois être à moins de 200m du Poste pour valider.</p><button class="btn" onclick="alert('GPS : Tu es bien à Filanidialakoro')">📍 VÉRIFIER MA POSITION</button></div></div>
 
-<div class="footer">Filanidialakoro - Patron : Bakary Sidibe - Règle : Retard = -5 000 GNF | Absence = -20 000 GNF</div>
+<div class="footer">Filanidialakoro - Heure automatique - Tu peux changer si tu veux aider</div>
 
 <script>
-function ajouter(){
+function show(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.menu button').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  window.scrollTo(0,0);
+}
+// --- HEURE AUTOMATIQUE ---
+function heureMaintenant(){
+  let now = new Date();
+  let h = String(now.getHours()).padStart(2,'0');
+  let m = String(now.getMinutes()).padStart(2,'0');
+  let dateFr = now.toLocaleDateString('fr-FR');
+  document.getElementById('dateP').value = dateFr;
+  document.getElementById('heureArr').value = h+':'+m;
+  return {dateFr, heure: h+':'+m, h: parseInt(h), m: parseInt(m)};
+}
+heureMaintenant();
+setInterval(heureMaintenant, 30000); // Actualise toutes les 30 secondes
+
+function pointerArrivee(){
   let nom = document.getElementById('nom').value.trim();
-  let date = document.getElementById('date').value;
-  let arr = document.getElementById('arrivee').value;
-  let dep = document.getElementById('depart').value;
-  if(!nom){alert('Mets le Nom et Prénom d\'abord');return;}
-  if(!date){alert('Choisis la date');return;}
-  if(!arr){alert('Choisis l\'heure d\'arrivée');return;}
+  if(!nom){alert('Écris d\'abord le Nom et Prénom');return;}
+  let t = heureMaintenant();
+  let statut = document.getElementById('statutManuel').value;
+  let statutTxt, retenue, classe, heureAff = t.heure.replace(':','h');
 
-  let statut, retenue, classe, reste;
-  let dateFr = new Date(date).toLocaleDateString('fr-FR');
-
-  if(arr === 'Absent'){
-    statut='ABSENCE'; retenue=20000; classe='absence'; dep='Absent'; arr='Absent';
-  } else if(arr === '08:00'){
-    statut="À L'HEURE"; retenue=0; classe='a-lheure';
+  if(statut==='absence'){
+    statutTxt='ABSENCE'; retenue=20000; classe='red'; heureAff='Absent';
+  } else if(t.h > 8 || (t.h===8 && t.m>=1)){
+    statutTxt='RETARD'; retenue=5000; classe='orange';
   } else {
-    statut='RETARD'; retenue=5000; classe='retard';
+    statutTxt="À L'HEURE"; retenue=0; classe='green';
   }
-  reste = 600000 - retenue;
-
+  let reste = 600000 - retenue;
   let tr = document.createElement('tr');
-  tr.innerHTML = `<td><b>${nom}</b></td><td>${dateFr}</td><td>${arr}</td><td>${dep}</td><td><span class="badge ${classe}">${statut}</span></td><td>${retenue===0?'0 GNF':'- '+retenue.toLocaleString('fr-FR')+' GNF'}</td><td>${reste.toLocaleString('fr-FR')} GNF</td><td><button class="delete" onclick="this.closest('tr').remove();calculer()">×</button></td>`;
-  document.getElementById('liste').appendChild(tr);
+  tr.innerHTML = `<td><b>${nom}</b></td><td>${t.dateFr}</td><td>${heureAff}</td><td>17h20</td><td><span class="badge ${classe}">${statutTxt}</span></td><td>${retenue===0?'0 GNF':'- '+retenue.toLocaleString('fr-FR')+' GNF'}</td><td>${reste.toLocaleString('fr-FR')} GNF</td>`;
+  document.getElementById('listeP').appendChild(tr);
+  alert(nom + ' pointé à ' + heureAff + ' - ' + statutTxt + ' - Retenue : ' + retenue + ' GNF');
   document.getElementById('nom').value='';
-  calculer();
 }
-function calculer(){
-  let lignes = document.querySelectorAll('#liste tr');
-  let totalRetenue = 0; let totalEnveloppe = 0;
-  lignes.forEach(l=>{
-    let txt = l.cells[5].innerText.replace(/[^0-9-]/g,'');
-    let r = parseInt(txt)||0;
-    // retenue est négative dans l'affichage, on prend valeur absolue
-    if(txt.includes('-')) r = Math.abs(r);
-    else if(txt==='0') r=0;
-    totalRetenue += r;
-    totalEnveloppe += (600000 - r);
-  });
-  document.getElementById('totalRetenue').innerText = totalRetenue.toLocaleString('fr-FR')+' GNF';
-  document.getElementById('totalEnveloppe').innerText = totalEnveloppe.toLocaleString('fr-FR')+' GNF';
+function pointerDepart(){
+  let nom = document.getElementById('nom').value.trim();
+  if(!nom){alert('Écris le Nom pour le départ');return;}
+  let t = heureMaintenant();
+  alert(nom + ' départ pointé à ' + t.heure.replace(':','h') + ' - Heure normale : 17h20');
 }
-calculer();
 </script>
 </body>
 </html>
