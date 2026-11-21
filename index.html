@@ -27,6 +27,8 @@ table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px} th,td{b
 .somme-box{background:#e8f5e9;padding:6px;border-radius:6px;text-align:center;font-weight:bold;color:#2e7d32}
 .jour-box{background:#fff3cd;padding:10px;border-radius:8px;text-align:center;font-weight:bold;margin-top:8px;border:1px solid #ffca28}
 .jour-box2{background:#d4edda;padding:10px;border-radius:8px;text-align:center;font-weight:bold;margin-top:8px;border:1px solid #28a745}
+.total-dettes-box{background:#FFD700;padding:12px;border-radius:10px;text-align:center;font-weight:bold;margin-top:10px;font-size:16px;border:1px solid #e6b800}
+.total-dettes-sub{font-size:13px;font-weight:normal;margin-top:3px}
 </style>
 </head>
 <body>
@@ -150,7 +152,29 @@ function renderConsultations(data){
  h+='</table>'; if(document.getElementById('consultTable')) document.getElementById('consultTable').innerHTML = keys.length? h : 'Aucun patient encore'; if(document.getElementById('totalJourBox')){ document.getElementById('totalJourBox').innerHTML = `<div class="jour-box">💊 TOTAL MÉDICAMENTS VENDUS AUJOURD'HUI : ${qteJour} médicaments</div><div class="jour-box2">💰 SOMME TOTALE JOURNALIÈRE : ${totalJour.toLocaleString()} GNF</div>`; }
 }
 function filterPatients(){ let q=document.getElementById('searchPatient').value.toLowerCase(); let filtered={}; for(let k in allCons){ let txt=((allCons[k].patient||'')+' '+(allCons[k].diagnostic||'')+' '+(allCons[k].plainte||'')).toLowerCase(); if(txt.includes(q)) filtered[k]=allCons[k]; } renderConsultations(filtered); }
-function loadDettes(){document.getElementById('content').innerHTML='<h3>📒 Dettes Payé</h3><input id="dNom" placeholder="Nom"><input id="dMont" type="number" placeholder="Montant"><button class="btn btn-blue" onclick="saveDette()">Enregistrer</button><div id="dList"></div>'; db.ref('dettes_paye').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Client</th><th>Montant</th><th>Date</th>'+(isPatron?'<th>X</th>':'')+'</tr>'; for(let k in d)h+=`<tr><td>${d[k].nom}</td><td>${d[k].montant}</td><td>${d[k].date}</td>${isPatron?`<td><button onclick="deleteDette('${k}')" style="background:#e74c3c;color:white;border:none;padding:6px 10px;border-radius:6px;font-weight:bold;cursor:pointer">X</button></td>`:''}</tr>`; document.getElementById('dList').innerHTML=h+'</table>';});}
+
+// ===== DETTES PAYÉ - AVEC TOTAL AUTOMATIQUE =====
+function loadDettes(){
+  document.getElementById('content').innerHTML='<h3>📒 Dettes Payé</h3><input id="dNom" placeholder="Nom"><input id="dMont" type="number" placeholder="Montant"><button class="btn btn-blue" onclick="saveDette()">Enregistrer</button><div id="totalDettesBox"></div><div id="dList"></div>';
+  db.ref('dettes_paye').on('value', s=>{
+    let d=s.val()||{};
+    let totalGeneral = 0;
+    let nb = 0;
+    let h='<table><tr><th>Client</th><th>Montant</th><th>Date</th>'+(isPatron?'<th>X</th>':'')+'</tr>';
+    for(let k in d){
+      let m = parseInt(d[k].montant) || 0;
+      totalGeneral += m;
+      nb++;
+      h+=`<tr><td>${d[k].nom}</td><td>${m.toLocaleString()} GNF</td><td>${d[k].date}</td>${isPatron?`<td><button onclick="deleteDette('${k}')" style="background:#e74c3c;color:white;border:none;padding:6px 10px;border-radius:6px;font-weight:bold;cursor:pointer">X</button></td>`:''}</tr>`;
+    }
+    // Ligne TOTAL en bas du tableau - format que tu as choisi
+    h+=`<tr style="background:#FFD700;font-weight:bold"><td>TOTAL GÉNÉRAL</td><td>${totalGeneral.toLocaleString()} GNF</td><td>${nb} paiements</td>${isPatron?'<td></td>':''}</tr>`;
+    h+='</table>';
+    document.getElementById('dList').innerHTML=h;
+    // Boîte TOTAL en haut - se met à jour toute seule
+    document.getElementById('totalDettesBox').innerHTML = `<div class="total-dettes-box">💰 TOTAL GÉNÉRAL : ${totalGeneral.toLocaleString()} GNF<div class="total-dettes-sub">${nb} paiements enregistrés</div></div>`;
+  });
+}
 function saveDette(){let n=document.getElementById('dNom').value,m=document.getElementById('dMont').value; if(!n||!m)return; db.ref('dettes_paye').push({nom:n,montant:m,date:new Date().toLocaleString()});}
 function deleteDette(k){ if(confirm('Tu veux vraiment supprimer cette dette ?')){ db.ref('dettes_paye/'+k).remove(); } }
 function loadSuivi(){document.getElementById('content').innerHTML='<h3>📈 SUIVI LIVE</h3><div id="box"></div>'; db.ref('consultations').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Date</th><th>Patient</th><th>Plainte / Examen / Diagnostic</th><th>Médicaments</th><th>Somme Totale</th></tr>'; for(let k in d){ let txt=''; let somme=0; if(d[k].meds) d[k].meds.forEach(m=>{ let pr=(m.prix&&m.prix>0)?m.prix:(postesData[m.key]?.prix||0); let pt=pr*m.qte; somme+=pt; txt+=m.nom+':'+m.qte+' x '+pr+'='+pt+' '; }); else txt=d[k].med; h+=`<tr><td>${d[k].date}</td><td>${d[k].patient}<br><small>${d[k].sexe||''} ${d[k].age?d[k].age+' ans':''}</small></td><td>Plainte: ${d[k].plainte||'-'}<br>Examen: ${d[k].examen||'-'}<br><b>Diag: ${d[k].diagnostic||'-'}</b></td><td>${txt}</td><td><b>${somme.toLocaleString()} GNF</b></td></tr>`;} document.getElementById('box').innerHTML=h+'</table>';});}
