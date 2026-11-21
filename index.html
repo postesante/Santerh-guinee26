@@ -27,6 +27,14 @@ table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px} th,td{b
 .somme-box{background:#e8f5e9;padding:6px;border-radius:6px;text-align:center;font-weight:bold;color:#2e7d32}
 .jour-box{background:#fff3cd;padding:10px;border-radius:8px;text-align:center;font-weight:bold;margin-top:8px;border:1px solid #ffca28}
 .jour-box2{background:#d4edda;padding:10px;border-radius:8px;text-align:center;font-weight:bold;margin-top:8px;border:1px solid #28a745}
+/* SEULEMENT POUR PRESENCE - ne touche pas aux autres */
+.pres-menu{display:flex;gap:6px;overflow-x:auto;margin:8px 0}
+.pres-menu button{white-space:nowrap;padding:9px 12px;border:1px solid #ddd;border-radius:20px;background:#f8f9fa;font-weight:bold;cursor:pointer}
+.pres-menu button.active{background:#1877f2;color:#fff;border-color:#1877f2}
+.pres-page{display:none}.pres-page.active{display:block}
+.badge-pres{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:bold;color:#fff}
+.badge-green{background:#42b72a}.badge-orange{background:#ff9800}.badge-red{background:#e74c3c}
+.pres-info{background:#e8f5e9;padding:10px;border-radius:8px;text-align:center;font-weight:bold;font-size:13px;margin-bottom:8px}
 </style>
 </head>
 <body>
@@ -158,8 +166,137 @@ function loadPrimes(){document.getElementById('content').innerHTML='<h3>🏆 Pri
 function savePrime(){let n=document.getElementById('pNom').value,m=document.getElementById('pMont').value; db.ref('primes').push({nom:n,montant:m,date:new Date().toLocaleString()});}
 function loadObservation(){document.getElementById('content').innerHTML='<h3>📝 Observation</h3><textarea id="oTxt" rows="3"></textarea><button class="btn btn-blue" onclick="saveObs()">Enregistrer</button><div id="oList"></div>'; db.ref('observations').on('value',s=>{let d=s.val()||{},h=''; for(let k in d)h+=`<div style="padding:6px;border-bottom:1px solid #eee"><b>${d[k].date}</b> ${d[k].texte}</div>`; document.getElementById('oList').innerHTML=h;});}
 function saveObs(){let t=document.getElementById('oTxt').value; if(!t)return; db.ref('observations').push({texte:t,date:new Date().toLocaleString()});}
-function loadPresence(){document.getElementById('content').innerHTML='<h3>✅ Présence 600k</h3><input id="prNom" placeholder="Nom"><select id="prSt"><option>Présent</option><option>Absent</option></select><button class="btn btn-blue" onclick="savePres()">Valider</button><div id="prList"></div>'; db.ref('presence_600k').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Nom</th><th>Statut</th><th>Date</th></tr>'; for(let k in d)h+=`<tr><td>${d[k].nom}</td><td>${d[k].statut}</td><td>${d[k].date}</td></tr>`; document.getElementById('prList').innerHTML=h+'</table>';});}
-function savePres(){let n=document.getElementById('prNom').value,s=document.getElementById('prSt').value; db.ref('presence_600k').push({nom:n,statut:s,date:new Date().toLocaleString()});}
+
+/* ===== SEULEMENT PRESENCE - TOUCHE ICI - LES AUTRES SONT INTACTS ===== */
+let presenceData = {};
+function loadPresence(){
+  let now = new Date();
+  let dateFr = now.toLocaleDateString('fr-FR');
+  let hh = String(now.getHours()).padStart(2,'0');
+  let mm = String(now.getMinutes()).padStart(2,'0');
+  let heureNow = hh + ':' + mm;
+
+  document.getElementById('content').innerHTML = `
+  <h3>✅ Présence 600k</h3>
+  <div class="pres-info">📍 08h00 = 0 &nbsp; | &nbsp; 08h01 = - 5 000 &nbsp; | &nbsp; Absent = - 20 000 &nbsp; | &nbsp; Départ 17h20 &nbsp; | &nbsp; Enveloppe 600 000 GNF</div>
+
+  <div class="pres-menu">
+    <button class="active" onclick="showPresPage('pres-pointer',this)">📍 POINTER</button>
+    <button onclick="showPresPage('pres-liste',this)">📋 LISTE DU JOUR</button>
+    <button onclick="showPresPage('pres-retards',this)">🟠 RETARDS</button>
+    <button onclick="showPresPage('pres-absences',this)">🔴 ABSENCES</button>
+    <button onclick="showPresPage('pres-enveloppes',this)">💰 ENVELOPPES</button>
+  </div>
+
+  <div id="pres-pointer" class="pres-page active">
+    <p style="font-size:13px;color:#2e7d32;font-weight:bold;margin:0">✅ Tu écris SEULEMENT le nom. Date + heure viennent seules.</p>
+    <input id="prNom" placeholder="Nom et Prénom *">
+    <label style="font-size:13px">Date - automatique</label>
+    <input id="prDate" readonly value="${dateFr}">
+    <label style="font-size:13px">Heure d'arrivée - automatique (tu peux changer pour aider)</label>
+    <input id="prHeure" type="time" value="${heureNow}">
+    <select id="prSt"><option value="auto">Laisser l'application décider (Présent / Retard)</option><option value="Absent">Marquer ABSENT</option></select>
+    <button class="btn btn-blue" onclick="savePres()">📍 POINTER ARRIVÉE MAINTENANT</button>
+  </div>
+
+  <div id="pres-liste" class="pres-page"><div id="presListeBox">Chargement...</div></div>
+  <div id="pres-retards" class="pres-page"><div id="presRetardsBox">Chargement...</div></div>
+  <div id="pres-absences" class="pres-page"><div id="presAbsencesBox">Chargement...</div></div>
+  <div id="pres-enveloppes" class="pres-page"><div id="presEnveloppesBox">Chargement...</div></div>
+  `;
+
+  db.ref('presence_600k').on('value', s=>{
+    presenceData = s.val() || {};
+    renderPresence();
+  });
+}
+function showPresPage(id, btn){
+  document.querySelectorAll('.pres-page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.pres-menu button').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+}
+function renderPresence(){
+  let keys = Object.keys(presenceData).reverse();
+  let auj = new Date().toLocaleDateString('fr-FR');
+
+  // LISTE DU JOUR - on montre ceux d'aujourd'hui, sinon tout
+  let liste = keys.filter(k=>{
+    let d = presenceData[k].date || '';
+    return d.includes(auj) || !presenceData[k].dateFr;
+  });
+  if(liste.length===0) liste = keys.slice(0,20);
+
+  let hListe = '<table><tr><th>Nom</th><th>Heure d\'arrivée</th><th>Heure de départ</th><th>Statut</th><th>Retenue</th>'+(isPatron?'<th>X</th>':'')+'</tr>';
+  let hRet = '<table><tr><th>Nom</th><th>Date</th><th>Heure</th><th>Retenue</th></tr>';
+  let hAbs = '<table><tr><th>Nom</th><th>Date</th><th>Retenue</th></tr>';
+  let parPersonne = {};
+  let nbRet=0, nbAbs=0;
+
+  for(let k of keys){
+    let p = presenceData[k];
+    let statut = p.statut || 'Présent';
+    let retenue = p.retenue || 0;
+    // compatibilité avec ancien code : Présent / Absent sans retenue
+    if(statut==='Absent' && !p.retenue) retenue = 20000;
+    if(statut==='Retard' || statut==='RETARD') retenue = 5000;
+    if(statut==='Présent' || statut==="À L'HEURE") retenue = 0;
+
+    let badge = '<span class="badge-pres badge-green">À L\'HEURE</span>';
+    if(statut==='Absent' || statut==='ABSENCE') badge = '<span class="badge-pres badge-red">ABSENCE</span>';
+    else if(statut==='Retard' || statut==='RETARD') badge = '<span class="badge-pres badge-orange">RETARD</span>';
+
+    if(liste.includes(k)){
+      hListe += `<tr><td><b>${p.nom||''}</b></td><td>${p.heureArrivee||p.heure||'—'}</td><td>17h20</td><td>${badge}</td><td>${retenue===0?'0 GNF':'- '+retenue.toLocaleString()+' GNF'}</td>${isPatron?`<td><button onclick="deletePres('${k}')">X</button></td>`:''}</tr>`;
+    }
+    if(statut==='Retard' || statut==='RETARD'){ nbRet++; hRet += `<tr><td>${p.nom||''}</td><td>${p.dateFr||p.date||''}</td><td>${p.heureArrivee||''}</td><td>- 5 000 GNF</td></tr>`; }
+    if(statut==='Absent' || statut==='ABSENCE'){ nbAbs++; hAbs += `<tr><td>${p.nom||''}</td><td>${p.dateFr||p.date||''}</td><td>- 20 000 GNF</td></tr>`; }
+
+    // enveloppes par personne
+    let nom = p.nom || 'Inconnu';
+    if(!parPersonne[nom]) parPersonne[nom]={retards:0,absences:0,totalRetenue:0};
+    if(statut==='Retard' || statut==='RETARD'){ parPersonne[nom].retards++; parPersonne[nom].totalRetenue+=5000; }
+    if(statut==='Absent' || statut==='ABSENCE'){ parPersonne[nom].absences++; parPersonne[nom].totalRetenue+=20000; }
+  }
+  hListe += '</table>'; hRet += '</table>'; hAbs += '</table>';
+
+  if(document.getElementById('presListeBox')) document.getElementById('presListeBox').innerHTML = liste.length ? hListe : 'Aucun pointage aujourd\'hui';
+  if(document.getElementById('presRetardsBox')) document.getElementById('presRetardsBox').innerHTML = '<div class="pres-info">🟠 Total retards : '+nbRet+' | 08h01 = - 5 000 GNF</div>' + (nbRet? hRet : 'Aucun retard');
+  if(document.getElementById('presAbsencesBox')) document.getElementById('presAbsencesBox').innerHTML = '<div class="pres-info">🔴 Total absences : '+nbAbs+' | Absence = - 20 000 GNF</div>' + (nbAbs? hAbs : 'Aucune absence');
+
+  let hEnv = '<table><tr><th>Nom</th><th>Retards</th><th>Absences</th><th>Total Retenue</th><th>Reste à payer</th></tr>';
+  let totalEnv = 0;
+  for(let nom in parPersonne){
+    let pp = parPersonne[nom];
+    let reste = 600000 - pp.totalRetenue;
+    if(reste<0) reste=0;
+    totalEnv += reste;
+    hEnv += `<tr><td><b>${nom}</b></td><td>${pp.retards}</td><td>${pp.absences}</td><td>- ${pp.totalRetenue.toLocaleString()} GNF</td><td><b>${reste.toLocaleString()} GNF</b></td></tr>`;
+  }
+  hEnv += '</table>';
+  if(document.getElementById('presEnveloppesBox')) document.getElementById('presEnveloppesBox').innerHTML = '<div class="pres-info">💰 Enveloppe de base : 600 000 GNF par personne</div>' + (Object.keys(parPersonne).length? hEnv : 'Aucune présence encore') + `<div class="total-box">💰 TOTAL ENVELOPPES À PAYER : ${totalEnv.toLocaleString()} GNF</div>`;
+}
+function savePres(){
+  let n = document.getElementById('prNom').value.trim();
+  if(!n) return alert('Écris le Nom et Prénom');
+  let heure = document.getElementById('prHeure').value || '08:00';
+  let dateFr = document.getElementById('prDate').value || new Date().toLocaleDateString('fr-FR');
+  let choix = document.getElementById('prSt').value;
+  let statut, retenue;
+  let parts = heure.split(':');
+  let hh = parseInt(parts[0]||0), mm = parseInt(parts[1]||0);
+  if(choix==='Absent'){ statut='Absent'; retenue=20000; heure='Absent'; }
+  else if(hh>8 || (hh===8 && mm>=1)){ statut='Retard'; retenue=5000; }
+  else { statut='Présent'; retenue=0; }
+  let heureAff = (heure==='Absent') ? 'Absent' : heure.replace(':','h');
+  db.ref('presence_600k').push({nom:n, statut:statut, retenue:retenue, heureArrivee:heureAff, heure:heureAff, dateFr:dateFr, date:new Date().toLocaleString()});
+  document.getElementById('prNom').value='';
+  alert(n+' pointé à '+heureAff+' - '+statut);
+  showPresPage('pres-liste', document.querySelectorAll('.pres-menu button')[1]);
+}
+function deletePres(k){ if(confirm('Supprimer ce pointage ?')) db.ref('presence_600k/'+k).remove(); }
+/* ===== FIN PRESENCE ===== */
+
 loadMedicaments();
 </script>
 </body>
