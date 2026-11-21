@@ -53,7 +53,7 @@ if(role){ localStorage.setItem('mon_role', role); }
 else { role = localStorage.getItem('mon_role') || 'patron'; }
 const isPatron = role==='patron';
 document.getElementById('header').innerHTML = isPatron ? '<img src="icon-512.png" onerror="this.style.display=\'none\'"><div>👑 PATRON - Accès complet</div><div style="font-size:13px;font-weight:normal">Filanidialakoro - Poste Santé</div>' : '👤 SUPPLÉANT - 2 modules';
-let gridHTML=`<div class="card" onclick="openModule('medicaments')">💊 Médicaments</div><div class="card" onclick="openModule('dettes')">📒 Dettes Payé</div>`;
+let gridHTML=`<div class="card" onclick="openModule('medicaments')">💊 Médicaments</div><div class="card" onclick="openModule('dettes')">📒 Dettes Non Payé</div>`;
 if(isPatron){ gridHTML+=`<div class="card" onclick="openModule('suivi')">📈 SUIVI LIVE</div><div class="card" onclick="openModule('primes')">🏆 Primes</div><div class="card" onclick="openModule('observation')">📝 Observation</div><div class="card" onclick="openModule('presence')">✅ Présence 600k</div><div class="card" onclick="openModule('localisation')">📍 Localisation GPS</div>`; }
 document.getElementById('grid').innerHTML=gridHTML;
 function openModule(n){ if(n==='medicaments') loadMedicaments(); if(n==='dettes') loadDettes(); if(n==='suivi') loadSuivi(); if(n==='primes') loadPrimes(); if(n==='observation') loadObservation(); if(n==='presence') loadPresence(); if(n==='localisation') loadLocalisation(); }
@@ -153,9 +153,9 @@ function renderConsultations(data){
 }
 function filterPatients(){ let q=document.getElementById('searchPatient').value.toLowerCase(); let filtered={}; for(let k in allCons){ let txt=((allCons[k].patient||'')+' '+(allCons[k].diagnostic||'')+' '+(allCons[k].plainte||'')).toLowerCase(); if(txt.includes(q)) filtered[k]=allCons[k]; } renderConsultations(filtered); }
 
-// ===== DETTES PAYÉ - AVEC TOTAL AUTOMATIQUE =====
+// ===== DETTES NON PAYÉ - AVEC TOTAL AUTOMATIQUE =====
 function loadDettes(){
-  document.getElementById('content').innerHTML='<h3>📒 Dettes Payé</h3><input id="dNom" placeholder="Nom"><input id="dMont" type="number" placeholder="Montant"><button class="btn btn-blue" onclick="saveDette()">Enregistrer</button><div id="totalDettesBox"></div><div id="dList"></div>';
+  document.getElementById('content').innerHTML='<h3>📒 Dettes Non Payé</h3><input id="dNom" placeholder="Nom"><input id="dMont" type="number" placeholder="Montant"><button class="btn btn-blue" onclick="saveDette()">Enregistrer</button><div id="totalDettesBox"></div><div id="dList"></div>';
   db.ref('dettes_paye').on('value', s=>{
     let d=s.val()||{};
     let totalGeneral = 0;
@@ -168,11 +168,11 @@ function loadDettes(){
       h+=`<tr><td>${d[k].nom}</td><td>${m.toLocaleString()} GNF</td><td>${d[k].date}</td>${isPatron?`<td><button onclick="deleteDette('${k}')" style="background:#e74c3c;color:white;border:none;padding:6px 10px;border-radius:6px;font-weight:bold;cursor:pointer">X</button></td>`:''}</tr>`;
     }
     // Ligne TOTAL en bas du tableau - format que tu as choisi
-    h+=`<tr style="background:#FFD700;font-weight:bold"><td>TOTAL GÉNÉRAL</td><td>${totalGeneral.toLocaleString()} GNF</td><td>${nb} paiements</td>${isPatron?'<td></td>':''}</tr>`;
+    h+=`<tr style="background:#FFD700;font-weight:bold"><td>TOTAL DETTES NON PAYÉ</td><td>${totalGeneral.toLocaleString()} GNF</td><td>${nb} dettes</td>${isPatron?'<td></td>':''}</tr>`;
     h+='</table>';
     document.getElementById('dList').innerHTML=h;
     // Boîte TOTAL en haut - se met à jour toute seule
-    document.getElementById('totalDettesBox').innerHTML = `<div class="total-dettes-box">💰 TOTAL GÉNÉRAL : ${totalGeneral.toLocaleString()} GNF<div class="total-dettes-sub">${nb} paiements enregistrés</div></div>`;
+    document.getElementById('totalDettesBox').innerHTML = `<div class="total-dettes-box">💰 TOTAL DETTES NON PAYÉ : ${totalGeneral.toLocaleString()} GNF<div class="total-dettes-sub">${nb} dettes non payées</div></div>`;
   });
 }
 function saveDette(){let n=document.getElementById('dNom').value,m=document.getElementById('dMont').value; if(!n||!m)return; db.ref('dettes_paye').push({nom:n,montant:m,date:new Date().toLocaleString()});}
