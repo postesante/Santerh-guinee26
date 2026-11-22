@@ -42,12 +42,14 @@ table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px} th,td{b
 .stock-alerte-box{display:flex;gap:6px;margin:8px 0}
 .stock-alerte-box div{flex:1;padding:10px;border-radius:8px;text-align:center;font-weight:bold;font-size:13px}
 .badge-stock{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:bold;color:#fff;white-space:nowrap}
-/* SEULEMENT CAISSE */
 .caisse-menu{display:flex;gap:6px;margin:8px 0}
 .caisse-menu button{flex:1;padding:10px;border:1px solid #ddd;border-radius:20px;background:#f8f9fa;font-weight:bold;cursor:pointer}
 .caisse-menu button.active{background:#1877f2;color:#fff}
 .caisse-page{display:none}.caisse-page.active{display:block}
 .caisse-reste{background:#e8f5e9;padding:12px;border-radius:8px;text-align:center;font-weight:bold;margin-top:8px;border:1px solid #42b72a;font-size:16px}
+/* SEULEMENT EXPIRATION */
+.expire-box{display:flex;gap:6px;margin:8px 0}
+.expire-box div{flex:1;padding:10px;border-radius:8px;text-align:center;font-weight:bold;font-size:13px}
 </style>
 </head>
 <body>
@@ -100,13 +102,19 @@ let h=`
 <div class="section">
 <b>STOCK PERMANENT</b>
 <div id="stockAlerteResume"></div>
+<div id="expireResume"></div>
 <div style="display:flex;gap:6px;margin-top:6px">
 <button class="btn btn-blue" style="flex:1" onclick="filterStock('all')">TOUT</button>
 <button class="btn btn-red" style="flex:1" onclick="filterStock('rupture')">🔴 RUPTURE</button>
 <button class="btn btn-orange" style="flex:1" onclick="filterStock('alerte')">🟠 ALERTE</button>
 <button class="btn btn-green" style="flex:1" onclick="filterStock('ok')">🟢 OK</button>
 </div>
-${isPatron?`<input id="newMedName" placeholder="Nom nouveau médicament"><input id="newMedPrix" type="number" placeholder="Prix unitaire ex: 500"><input id="newMedSeuil" type="number" placeholder="Seuil Alerte pour ce produit ex: 10 (toi tu choisis)"><button class="btn btn-green" onclick="addMedicament()">AUGMENTER LA LISTE</button>`:''}
+<div style="display:flex;gap:6px;margin-top:6px">
+<button class="btn btn-red" style="flex:1" onclick="filterStock('expire')">🔴 EXPIRÉ</button>
+<button class="btn btn-orange" style="flex:1" onclick="filterStock('bientot')">🟠 EXPIRE BIENTÔT (60j)</button>
+<button class="btn btn-green" style="flex:1" onclick="filterStock('bon')">🟢 BON</button>
+</div>
+${isPatron?`<input id="newMedName" placeholder="Nom nouveau médicament"><input id="newMedPrix" type="number" placeholder="Prix unitaire ex: 500"><input id="newMedSeuil" type="number" placeholder="Seuil Alerte pour ce produit ex: 10 (toi tu choisis)"><input id="newMedExpire" type="date" placeholder="Date d'expiration"><button class="btn btn-green" onclick="addMedicament()">AUGMENTER LA LISTE</button>`:''}
 <div id="medTable">Chargement...</div>
 <div id="totalStockBox"></div>
 <div id="totalJourBox"></div>
@@ -136,11 +144,21 @@ loadStock(); loadConsultations(); addMedRow();
 }
 let stockFilter='all';
 function filterStock(f){ stockFilter=f; loadStock(); }
+/* SEULEMENT EXPIRATION - 60 JOURS */
+function getExpireStat(dateStr){
+  if(!dateStr) return {etat:'sans', label:'—', bg:''};
+  let today = new Date(); today.setHours(0,0,0,0);
+  let exp = new Date(dateStr); exp.setHours(0,0,0,0);
+  let diff = Math.ceil((exp - today) / (1000*60*60*24));
+  if(diff < 0) return {etat:'expire', label:'🔴 EXPIRÉ', bg:'#ffebee', diff:diff};
+  if(diff <= 60) return {etat:'bientot', label:'🟠 EXPIRE BIENTÔT<br><small>'+diff+' jours</small>', bg:'#fff3e0', diff:diff};
+  return {etat:'bon', label:'🟢 BON<br><small>'+diff+' jours</small>', bg:'', diff:diff};
+}
 function loadStock(){
  db.ref('postes').on('value',snap=>{
   postesData=snap.val()||{};
-  let t='<table><tr><th>Nom</th><th>Stock</th><th>Seuil Alerte<br><small>Toi tu modifies</small></th><th>État</th><th>Prix unitaire</th><th>Total de prix</th>'+(isPatron?'<th>X</th>':'')+'</tr>';
-  let grandTotal=0; let nbRupture=0, nbAlerte=0, nbOk=0;
+  let t='<table><tr><th>Nom</th><th>Stock</th><th>Seuil Alerte<br><small>Toi tu modifies</small></th><th>État Stock</th><th>Date Expiration<br><small>Toi tu mets</small></th><th>État Expiration<br><small>60 jours</small></th><th>Prix unitaire</th><th>Total de prix</th>'+(isPatron?'<th>X</th>':'')+'</tr>';
+  let grandTotal=0; let nbRupture=0, nbAlerte=0, nbOk=0; let nbExpire=0, nbBientot=0, nbBon=0;
   for(let k in postesData){
     let q = postesData[k].quantite||0; let p = postesData[k].prix||0; let seuil = postesData[k].seuil; if(seuil===undefined||seuil===null||seuil==='') seuil=5;
     let total = q * p; grandTotal += total;
@@ -148,25 +166,40 @@ function loadStock(){
     if(q===0){ etat='<span class="badge-stock badge-red">🔴 RUPTURE</span>'; bg='#ffebee'; nbRupture++; }
     else if(q<=seuil){ etat='<span class="badge-stock badge-orange">🟠 ALERTE</span>'; bg='#fff3e0'; nbAlerte++; }
     else { etat='<span class="badge-stock badge-green">🟢 OK</span>'; bg=''; nbOk++; }
+    let expStr = postesData[k].expiration || '';
+    let exp = getExpireStat(expStr);
+    if(exp.etat==='expire') nbExpire++;
+    else if(exp.etat==='bientot') nbBientot++;
+    else if(exp.etat==='bon') nbBon++;
     if(stockFilter==='rupture' && q!==0) continue;
     if(stockFilter==='alerte' && !(q>0 && q<=seuil)) continue;
     if(stockFilter==='ok' && !(q>seuil)) continue;
-    t+=`<tr style="background:${bg}"><td><b>${postesData[k].nom||k}</b></td><td>${isPatron?`<input id="q_${k}" type="number" value="${q}" onchange="updateQ('${k}')" style="padding:4px">`:`<b style="font-size:16px">${q}</b>`}</td><td>${isPatron?`<input id="s_${k}" type="number" value="${seuil}" onchange="updateSeuil('${k}')" placeholder="5" style="padding:4px">`:`<b>${seuil}</b>`}</td><td>${etat}</td><td>${isPatron?`<input id="p_${k}" type="number" value="${p}" onchange="updatePrix('${k}')" placeholder="0" style="padding:4px">`:`<b>${p.toLocaleString()} GNF</b>`}</td><td><b>${total.toLocaleString()} GNF</b></td>${isPatron?`<td><button onclick="deleteMed('${k}')">X</button></td>`:''}</tr>`;
+    if(stockFilter==='expire' && exp.etat!=='expire') continue;
+    if(stockFilter==='bientot' && exp.etat!=='bientot') continue;
+    if(stockFilter==='bon' && exp.etat!=='bon') continue;
+    let rowBg = bg;
+    if(exp.etat==='expire') rowBg='#ffebee';
+    else if(exp.etat==='bientot' && !rowBg) rowBg='#fff3e0';
+    t+=`<tr style="background:${rowBg}"><td><b>${postesData[k].nom||k}</b></td><td>${isPatron?`<input id="q_${k}" type="number" value="${q}" onchange="updateQ('${k}')" style="padding:4px">`:`<b style="font-size:16px">${q}</b>`}</td><td>${isPatron?`<input id="s_${k}" type="number" value="${seuil}" onchange="updateSeuil('${k}')" placeholder="5" style="padding:4px">`:`<b>${seuil}</b>`}</td><td>${etat}</td><td>${isPatron?`<input id="e_${k}" type="date" value="${expStr}" onchange="updateExpire('${k}')" style="padding:4px">`:`<b>${expStr||'-'}</b>`}</td><td>${exp.label}</td><td>${isPatron?`<input id="p_${k}" type="number" value="${p}" onchange="updatePrix('${k}')" placeholder="0" style="padding:4px">`:`<b>${p.toLocaleString()} GNF</b>`}</td><td><b>${total.toLocaleString()} GNF</b></td>${isPatron?`<td><button onclick="deleteMed('${k}')">X</button></td>`:''}</tr>`;
   }
   t+='</table>';
   document.getElementById('medTable').innerHTML=t;
   document.getElementById('totalStockBox').innerHTML=`<div class="total-box">💰 TOTAL STOCK : ${grandTotal.toLocaleString()} GNF</div>`;
   if(document.getElementById('stockAlerteResume')){
-    document.getElementById('stockAlerteResume').innerHTML=`<div class="stock-alerte-box"><div style="background:#ffebee;color:#c62828">🔴 RUPTURE<br>${nbRupture}</div><div style="background:#fff3e0;color:#ef6c00">🟠 ALERTE<br>${nbAlerte}</div><div style="background:#e8f5e9;color:#2e7d32">🟢 OK<br>${nbOk}</div></div><p style="font-size:12px;margin:0;color:#666">Chaque produit a son propre Seuil. C'est toi qui modifies. Si Stock = 0 = Rupture. Si Stock <= Seuil = Alerte.</p>`;
+    document.getElementById('stockAlerteResume').innerHTML=`<div class="stock-alerte-box"><div style="background:#ffebee;color:#c62828">🔴 RUPTURE<br>${nbRupture}</div><div style="background:#fff3e0;color:#ef6c00">🟠 ALERTE<br>${nbAlerte}</div><div style="background:#e8f5e9;color:#2e7d32">🟢 OK<br>${nbOk}</div></div>`;
+  }
+  if(document.getElementById('expireResume')){
+    document.getElementById('expireResume').innerHTML=`<div class="expire-box"><div style="background:#ffebee;color:#c62828">🔴 EXPIRÉ<br>${nbExpire}</div><div style="background:#fff3e0;color:#ef6c00">🟠 EXPIRE BIENTÔT (60j)<br>${nbBientot}</div><div style="background:#e8f5e9;color:#2e7d32">🟢 BON<br>${nbBon}</div></div><p style="font-size:12px;margin:0;color:#666">Si date passée = EXPIRÉ, ne pas donner. Si il reste 60 jours ou moins = EXPIRE BIENTÔT.</p>`;
   }
   updateAllSelects(); if(document.getElementById('consultTable')) renderConsultations(allCons);
  });
 }
 function updateSeuil(k){ if(!isPatron) return alert('Seul le Patron'); let s=document.getElementById('s_'+k).value; db.ref('postes/'+k+'/seuil').set(parseInt(s)||0); }
-function getSelectHTML(){ let html='<option value="">Choisir médicament</option>'; for(let k in postesData){ let q=postesData[k].quantite||0; let seuil=postesData[k].seuil; if(seuil===undefined||seuil==='') seuil=5; let tag=''; if(q===0) tag=' 🔴 RUPTURE'; else if(q<=seuil) tag=' 🟠 ALERTE'; html+=`<option value="${k}">${postesData[k].nom||k} (stock:${q} - prix:${postesData[k].prix||0})${tag}</option>`; } return html; }
+function updateExpire(k){ if(!isPatron) return alert('Seul le Patron'); let v=document.getElementById('e_'+k).value; db.ref('postes/'+k+'/expiration').set(v||''); }
+function getSelectHTML(){ let html='<option value="">Choisir médicament</option>'; for(let k in postesData){ let q=postesData[k].quantite||0; let seuil=postesData[k].seuil; if(seuil===undefined||seuil==='') seuil=5; let tag=''; if(q===0) tag=' 🔴 RUPTURE'; else if(q<=seuil) tag=' 🟠 ALERTE'; let exp=getExpireStat(postesData[k].expiration||''); if(exp.etat==='expire') tag+=' 🔴 EXPIRÉ'; else if(exp.etat==='bientot') tag+=' 🟠 EXPIRE BIENTÔT'; html+=`<option value="${k}">${postesData[k].nom||k} (stock:${q} - prix:${postesData[k].prix||0})${tag}</option>`; } return html; }
 function addMedRow(){ let div=document.createElement('div'); div.className='med-row'; div.innerHTML=`<select class="medSelect">${getSelectHTML()}</select><input type="number" class="medQte" placeholder="Qté" value="1" style="width:70px"><button class="btn btn-red" style="width:40px;padding:6px" onclick="this.parentElement.remove()">X</button>`; document.getElementById('medRows').appendChild(div); }
 function updateAllSelects(){ let selHTML=getSelectHTML(); document.querySelectorAll('.medSelect').forEach(sel=>{ let val=sel.value; sel.innerHTML=selHTML; sel.value=val; }); }
-function addMedicament(){ if(!isPatron) return alert('Seul le Patron'); let nom=document.getElementById('newMedName').value.trim(); let prix=parseInt(document.getElementById('newMedPrix').value)||0; let seuil=parseInt(document.getElementById('newMedSeuil').value); if(isNaN(seuil)) seuil=5; if(!nom)return; let key=nom.replace(/[^a-zA-Z0-9]/g,'_')+'_'+Date.now(); db.ref('postes/'+key).set({nom:nom,quantite:0,prix:prix,seuil:seuil}).then(()=>{ document.getElementById('newMedName').value=''; document.getElementById('newMedPrix').value=''; document.getElementById('newMedSeuil').value=''; }); }
+function addMedicament(){ if(!isPatron) return alert('Seul le Patron'); let nom=document.getElementById('newMedName').value.trim(); let prix=parseInt(document.getElementById('newMedPrix').value)||0; let seuil=parseInt(document.getElementById('newMedSeuil').value); if(isNaN(seuil)) seuil=5; let exp=document.getElementById('newMedExpire') ? document.getElementById('newMedExpire').value : ''; if(!nom)return; let key=nom.replace(/[^a-zA-Z0-9]/g,'_')+'_'+Date.now(); db.ref('postes/'+key).set({nom:nom,quantite:0,prix:prix,seuil:seuil,expiration:exp}).then(()=>{ document.getElementById('newMedName').value=''; document.getElementById('newMedPrix').value=''; document.getElementById('newMedSeuil').value=''; if(document.getElementById('newMedExpire')) document.getElementById('newMedExpire').value=''; }); }
 function updateQ(k){ if(!isPatron) return alert('Seul le Patron peut changer le stock'); let q=document.getElementById('q_'+k).value; db.ref('postes/'+k+'/quantite').set(parseInt(q)||0); }
 function updatePrix(k){ if(!isPatron) return alert('Seul le Patron peut changer le prix'); let p=document.getElementById('p_'+k).value; db.ref('postes/'+k+'/prix').set(parseInt(p)||0); }
 function deleteMed(k){if(confirm('Supprimer?')) db.ref('postes/'+k).remove();}
@@ -180,6 +213,8 @@ function saveConsultation(){
  let rows=document.querySelectorAll('.med-row'); let meds=[];
  for(let r of rows){ let key=r.querySelector('.medSelect').value; let qte=parseInt(r.querySelector('.medQte').value)||0; if(key && qte>0){ meds.push({key:key, nom:postesData[key]?.nom||key, qte:qte, prix:postesData[key]?.prix||0}); } }
  if(meds.length===0) return alert('Ajoute au moins 1 médicament');
+ let expired = meds.filter(m=> getExpireStat(postesData[m.key]?.expiration||'').etat==='expire');
+ if(expired.length>0){ if(!confirm('⚠️ ATTENTION : '+expired.map(m=>m.nom).join(', ')+' est EXPIRÉ ! Tu veux quand même donner ?')) return; }
  meds.forEach(m=>{ let cur=postesData[m.key]?.quantite||0; db.ref('postes/'+m.key+'/quantite').set(cur - m.qte); });
  db.ref('consultations').push({patient:patient, sexe:sexe, age:age, plainte:plainte, examen:examen, diagnostic:diagnostic, meds:meds, date:new Date().toLocaleString(), role:role});
  document.getElementById('patientName').value=''; document.getElementById('patientSexe').value=''; document.getElementById('patientAge').value=''; document.getElementById('patientPlainte').value=''; document.getElementById('patientExamen').value=''; document.getElementById('patientDiag').value=''; document.getElementById('medRows').innerHTML=''; addMedRow(); addMedRow(); alert('✅ '+patient+' enregistré avec '+meds.length+' médicaments');
@@ -193,7 +228,7 @@ function renderConsultations(data){
 }
 function filterPatients(){ let q=document.getElementById('searchPatient').value.toLowerCase(); let filtered={}; for(let k in allCons){ let txt=((allCons[k].patient||'')+' '+(allCons[k].diagnostic||'')+' '+(allCons[k].plainte||'')).toLowerCase(); if(txt.includes(q)) filtered[k]=allCons[k]; } renderConsultations(filtered); }
 
-/* ===== SEULEMENT CAISSE JOURNALIERE - NOUVEAU - LES AUTRES SONT INTACTS ===== */
+/* ===== CAISSE - FINI, INTACT ===== */
 let caisseEntrees={}, caisseSorties={};
 function loadCaisse(){
   document.getElementById('content').innerHTML = `
@@ -204,49 +239,23 @@ function loadCaisse(){
     <button onclick="showCaissePage('caisse-sortie',this)">💸 SORTIE</button>
     <button onclick="showCaissePage('caisse-histo',this)">📋 HISTORIQUE</button>
   </div>
-
-  <div id="caisse-jour" class="caisse-page active">
-    <div id="caisseResumeJour"></div>
-    <div id="caisseListJour"></div>
-  </div>
-
-  <div id="caisse-entree" class="caisse-page">
-    <p style="font-size:13px;font-weight:bold;color:#2e7d32;margin:0">💰 Argent qui ENTRE dans la caisse</p>
-    <select id="ceType"><option value="Vente médicaments">Vente médicaments</option><option value="Dettes payées">Dettes payées</option><option value="Autre entrée">Autre entrée</option></select>
-    <input id="ceMotif" placeholder="Motif - ex: Vente Paracétamol, Dette de Moussa...">
-    <input id="ceMontant" type="number" placeholder="Montant GNF">
-    <button class="btn btn-green" onclick="saveCaisseEntree()">✅ ENREGISTRER ENTRÉE</button>
-  </div>
-
-  <div id="caisse-sortie" class="caisse-page">
-    <p style="font-size:13px;font-weight:bold;color:#c62828;margin:0">💸 Argent qui SORT de la caisse</p>
-    <select id="csType"><option value="Achat médicaments">Achat médicaments</option><option value="Dépenses Poste">Dépenses Poste</option><option value="Autre sortie">Autre sortie</option></select>
-    <input id="csMotif" placeholder="Motif - ex: Achat stock, Carburant, Savon...">
-    <input id="csMontant" type="number" placeholder="Montant GNF">
-    <button class="btn btn-red" onclick="saveCaisseSortie()">✅ ENREGISTRER SORTIE</button>
-  </div>
-
-  <div id="caisse-histo" class="caisse-page">
-    <div id="caisseHistoBox"></div>
-  </div>
+  <div id="caisse-jour" class="caisse-page active"><div id="caisseResumeJour"></div><div id="caisseListJour"></div></div>
+  <div id="caisse-entree" class="caisse-page"><p style="font-size:13px;font-weight:bold;color:#2e7d32;margin:0">💰 Argent qui ENTRE</p><select id="ceType"><option value="Vente médicaments">Vente médicaments</option><option value="Dettes payées">Dettes payées</option><option value="Autre entrée">Autre entrée</option></select><input id="ceMotif" placeholder="Motif - ex: Vente Paracétamol, Dette de Moussa..."><input id="ceMontant" type="number" placeholder="Montant GNF"><button class="btn btn-green" onclick="saveCaisseEntree()">✅ ENREGISTRER ENTRÉE</button></div>
+  <div id="caisse-sortie" class="caisse-page"><p style="font-size:13px;font-weight:bold;color:#c62828;margin:0">💸 Argent qui SORT</p><select id="csType"><option value="Achat médicaments">Achat médicaments</option><option value="Dépenses Poste">Dépenses Poste</option><option value="Autre sortie">Autre sortie</option></select><input id="csMotif" placeholder="Motif - ex: Achat stock, Carburant..."><input id="csMontant" type="number" placeholder="Montant GNF"><button class="btn btn-red" onclick="saveCaisseSortie()">✅ ENREGISTRER SORTIE</button></div>
+  <div id="caisse-histo" class="caisse-page"><div id="caisseHistoBox"></div></div>
   `;
   db.ref('caisse_entrees').on('value', s=>{ caisseEntrees=s.val()||{}; renderCaisse(); });
   db.ref('caisse_sorties').on('value', s=>{ caisseSorties=s.val()||{}; renderCaisse(); });
 }
 function showCaissePage(id,btn){ document.querySelectorAll('.caisse-page').forEach(p=>p.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.caisse-menu button').forEach(b=>b.classList.remove('active')); if(btn) btn.classList.add('active'); }
 function renderCaisse(){
-  let auj = new Date().toLocaleDateString();
-  let totalEntreeJour=0, totalSortieJour=0, totalEntreeAll=0, totalSortieAll=0;
-  let hJour='<table><tr><th>Heure</th><th>Type</th><th>Motif</th><th>Montant</th></tr>';
-  let hHisto='<table><tr><th>Date</th><th>Type</th><th>Motif</th><th>Montant</th>'+(isPatron?'<th>X</th>':'')+'</tr>';
-  let all=[];
+  let auj = new Date().toLocaleDateString(); let totalEntreeJour=0, totalSortieJour=0, totalEntreeAll=0, totalSortieAll=0;
+  let hJour='<table><tr><th>Heure</th><th>Type</th><th>Motif</th><th>Montant</th></tr>'; let hHisto='<table><tr><th>Date</th><th>Type</th><th>Motif</th><th>Montant</th>'+(isPatron?'<th>X</th>':'')+'</tr>'; let all=[];
   for(let k in caisseEntrees){ let e=caisseEntrees[k]; let m=parseInt(e.montant)||0; totalEntreeAll+=m; all.push({k:k, kind:'entree', ...e}); if(e.date && e.date.startsWith(auj)){ totalEntreeJour+=m; hJour+=`<tr style="background:#e8f5e9"><td>${e.date}</td><td>💰 ${e.type}</td><td>${e.motif||'-'}</td><td><b>+ ${m.toLocaleString()} GNF</b></td></tr>`; } }
   for(let k in caisseSorties){ let s=caisseSorties[k]; let m=parseInt(s.montant)||0; totalSortieAll+=m; all.push({k:k, kind:'sortie', ...s}); if(s.date && s.date.startsWith(auj)){ totalSortieJour+=m; hJour+=`<tr style="background:#ffebee"><td>${s.date}</td><td>💸 ${s.type}</td><td>${s.motif||'-'}</td><td><b>- ${m.toLocaleString()} GNF</b></td></tr>`; } }
   hJour+='</table>'; all.sort((a,b)=> (b.date||'').localeCompare(a.date||''));
   for(let o of all){ let m=parseInt(o.montant)||0; let sign = o.kind==='entree' ? '+ ' : '- '; let bg = o.kind==='entree' ? '#e8f5e9' : '#ffebee'; let icon = o.kind==='entree' ? '💰' : '💸'; let delBtn = isPatron ? `<button onclick="deleteCaisse('${o.kind}','${o.k}')">X</button>` : ''; hHisto+=`<tr style="background:${bg}"><td>${o.date||''}</td><td>${icon} ${o.type||''}</td><td>${o.motif||'-'}</td><td><b>${sign}${m.toLocaleString()} GNF</b></td>${isPatron?`<td>${delBtn}</td>`:''}</tr>`; }
-  hHisto+='</table>';
-  let resteJour = totalEntreeJour - totalSortieJour;
-  let resteAll = totalEntreeAll - totalSortieAll;
+  hHisto+='</table>'; let resteJour = totalEntreeJour - totalSortieJour; let resteAll = totalEntreeAll - totalSortieAll;
   if(document.getElementById('caisseResumeJour')) document.getElementById('caisseResumeJour').innerHTML = `<div class="total-box" style="background:#e8f5e9">💰 ENTRÉE AUJOURD'HUI : ${totalEntreeJour.toLocaleString()} GNF</div><div class="total-box" style="background:#ffebee">💸 SORTIE AUJOURD'HUI : ${totalSortieJour.toLocaleString()} GNF</div><div class="caisse-reste">💰 RESTE EN CAISSE AUJOURD'HUI : ${resteJour.toLocaleString()} GNF</div><div class="total-box">📊 RESTE TOTAL (tout) : ${resteAll.toLocaleString()} GNF</div>`;
   if(document.getElementById('caisseListJour')) document.getElementById('caisseListJour').innerHTML = (totalEntreeJour===0 && totalSortieJour===0) ? 'Aucun mouvement aujourd\'hui' : hJour;
   if(document.getElementById('caisseHistoBox')) document.getElementById('caisseHistoBox').innerHTML = all.length ? hHisto : 'Aucun historique';
@@ -254,51 +263,24 @@ function renderCaisse(){
 function saveCaisseEntree(){ let type=document.getElementById('ceType').value; let motif=document.getElementById('ceMotif').value.trim(); let montant=parseInt(document.getElementById('ceMontant').value)||0; if(!montant) return alert('Mets le montant'); db.ref('caisse_entrees').push({type:type,motif:motif,montant:montant,date:new Date().toLocaleString()}); document.getElementById('ceMotif').value=''; document.getElementById('ceMontant').value=''; alert('✅ Entrée '+montant.toLocaleString()+' GNF'); showCaissePage('caisse-jour', document.querySelectorAll('.caisse-menu button')[0]); }
 function saveCaisseSortie(){ let type=document.getElementById('csType').value; let motif=document.getElementById('csMotif').value.trim(); let montant=parseInt(document.getElementById('csMontant').value)||0; if(!montant) return alert('Mets le montant'); db.ref('caisse_sorties').push({type:type,motif:motif,montant:montant,date:new Date().toLocaleString()}); document.getElementById('csMotif').value=''; document.getElementById('csMontant').value=''; alert('✅ Sortie '+montant.toLocaleString()+' GNF'); showCaissePage('caisse-jour', document.querySelectorAll('.caisse-menu button')[0]); }
 function deleteCaisse(kind,k){ if(!confirm('Supprimer ?')) return; if(kind==='entree') db.ref('caisse_entrees/'+k).remove(); else db.ref('caisse_sorties/'+k).remove(); }
-/* ===== FIN CAISSE ===== */
 
 /* ===== DETTES - FINI, INTACT ===== */
 let dettesNonPayeData = {};
 function loadDettes(){
   document.getElementById('content').innerHTML = `
   <h3>📒 Dettes</h3>
-  <div class="dette-menu">
-    <button class="active" onclick="showDettePage('dette-paye',this)">✅ Dettes Payées</button>
-    <button onclick="showDettePage('dette-nonpaye',this)">❌ Dettes Non Payées</button>
-  </div>
-  <div id="dette-paye" class="dette-page active">
-    <input id="dNom" placeholder="Nom">
-    <input id="dMont" type="number" placeholder="Montant payé">
-    <button class="btn btn-blue" onclick="saveDette()">Enregistrer Payé</button>
-    <div id="dList"></div>
-    <div id="dTotalPaye"></div>
-  </div>
-  <div id="dette-nonpaye" class="dette-page">
-    <p style="font-size:13px;font-weight:bold;color:#c62828;margin:0">Tu mets Total + Déjà payé, le Reste se calcule seul.</p>
-    <input id="dnNom" placeholder="Nom du client">
-    <input id="dnTotal" type="number" placeholder="Montant total de la dette" oninput="calcResteDette()">
-    <input id="dnPaye" type="number" placeholder="Montant déjà payé" oninput="calcResteDette()">
-    <input id="dnReste" type="number" placeholder="Reste à payer - automatique" readonly style="background:#ffebee;font-weight:bold">
-    <button class="btn btn-orange" onclick="saveDetteNonPaye()">Enregistrer Dette Non Payée</button>
-    <div id="dnList"></div>
-    <div id="dnTotalReste"></div>
-  </div>
-  `;
-  db.ref('dettes_paye').on('value', s=>{
-    let d=s.val()||{}, h='<table><tr><th>Client</th><th>Montant</th><th>Date</th>'+(isPatron?'<th>X</th>':'')+'</tr>'; let total=0;
-    for(let k in d){ let m=parseInt(d[k].montant)||0; total+=m; h+=`<tr><td>${d[k].nom}</td><td>${m.toLocaleString()} GNF</td><td>${d[k].date}</td>${isPatron?`<td><button onclick="deleteDette('${k}')" style="background:#e74c3c;color:white;border:none;padding:6px 10px;border-radius:6px;font-weight:bold;cursor:pointer">X</button></td>`:''}</tr>`; }
-    if(document.getElementById('dList')) document.getElementById('dList').innerHTML=h+'</table>';
-    if(document.getElementById('dTotalPaye')) document.getElementById('dTotalPaye').innerHTML=`<div class="total-box" style="background:#e8f5e9">✅ TOTAL DETTES PAYÉES : ${total.toLocaleString()} GNF</div>`;
-  });
+  <div class="dette-menu"><button class="active" onclick="showDettePage('dette-paye',this)">✅ Dettes Payées</button><button onclick="showDettePage('dette-nonpaye',this)">❌ Dettes Non Payées</button></div>
+  <div id="dette-paye" class="dette-page active"><input id="dNom" placeholder="Nom"><input id="dMont" type="number" placeholder="Montant payé"><button class="btn btn-blue" onclick="saveDette()">Enregistrer Payé</button><div id="dList"></div><div id="dTotalPaye"></div></div>
+  <div id="dette-nonpaye" class="dette-page"><p style="font-size:13px;font-weight:bold;color:#c62828;margin:0">Tu mets Total + Déjà payé, le Reste se calcule seul.</p><input id="dnNom" placeholder="Nom du client"><input id="dnTotal" type="number" placeholder="Montant total de la dette" oninput="calcResteDette()"><input id="dnPaye" type="number" placeholder="Montant déjà payé" oninput="calcResteDette()"><input id="dnReste" type="number" placeholder="Reste à payer - automatique" readonly style="background:#ffebee;font-weight:bold"><button class="btn btn-orange" onclick="saveDetteNonPaye()">Enregistrer Dette Non Payée</button><div id="dnList"></div><div id="dnTotalReste"></div></div>`;
+  db.ref('dettes_paye').on('value', s=>{ let d=s.val()||{}, h='<table><tr><th>Client</th><th>Montant</th><th>Date</th>'+(isPatron?'<th>X</th>':'')+'</tr>'; let total=0; for(let k in d){ let m=parseInt(d[k].montant)||0; total+=m; h+=`<tr><td>${d[k].nom}</td><td>${m.toLocaleString()} GNF</td><td>${d[k].date}</td>${isPatron?`<td><button onclick="deleteDette('${k}')" style="background:#e74c3c;color:white;border:none;padding:6px 10px;border-radius:6px;font-weight:bold;cursor:pointer">X</button></td>`:''}</tr>`; } if(document.getElementById('dList')) document.getElementById('dList').innerHTML=h+'</table>'; if(document.getElementById('dTotalPaye')) document.getElementById('dTotalPaye').innerHTML=`<div class="total-box" style="background:#e8f5e9">✅ TOTAL DETTES PAYÉES : ${total.toLocaleString()} GNF</div>`; });
   db.ref('dettes_non_paye').on('value', s=>{ dettesNonPayeData = s.val()||{}; renderDettesNonPaye(); });
 }
 function showDettePage(id,btn){ document.querySelectorAll('.dette-page').forEach(p=>p.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.dette-menu button').forEach(b=>b.classList.remove('active')); if(btn) btn.classList.add('active'); }
 function calcResteDette(){ let total = parseInt(document.getElementById('dnTotal').value)||0; let paye = parseInt(document.getElementById('dnPaye').value)||0; let reste = total - paye; if(reste<0) reste=0; document.getElementById('dnReste').value = reste; }
 function renderDettesNonPaye(){
-  let h='<table><tr><th>Client</th><th>Total</th><th>Déjà Payé</th><th>Reste</th><th>Date</th>'+(isPatron?'<th>Action</th>':'')+'</tr>';
-  let totalReste=0, totalDette=0, totalPaye=0;
+  let h='<table><tr><th>Client</th><th>Total</th><th>Déjà Payé</th><th>Reste</th><th>Date</th>'+(isPatron?'<th>Action</th>':'')+'</tr>'; let totalReste=0, totalDette=0, totalPaye=0;
   for(let k in dettesNonPayeData){ let d = dettesNonPayeData[k]; let tot = parseInt(d.total)||0, pay = parseInt(d.paye)||0, reste = parseInt(d.reste); if(isNaN(reste)) reste = tot - pay; totalDette+=tot; totalPaye+=pay; totalReste+=reste; h+=`<tr><td><b>${d.nom}</b></td><td>${tot.toLocaleString()}</td><td>${pay.toLocaleString()}</td><td><b style="color:#c62828">${reste.toLocaleString()} GNF</b></td><td>${d.date}</td>${isPatron?`<td><button onclick="marquerDettePaye('${k}')" style="background:#42b72a;color:white;border:none;padding:6px 8px;border-radius:6px;font-weight:bold;cursor:pointer">✅ Payé</button> <button onclick="deleteDetteNonPaye('${k}')" style="background:#e74c3c;color:white;border:none;padding:6px 8px;border-radius:6px;font-weight:bold;cursor:pointer">X</button></td>`:''}</tr>`; }
-  h+='</table>';
-  if(document.getElementById('dnList')) document.getElementById('dnList').innerHTML = Object.keys(dettesNonPayeData).length ? h : 'Aucune dette non payée';
+  h+='</table>'; if(document.getElementById('dnList')) document.getElementById('dnList').innerHTML = Object.keys(dettesNonPayeData).length ? h : 'Aucune dette non payée';
   if(document.getElementById('dnTotalReste')) document.getElementById('dnTotalReste').innerHTML = `<div class="total-box">📒 Total Dettes : ${totalDette.toLocaleString()} GNF</div><div class="total-box" style="background:#fff3cd">💰 Déjà Payé : ${totalPaye.toLocaleString()} GNF</div><div class="reste-box">❌ TOTAL RESTE À RÉCUPÉRER : ${totalReste.toLocaleString()} GNF</div>`;
 }
 function saveDette(){let n=document.getElementById('dNom').value,m=document.getElementById('dMont').value; if(!n||!m)return; db.ref('dettes_paye').push({nom:n,montant:m,date:new Date().toLocaleString()}); document.getElementById('dNom').value=''; document.getElementById('dMont').value='';}
@@ -306,89 +288,39 @@ function deleteDette(k){ if(confirm('Tu veux vraiment supprimer cette dette ?'))
 function saveDetteNonPaye(){ let n=document.getElementById('dnNom').value.trim(); let tot=parseInt(document.getElementById('dnTotal').value)||0; let pay=parseInt(document.getElementById('dnPaye').value)||0; if(!n||!tot) return alert('Mets Nom + Montant total'); let reste = tot - pay; if(reste<0) reste=0; db.ref('dettes_non_paye').push({nom:n,total:tot,paye:pay,reste:reste,date:new Date().toLocaleString()}); document.getElementById('dnNom').value=''; document.getElementById('dnTotal').value=''; document.getElementById('dnPaye').value=''; document.getElementById('dnReste').value=''; alert('✅ '+n+' - Reste : '+reste.toLocaleString()+' GNF'); }
 function deleteDetteNonPaye(k){ if(confirm('Supprimer cette dette non payée ?')) db.ref('dettes_non_paye/'+k).remove(); }
 function marquerDettePaye(k){ let d = dettesNonPayeData[k]; if(!d) return; if(!confirm(d.nom+' a tout payé ? On déplace en Dettes Payées ?')) return; db.ref('dettes_paye').push({nom:d.nom,montant:d.total,date:new Date().toLocaleString()}); db.ref('dettes_non_paye/'+k).remove(); }
-
 function loadSuivi(){document.getElementById('content').innerHTML='<h3>📈 SUIVI LIVE</h3><div id="box"></div>'; db.ref('consultations').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Date</th><th>Patient</th><th>Plainte / Examen / Diagnostic</th><th>Médicaments</th><th>Somme Totale</th></tr>'; for(let k in d){ let txt=''; let somme=0; if(d[k].meds) d[k].meds.forEach(m=>{ let pr=(m.prix&&m.prix>0)?m.prix:(postesData[m.key]?.prix||0); let pt=pr*m.qte; somme+=pt; txt+=m.nom+':'+m.qte+' x '+pr+'='+pt+' '; }); else txt=d[k].med; h+=`<tr><td>${d[k].date}</td><td>${d[k].patient}<br><small>${d[k].sexe||''} ${d[k].age?d[k].age+' ans':''}</small></td><td>Plainte: ${d[k].plainte||'-'}<br>Examen: ${d[k].examen||'-'}<br><b>Diag: ${d[k].diagnostic||'-'}</b></td><td>${txt}</td><td><b>${somme.toLocaleString()} GNF</b></td></tr>`;} document.getElementById('box').innerHTML=h+'</table>';});}
 function loadPrimes(){document.getElementById('content').innerHTML='<h3>🏆 Primes</h3><input id="pNom" placeholder="Nom"><input id="pMont" type="number" placeholder="Montant"><button class="btn btn-blue" onclick="savePrime()">Enregistrer</button><div id="pList"></div>'; db.ref('primes').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Nom</th><th>Montant</th></tr>'; for(let k in d)h+=`<tr><td>${d[k].nom}</td><td>${d[k].montant}</td></tr>`; document.getElementById('pList').innerHTML=h+'</table>';});}
 function savePrime(){let n=document.getElementById('pNom').value,m=document.getElementById('pMont').value; db.ref('primes').push({nom:n,montant:m,date:new Date().toLocaleString()});}
 function loadObservation(){document.getElementById('content').innerHTML='<h3>📝 Observation</h3><textarea id="oTxt" rows="3"></textarea><button class="btn btn-blue" onclick="saveObs()">Enregistrer</button><div id="oList"></div>'; db.ref('observations').on('value',s=>{let d=s.val()||{},h=''; for(let k in d)h+=`<div style="padding:6px;border-bottom:1px solid #eee"><b>${d[k].date}</b> ${d[k].texte}</div>`; document.getElementById('oList').innerHTML=h;});}
 function saveObs(){let t=document.getElementById('oTxt').value; if(!t)return; db.ref('observations').push({texte:t,date:new Date().toLocaleString()});}
-
-/* ===== PRESENCE - FINI, INTACT ===== */
 let presenceData = {};
 function loadPresence(){
   let now = new Date(); let dateFr = now.toLocaleDateString('fr-FR'); let hh = String(now.getHours()).padStart(2,'0'); let mm = String(now.getMinutes()).padStart(2,'0'); let heureNow = hh + ':' + mm;
   document.getElementById('content').innerHTML = `
   <h3>✅ Présence 600k</h3>
   <div class="pres-info">📍 08h00 = 0 &nbsp; | &nbsp; 08h01 = - 5 000 &nbsp; | &nbsp; Absent = - 20 000 &nbsp; | &nbsp; Départ 17h20 &nbsp; | &nbsp; Enveloppe 600 000 GNF</div>
-  <div class="pres-menu">
-    <button class="active" onclick="showPresPage('pres-pointer',this)">📍 POINTER</button>
-    <button onclick="showPresPage('pres-liste',this)">📋 LISTE DU JOUR</button>
-    <button onclick="showPresPage('pres-retards',this)">🟠 RETARDS</button>
-    <button onclick="showPresPage('pres-absences',this)">🔴 ABSENCES</button>
-    <button onclick="showPresPage('pres-enveloppes',this)">💰 ENVELOPPES</button>
-  </div>
-  <div id="pres-pointer" class="pres-page active">
-    <p style="font-size:13px;color:#2e7d32;font-weight:bold;margin:0">✅ Tu écris SEULEMENT le nom. Date + heure viennent seules.</p>
-    <input id="prNom" placeholder="Nom et Prénom *">
-    <label style="font-size:13px">Date - automatique</label>
-    <input id="prDate" readonly value="${dateFr}">
-    <label style="font-size:13px">Heure d'arrivée - automatique (tu peux changer pour aider)</label>
-    <input id="prHeure" type="time" value="${heureNow}">
-    <select id="prSt"><option value="auto">Laisser l'application décider (Présent / Retard)</option><option value="Absent">Marquer ABSENT</option></select>
-    <button class="btn btn-blue" onclick="savePres()">📍 POINTER ARRIVÉE MAINTENANT</button>
-  </div>
-  <div id="pres-liste" class="pres-page"><div id="presListeBox">Chargement...</div></div>
-  <div id="pres-retards" class="pres-page"><div id="presRetardsBox">Chargement...</div></div>
-  <div id="pres-absences" class="pres-page"><div id="presAbsencesBox">Chargement...</div></div>
-  <div id="pres-enveloppes" class="pres-page"><div id="presEnveloppesBox">Chargement...</div></div>
-  `;
+  <div class="pres-menu"><button class="active" onclick="showPresPage('pres-pointer',this)">📍 POINTER</button><button onclick="showPresPage('pres-liste',this)">📋 LISTE DU JOUR</button><button onclick="showPresPage('pres-retards',this)">🟠 RETARDS</button><button onclick="showPresPage('pres-absences',this)">🔴 ABSENCES</button><button onclick="showPresPage('pres-enveloppes',this)">💰 ENVELOPPES</button></div>
+  <div id="pres-pointer" class="pres-page active"><p style="font-size:13px;color:#2e7d32;font-weight:bold;margin:0">✅ Tu écris SEULEMENT le nom. Date + heure viennent seules.</p><input id="prNom" placeholder="Nom et Prénom *"><label style="font-size:13px">Date - automatique</label><input id="prDate" readonly value="${dateFr}"><label style="font-size:13px">Heure d'arrivée - automatique (tu peux changer pour aider)</label><input id="prHeure" type="time" value="${heureNow}"><select id="prSt"><option value="auto">Laisser l'application décider (Présent / Retard)</option><option value="Absent">Marquer ABSENT</option></select><button class="btn btn-blue" onclick="savePres()">📍 POINTER ARRIVÉE MAINTENANT</button></div>
+  <div id="pres-liste" class="pres-page"><div id="presListeBox">Chargement...</div></div><div id="pres-retards" class="pres-page"><div id="presRetardsBox">Chargement...</div></div><div id="pres-absences" class="pres-page"><div id="presAbsencesBox">Chargement...</div></div><div id="pres-enveloppes" class="pres-page"><div id="presEnveloppesBox">Chargement...</div></div>`;
   db.ref('presence_600k').on('value', s=>{ presenceData = s.val() || {}; renderPresence(); });
 }
 function showPresPage(id, btn){ document.querySelectorAll('.pres-page').forEach(p=>p.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.pres-menu button').forEach(b=>b.classList.remove('active')); if(btn) btn.classList.add('active'); }
 function renderPresence(){
-  let keys = Object.keys(presenceData).reverse(); let auj = new Date().toLocaleDateString('fr-FR');
-  let liste = keys.filter(k=>{ let d = presenceData[k].date || ''; return d.includes(auj) || !presenceData[k].dateFr; });
-  if(liste.length===0) liste = keys.slice(0,20);
-  let hListe = '<table><tr><th>Nom</th><th>Heure d\'arrivée</th><th>Heure de départ</th><th>Statut</th><th>Retenue</th>'+(isPatron?'<th>X</th>':'')+'</tr>';
-  let hRet = '<table><tr><th>Nom</th><th>Date</th><th>Heure</th><th>Retenue</th></tr>';
-  let hAbs = '<table><tr><th>Nom</th><th>Date</th><th>Retenue</th></tr>';
-  let parPersonne = {}; let nbRet=0, nbAbs=0;
-  for(let k of keys){
-    let p = presenceData[k]; let statut = p.statut || 'Présent'; let retenue = p.retenue || 0;
-    if(statut==='Absent' && !p.retenue) retenue = 20000;
-    if(statut==='Retard' || statut==='RETARD') retenue = 5000;
-    if(statut==='Présent' || statut==="À L'HEURE") retenue = 0;
-    let badge = '<span class="badge-pres badge-green">À L\'HEURE</span>';
-    if(statut==='Absent' || statut==='ABSENCE') badge = '<span class="badge-pres badge-red">ABSENCE</span>';
-    else if(statut==='Retard' || statut==='RETARD') badge = '<span class="badge-pres badge-orange">RETARD</span>';
-    if(liste.includes(k)){ hListe += `<tr><td><b>${p.nom||''}</b></td><td>${p.heureArrivee||p.heure||'—'}</td><td>17h20</td><td>${badge}</td><td>${retenue===0?'0 GNF':'- '+retenue.toLocaleString()+' GNF'}</td>${isPatron?`<td><button onclick="deletePres('${k}')">X</button></td>`:''}</tr>`; }
-    if(statut==='Retard' || statut==='RETARD'){ nbRet++; hRet += `<tr><td>${p.nom||''}</td><td>${p.dateFr||p.date||''}</td><td>${p.heureArrivee||''}</td><td>- 5 000 GNF</td></tr>`; }
-    if(statut==='Absent' || statut==='ABSENCE'){ nbAbs++; hAbs += `<tr><td>${p.nom||''}</td><td>${p.dateFr||p.date||''}</td><td>- 20 000 GNF</td></tr>`; }
-    let nom = p.nom || 'Inconnu'; if(!parPersonne[nom]) parPersonne[nom]={retards:0,absences:0,totalRetenue:0};
-    if(statut==='Retard' || statut==='RETARD'){ parPersonne[nom].retards++; parPersonne[nom].totalRetenue+=5000; }
-    if(statut==='Absent' || statut==='ABSENCE'){ parPersonne[nom].absences++; parPersonne[nom].totalRetenue+=20000; }
-  }
+  let keys = Object.keys(presenceData).reverse(); let auj = new Date().toLocaleDateString('fr-FR'); let liste = keys.filter(k=>{ let d = presenceData[k].date || ''; return d.includes(auj) || !presenceData[k].dateFr; }); if(liste.length===0) liste = keys.slice(0,20);
+  let hListe = '<table><tr><th>Nom</th><th>Heure d\'arrivée</th><th>Heure de départ</th><th>Statut</th><th>Retenue</th>'+(isPatron?'<th>X</th>':'')+'</tr>'; let hRet = '<table><tr><th>Nom</th><th>Date</th><th>Heure</th><th>Retenue</th></tr>'; let hAbs = '<table><tr><th>Nom</th><th>Date</th><th>Retenue</th></tr>'; let parPersonne = {}; let nbRet=0, nbAbs=0;
+  for(let k of keys){ let p = presenceData[k]; let statut = p.statut || 'Présent'; let retenue = p.retenue || 0; if(statut==='Absent' && !p.retenue) retenue = 20000; if(statut==='Retard' || statut==='RETARD') retenue = 5000; if(statut==='Présent' || statut==="À L'HEURE") retenue = 0; let badge = '<span class="badge-pres badge-green">À L\'HEURE</span>'; if(statut==='Absent' || statut==='ABSENCE') badge = '<span class="badge-pres badge-red">ABSENCE</span>'; else if(statut==='Retard' || statut==='RETARD') badge = '<span class="badge-pres badge-orange">RETARD</span>'; if(liste.includes(k)){ hListe += `<tr><td><b>${p.nom||''}</b></td><td>${p.heureArrivee||p.heure||'—'}</td><td>17h20</td><td>${badge}</td><td>${retenue===0?'0 GNF':'- '+retenue.toLocaleString()+' GNF'}</td>${isPatron?`<td><button onclick="deletePres('${k}')">X</button></td>`:''}</tr>`; } if(statut==='Retard' || statut==='RETARD'){ nbRet++; hRet += `<tr><td>${p.nom||''}</td><td>${p.dateFr||p.date||''}</td><td>${p.heureArrivee||''}</td><td>- 5 000 GNF</td></tr>`; } if(statut==='Absent' || statut==='ABSENCE'){ nbAbs++; hAbs += `<tr><td>${p.nom||''}</td><td>${p.dateFr||p.date||''}</td><td>- 20 000 GNF</td></tr>`; } let nom = p.nom || 'Inconnu'; if(!parPersonne[nom]) parPersonne[nom]={retards:0,absences:0,totalRetenue:0}; if(statut==='Retard' || statut==='RETARD'){ parPersonne[nom].retards++; parPersonne[nom].totalRetenue+=5000; } if(statut==='Absent' || statut==='ABSENCE'){ parPersonne[nom].absences++; parPersonne[nom].totalRetenue+=20000; } }
   hListe += '</table>'; hRet += '</table>'; hAbs += '</table>';
   if(document.getElementById('presListeBox')) document.getElementById('presListeBox').innerHTML = liste.length ? hListe : 'Aucun pointage aujourd\'hui';
   if(document.getElementById('presRetardsBox')) document.getElementById('presRetardsBox').innerHTML = '<div class="pres-info">🟠 Total retards : '+nbRet+' | 08h01 = - 5 000 GNF</div>' + (nbRet? hRet : 'Aucun retard');
   if(document.getElementById('presAbsencesBox')) document.getElementById('presAbsencesBox').innerHTML = '<div class="pres-info">🔴 Total absences : '+nbAbs+' | Absence = - 20 000 GNF</div>' + (nbAbs? hAbs : 'Aucune absence');
   let hEnv = '<table><tr><th>Nom</th><th>Retards</th><th>Absences</th><th>Total Retenue</th><th>Reste à payer</th></tr>'; let totalEnv = 0;
   for(let nom in parPersonne){ let pp = parPersonne[nom]; let reste = 600000 - pp.totalRetenue; if(reste<0) reste=0; totalEnv += reste; hEnv += `<tr><td><b>${nom}</b></td><td>${pp.retards}</td><td>${pp.absences}</td><td>- ${pp.totalRetenue.toLocaleString()} GNF</td><td><b>${reste.toLocaleString()} GNF</b></td></tr>`; }
-  hEnv += '</table>';
-  if(document.getElementById('presEnveloppesBox')) document.getElementById('presEnveloppesBox').innerHTML = '<div class="pres-info">💰 Enveloppe de base : 600 000 GNF par personne</div>' + (Object.keys(parPersonne).length? hEnv : 'Aucune présence encore') + `<div class="total-box">💰 TOTAL ENVELOPPES À PAYER : ${totalEnv.toLocaleString()} GNF</div>`;
+  hEnv += '</table>'; if(document.getElementById('presEnveloppesBox')) document.getElementById('presEnveloppesBox').innerHTML = '<div class="pres-info">💰 Enveloppe de base : 600 000 GNF par personne</div>' + (Object.keys(parPersonne).length? hEnv : 'Aucune présence encore') + `<div class="total-box">💰 TOTAL ENVELOPPES À PAYER : ${totalEnv.toLocaleString()} GNF</div>`;
 }
 function savePres(){
-  let n = document.getElementById('prNom').value.trim(); if(!n) return alert('Écris le Nom et Prénom');
-  let heure = document.getElementById('prHeure').value || '08:00';
-  let dateFr = document.getElementById('prDate').value || new Date().toLocaleDateString('fr-FR');
-  let choix = document.getElementById('prSt').value; let statut, retenue; let parts = heure.split(':'); let hh = parseInt(parts[0]||0), mm = parseInt(parts[1]||0);
-  if(choix==='Absent'){ statut='Absent'; retenue=20000; heure='Absent'; }
-  else if(hh>8 || (hh===8 && mm>=1)){ statut='Retard'; retenue=5000; }
-  else { statut='Présent'; retenue=0; }
-  let heureAff = (heure==='Absent') ? 'Absent' : heure.replace(':','h');
-  db.ref('presence_600k').push({nom:n, statut:statut, retenue:retenue, heureArrivee:heureAff, heure:heureAff, dateFr:dateFr, date:new Date().toLocaleString()});
-  document.getElementById('prNom').value=''; alert(n+' pointé à '+heureAff+' - '+statut);
-  showPresPage('pres-liste', document.querySelectorAll('.pres-menu button')[1]);
+  let n = document.getElementById('prNom').value.trim(); if(!n) return alert('Écris le Nom et Prénom'); let heure = document.getElementById('prHeure').value || '08:00'; let dateFr = document.getElementById('prDate').value || new Date().toLocaleDateString('fr-FR'); let choix = document.getElementById('prSt').value; let statut, retenue; let parts = heure.split(':'); let hh = parseInt(parts[0]||0), mm = parseInt(parts[1]||0);
+  if(choix==='Absent'){ statut='Absent'; retenue=20000; heure='Absent'; } else if(hh>8 || (hh===8 && mm>=1)){ statut='Retard'; retenue=5000; } else { statut='Présent'; retenue=0; }
+  let heureAff = (heure==='Absent') ? 'Absent' : heure.replace(':','h'); db.ref('presence_600k').push({nom:n, statut:statut, retenue:retenue, heureArrivee:heureAff, heure:heureAff, dateFr:dateFr, date:new Date().toLocaleString()}); document.getElementById('prNom').value=''; alert(n+' pointé à '+heureAff+' - '+statut); showPresPage('pres-liste', document.querySelectorAll('.pres-menu button')[1]);
 }
 function deletePres(k){ if(confirm('Supprimer ce pointage ?')) db.ref('presence_600k/'+k).remove(); }
 loadMedicaments();
