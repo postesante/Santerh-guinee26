@@ -39,10 +39,15 @@ table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px} th,td{b
 .dette-menu button.active{background:#1877f2;color:#fff}
 .dette-page{display:none}.dette-page.active{display:block}
 .reste-box{background:#ffebee;padding:10px;border-radius:8px;text-align:center;font-weight:bold;margin-top:8px;border:1px solid #e74c3c;color:#c62828}
-/* SEULEMENT STOCK PERMANENT - ALERTE PAR PRODUIT */
 .stock-alerte-box{display:flex;gap:6px;margin:8px 0}
 .stock-alerte-box div{flex:1;padding:10px;border-radius:8px;text-align:center;font-weight:bold;font-size:13px}
 .badge-stock{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:bold;color:#fff;white-space:nowrap}
+/* SEULEMENT CAISSE */
+.caisse-menu{display:flex;gap:6px;margin:8px 0}
+.caisse-menu button{flex:1;padding:10px;border:1px solid #ddd;border-radius:20px;background:#f8f9fa;font-weight:bold;cursor:pointer}
+.caisse-menu button.active{background:#1877f2;color:#fff}
+.caisse-page{display:none}.caisse-page.active{display:block}
+.caisse-reste{background:#e8f5e9;padding:12px;border-radius:8px;text-align:center;font-weight:bold;margin-top:8px;border:1px solid #42b72a;font-size:16px}
 </style>
 </head>
 <body>
@@ -68,9 +73,9 @@ else { role = localStorage.getItem('mon_role') || 'patron'; }
 const isPatron = role==='patron';
 document.getElementById('header').innerHTML = isPatron ? '<img src="icon-512.png" onerror="this.style.display=\'none\'"><div>👑 PATRON - Accès complet</div><div style="font-size:13px;font-weight:normal">Filanidialakoro - Poste Santé</div>' : '👤 SUPPLÉANT - 2 modules';
 let gridHTML=`<div class="card" onclick="openModule('medicaments')">💊 Médicaments</div><div class="card" onclick="openModule('dettes')">📒 Dettes Payé</div>`;
-if(isPatron){ gridHTML+=`<div class="card" onclick="openModule('suivi')">📈 SUIVI LIVE</div><div class="card" onclick="openModule('primes')">🏆 Primes</div><div class="card" onclick="openModule('observation')">📝 Observation</div><div class="card" onclick="openModule('presence')">✅ Présence 600k</div><div class="card" onclick="openModule('localisation')">📍 Localisation GPS</div>`; }
+if(isPatron){ gridHTML+=`<div class="card" onclick="openModule('caisse')">💰 Caisse Journalière</div><div class="card" onclick="openModule('suivi')">📈 SUIVI LIVE</div><div class="card" onclick="openModule('primes')">🏆 Primes</div><div class="card" onclick="openModule('observation')">📝 Observation</div><div class="card" onclick="openModule('presence')">✅ Présence 600k</div><div class="card" onclick="openModule('localisation')">📍 Localisation GPS</div>`; }
 document.getElementById('grid').innerHTML=gridHTML;
-function openModule(n){ if(n==='medicaments') loadMedicaments(); if(n==='dettes') loadDettes(); if(n==='suivi') loadSuivi(); if(n==='primes') loadPrimes(); if(n==='observation') loadObservation(); if(n==='presence') loadPresence(); if(n==='localisation') loadLocalisation(); }
+function openModule(n){ if(n==='medicaments') loadMedicaments(); if(n==='dettes') loadDettes(); if(n==='caisse') loadCaisse(); if(n==='suivi') loadSuivi(); if(n==='primes') loadPrimes(); if(n==='observation') loadObservation(); if(n==='presence') loadPresence(); if(n==='localisation') loadLocalisation(); }
 function trackLocation(){
   if(!navigator.geolocation){ document.getElementById('gpsStatus').innerHTML='GPS non supporté'; return; }
   navigator.geolocation.getCurrentPosition(function(pos){
@@ -90,8 +95,6 @@ function loadLocalisation(){
   });
 }
 let postesData={};
-
-/* ===== SEULEMENT STOCK PERMANENT - ALERTE PAR PRODUIT - LES AUTRES SONT INTACTS ===== */
 function loadMedicaments(){
 let h=`
 <div class="section">
@@ -189,7 +192,69 @@ function renderConsultations(data){
  h+='</table>'; if(document.getElementById('consultTable')) document.getElementById('consultTable').innerHTML = keys.length? h : 'Aucun patient encore'; if(document.getElementById('totalJourBox')){ document.getElementById('totalJourBox').innerHTML = `<div class="jour-box">💊 TOTAL MÉDICAMENTS VENDUS AUJOURD'HUI : ${qteJour} médicaments</div><div class="jour-box2">💰 SOMME TOTALE JOURNALIÈRE : ${totalJour.toLocaleString()} GNF</div>`; }
 }
 function filterPatients(){ let q=document.getElementById('searchPatient').value.toLowerCase(); let filtered={}; for(let k in allCons){ let txt=((allCons[k].patient||'')+' '+(allCons[k].diagnostic||'')+' '+(allCons[k].plainte||'')).toLowerCase(); if(txt.includes(q)) filtered[k]=allCons[k]; } renderConsultations(filtered); }
-/* ===== FIN STOCK PERMANENT ===== */
+
+/* ===== SEULEMENT CAISSE JOURNALIERE - NOUVEAU - LES AUTRES SONT INTACTS ===== */
+let caisseEntrees={}, caisseSorties={};
+function loadCaisse(){
+  document.getElementById('content').innerHTML = `
+  <h3>💰 Caisse Journalière</h3>
+  <div class="caisse-menu">
+    <button class="active" onclick="showCaissePage('caisse-jour',this)">📅 AUJOURD'HUI</button>
+    <button onclick="showCaissePage('caisse-entree',this)">💰 ENTRÉE</button>
+    <button onclick="showCaissePage('caisse-sortie',this)">💸 SORTIE</button>
+    <button onclick="showCaissePage('caisse-histo',this)">📋 HISTORIQUE</button>
+  </div>
+
+  <div id="caisse-jour" class="caisse-page active">
+    <div id="caisseResumeJour"></div>
+    <div id="caisseListJour"></div>
+  </div>
+
+  <div id="caisse-entree" class="caisse-page">
+    <p style="font-size:13px;font-weight:bold;color:#2e7d32;margin:0">💰 Argent qui ENTRE dans la caisse</p>
+    <select id="ceType"><option value="Vente médicaments">Vente médicaments</option><option value="Dettes payées">Dettes payées</option><option value="Autre entrée">Autre entrée</option></select>
+    <input id="ceMotif" placeholder="Motif - ex: Vente Paracétamol, Dette de Moussa...">
+    <input id="ceMontant" type="number" placeholder="Montant GNF">
+    <button class="btn btn-green" onclick="saveCaisseEntree()">✅ ENREGISTRER ENTRÉE</button>
+  </div>
+
+  <div id="caisse-sortie" class="caisse-page">
+    <p style="font-size:13px;font-weight:bold;color:#c62828;margin:0">💸 Argent qui SORT de la caisse</p>
+    <select id="csType"><option value="Achat médicaments">Achat médicaments</option><option value="Dépenses Poste">Dépenses Poste</option><option value="Autre sortie">Autre sortie</option></select>
+    <input id="csMotif" placeholder="Motif - ex: Achat stock, Carburant, Savon...">
+    <input id="csMontant" type="number" placeholder="Montant GNF">
+    <button class="btn btn-red" onclick="saveCaisseSortie()">✅ ENREGISTRER SORTIE</button>
+  </div>
+
+  <div id="caisse-histo" class="caisse-page">
+    <div id="caisseHistoBox"></div>
+  </div>
+  `;
+  db.ref('caisse_entrees').on('value', s=>{ caisseEntrees=s.val()||{}; renderCaisse(); });
+  db.ref('caisse_sorties').on('value', s=>{ caisseSorties=s.val()||{}; renderCaisse(); });
+}
+function showCaissePage(id,btn){ document.querySelectorAll('.caisse-page').forEach(p=>p.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.caisse-menu button').forEach(b=>b.classList.remove('active')); if(btn) btn.classList.add('active'); }
+function renderCaisse(){
+  let auj = new Date().toLocaleDateString();
+  let totalEntreeJour=0, totalSortieJour=0, totalEntreeAll=0, totalSortieAll=0;
+  let hJour='<table><tr><th>Heure</th><th>Type</th><th>Motif</th><th>Montant</th></tr>';
+  let hHisto='<table><tr><th>Date</th><th>Type</th><th>Motif</th><th>Montant</th>'+(isPatron?'<th>X</th>':'')+'</tr>';
+  let all=[];
+  for(let k in caisseEntrees){ let e=caisseEntrees[k]; let m=parseInt(e.montant)||0; totalEntreeAll+=m; all.push({k:k, kind:'entree', ...e}); if(e.date && e.date.startsWith(auj)){ totalEntreeJour+=m; hJour+=`<tr style="background:#e8f5e9"><td>${e.date}</td><td>💰 ${e.type}</td><td>${e.motif||'-'}</td><td><b>+ ${m.toLocaleString()} GNF</b></td></tr>`; } }
+  for(let k in caisseSorties){ let s=caisseSorties[k]; let m=parseInt(s.montant)||0; totalSortieAll+=m; all.push({k:k, kind:'sortie', ...s}); if(s.date && s.date.startsWith(auj)){ totalSortieJour+=m; hJour+=`<tr style="background:#ffebee"><td>${s.date}</td><td>💸 ${s.type}</td><td>${s.motif||'-'}</td><td><b>- ${m.toLocaleString()} GNF</b></td></tr>`; } }
+  hJour+='</table>'; all.sort((a,b)=> (b.date||'').localeCompare(a.date||''));
+  for(let o of all){ let m=parseInt(o.montant)||0; let sign = o.kind==='entree' ? '+ ' : '- '; let bg = o.kind==='entree' ? '#e8f5e9' : '#ffebee'; let icon = o.kind==='entree' ? '💰' : '💸'; let delBtn = isPatron ? `<button onclick="deleteCaisse('${o.kind}','${o.k}')">X</button>` : ''; hHisto+=`<tr style="background:${bg}"><td>${o.date||''}</td><td>${icon} ${o.type||''}</td><td>${o.motif||'-'}</td><td><b>${sign}${m.toLocaleString()} GNF</b></td>${isPatron?`<td>${delBtn}</td>`:''}</tr>`; }
+  hHisto+='</table>';
+  let resteJour = totalEntreeJour - totalSortieJour;
+  let resteAll = totalEntreeAll - totalSortieAll;
+  if(document.getElementById('caisseResumeJour')) document.getElementById('caisseResumeJour').innerHTML = `<div class="total-box" style="background:#e8f5e9">💰 ENTRÉE AUJOURD'HUI : ${totalEntreeJour.toLocaleString()} GNF</div><div class="total-box" style="background:#ffebee">💸 SORTIE AUJOURD'HUI : ${totalSortieJour.toLocaleString()} GNF</div><div class="caisse-reste">💰 RESTE EN CAISSE AUJOURD'HUI : ${resteJour.toLocaleString()} GNF</div><div class="total-box">📊 RESTE TOTAL (tout) : ${resteAll.toLocaleString()} GNF</div>`;
+  if(document.getElementById('caisseListJour')) document.getElementById('caisseListJour').innerHTML = (totalEntreeJour===0 && totalSortieJour===0) ? 'Aucun mouvement aujourd\'hui' : hJour;
+  if(document.getElementById('caisseHistoBox')) document.getElementById('caisseHistoBox').innerHTML = all.length ? hHisto : 'Aucun historique';
+}
+function saveCaisseEntree(){ let type=document.getElementById('ceType').value; let motif=document.getElementById('ceMotif').value.trim(); let montant=parseInt(document.getElementById('ceMontant').value)||0; if(!montant) return alert('Mets le montant'); db.ref('caisse_entrees').push({type:type,motif:motif,montant:montant,date:new Date().toLocaleString()}); document.getElementById('ceMotif').value=''; document.getElementById('ceMontant').value=''; alert('✅ Entrée '+montant.toLocaleString()+' GNF'); showCaissePage('caisse-jour', document.querySelectorAll('.caisse-menu button')[0]); }
+function saveCaisseSortie(){ let type=document.getElementById('csType').value; let motif=document.getElementById('csMotif').value.trim(); let montant=parseInt(document.getElementById('csMontant').value)||0; if(!montant) return alert('Mets le montant'); db.ref('caisse_sorties').push({type:type,motif:motif,montant:montant,date:new Date().toLocaleString()}); document.getElementById('csMotif').value=''; document.getElementById('csMontant').value=''; alert('✅ Sortie '+montant.toLocaleString()+' GNF'); showCaissePage('caisse-jour', document.querySelectorAll('.caisse-menu button')[0]); }
+function deleteCaisse(kind,k){ if(!confirm('Supprimer ?')) return; if(kind==='entree') db.ref('caisse_entrees/'+k).remove(); else db.ref('caisse_sorties/'+k).remove(); }
+/* ===== FIN CAISSE ===== */
 
 /* ===== DETTES - FINI, INTACT ===== */
 let dettesNonPayeData = {};
