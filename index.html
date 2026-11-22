@@ -49,10 +49,12 @@ table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px} th,td{b
 .caisse-reste{background:#e8f5e9;padding:12px;border-radius:8px;text-align:center;font-weight:bold;margin-top:8px;border:1px solid #42b72a;font-size:16px}
 .expire-box{display:flex;gap:6px;margin:8px 0}
 .expire-box div{flex:1;padding:10px;border-radius:8px;text-align:center;font-weight:bold;font-size:13px}
-/* SEULEMENT RAPPORT */
 .rapport-card{background:#f8f9fa;padding:12px;border-radius:10px;margin-top:10px;border:1px solid #e0e0e0}
 .rapport-card h4{margin:0 0 8px 0}
 .rapport-big{background:#1877f2;color:white;padding:14px;border-radius:10px;text-align:center;font-weight:bold;font-size:16px}
+/* SEULEMENT CARNET PATIENT */
+.carnet-card{background:#fff;padding:12px;border-radius:10px;margin-top:10px;border:2px solid #1877f2}
+.carnet-fiche{background:#e3f2fd;padding:12px;border-radius:10px;margin-top:10px;border:1px solid #1877f2}
 </style>
 </head>
 <body>
@@ -78,9 +80,9 @@ else { role = localStorage.getItem('mon_role') || 'patron'; }
 const isPatron = role==='patron';
 document.getElementById('header').innerHTML = isPatron ? '<img src="icon-512.png" onerror="this.style.display=\'none\'"><div>👑 PATRON - Accès complet</div><div style="font-size:13px;font-weight:normal">Filanidialakoro - Poste Santé</div>' : '👤 SUPPLÉANT - 2 modules';
 let gridHTML=`<div class="card" onclick="openModule('medicaments')">💊 Médicaments</div><div class="card" onclick="openModule('dettes')">📒 Dettes Payé</div>`;
-if(isPatron){ gridHTML+=`<div class="card" onclick="openModule('caisse')">💰 Caisse Journalière</div><div class="card" onclick="openModule('rapport')">📊 Rapport du Mois</div><div class="card" onclick="openModule('suivi')">📈 SUIVI LIVE</div><div class="card" onclick="openModule('primes')">🏆 Primes</div><div class="card" onclick="openModule('observation')">📝 Observation</div><div class="card" onclick="openModule('presence')">✅ Présence 600k</div><div class="card" onclick="openModule('localisation')">📍 Localisation GPS</div>`; }
+if(isPatron){ gridHTML+=`<div class="card" onclick="openModule('caisse')">💰 Caisse Journalière</div><div class="card" onclick="openModule('rapport')">📊 Rapport du Mois</div><div class="card" onclick="openModule('carnet')">📋 Carnet Patient</div><div class="card" onclick="openModule('suivi')">📈 SUIVI LIVE</div><div class="card" onclick="openModule('primes')">🏆 Primes</div><div class="card" onclick="openModule('observation')">📝 Observation</div><div class="card" onclick="openModule('presence')">✅ Présence 600k</div><div class="card" onclick="openModule('localisation')">📍 Localisation GPS</div>`; }
 document.getElementById('grid').innerHTML=gridHTML;
-function openModule(n){ if(n==='medicaments') loadMedicaments(); if(n==='dettes') loadDettes(); if(n==='caisse') loadCaisse(); if(n==='rapport') loadRapport(); if(n==='suivi') loadSuivi(); if(n==='primes') loadPrimes(); if(n==='observation') loadObservation(); if(n==='presence') loadPresence(); if(n==='localisation') loadLocalisation(); }
+function openModule(n){ if(n==='medicaments') loadMedicaments(); if(n==='dettes') loadDettes(); if(n==='caisse') loadCaisse(); if(n==='rapport') loadRapport(); if(n==='carnet') loadCarnet(); if(n==='suivi') loadSuivi(); if(n==='primes') loadPrimes(); if(n==='observation') loadObservation(); if(n==='presence') loadPresence(); if(n==='localisation') loadLocalisation(); }
 function trackLocation(){
   if(!navigator.geolocation){ document.getElementById('gpsStatus').innerHTML='GPS non supporté'; return; }
   navigator.geolocation.getCurrentPosition(function(pos){
@@ -250,7 +252,7 @@ function saveCaisseEntree(){ let type=document.getElementById('ceType').value; l
 function saveCaisseSortie(){ let type=document.getElementById('csType').value; let motif=document.getElementById('csMotif').value.trim(); let montant=parseInt(document.getElementById('csMontant').value)||0; if(!montant) return alert('Mets le montant'); db.ref('caisse_sorties').push({type:type,motif:motif,montant:montant,date:new Date().toLocaleString()}); document.getElementById('csMotif').value=''; document.getElementById('csMontant').value=''; alert('✅ Sortie '+montant.toLocaleString()+' GNF'); showCaissePage('caisse-jour', document.querySelectorAll('.caisse-menu button')[0]); }
 function deleteCaisse(kind,k){ if(!confirm('Supprimer ?')) return; if(kind==='entree') db.ref('caisse_entrees/'+k).remove(); else db.ref('caisse_sorties/'+k).remove(); }
 
-/* ===== SEULEMENT RAPPORT DU MOIS - NOUVEAU - LES AUTRES SONT INTACTS ===== */
+/* ===== RAPPORT DU MOIS - FINI, INTACT ===== */
 let rapportMois = new Date().toISOString().slice(0,7);
 function loadRapport(){
   let now = new Date();
@@ -262,22 +264,18 @@ function loadRapport(){
   <input id="rapportMoisInput" type="month" value="${rapportMois}" onchange="rapportMois=this.value; renderRapport();">
   <button class="btn btn-blue" onclick="renderRapport()">🔄 ACTUALISER RAPPORT</button>
   <button class="btn btn-green" onclick="window.print()">🖨️ IMPRIMER / PARTAGER</button>
-  <div id="rapportBox">Chargement...</div>
-  `;
+  <div id="rapportBox">Chargement...</div>`;
   renderRapport();
 }
 function isInMois(dateStr, mois){
   if(!dateStr) return false;
-  // dateStr = "22/11/2026 10:00" ou "2026-11-22" ou "11/22/2026"
   let d = null;
   if(dateStr.includes('/')){
     let parts = dateStr.split(' ')[0].split('/');
     if(parts[0].length===4){ d = new Date(parts[0], parseInt(parts[1])-1, parseInt(parts[2])); }
     else if(parseInt(parts[0])>12){ d = new Date(parts[2], parseInt(parts[1])-1, parseInt(parts[0])); }
     else { d = new Date(parts[2], parseInt(parts[0])-1, parseInt(parts[1])); }
-  } else if(dateStr.includes('-')){
-    d = new Date(dateStr.split(' ')[0]);
-  } else { return false; }
+  } else if(dateStr.includes('-')){ d = new Date(dateStr.split(' ')[0]); } else { return false; }
   if(isNaN(d)) return false;
   let m = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
   return m === mois;
@@ -286,13 +284,11 @@ function renderRapport(){
   let mois = rapportMois || new Date().toISOString().slice(0,7);
   let moisLabel = mois;
   try{ let p = mois.split('-'); let noms = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre']; moisLabel = noms[parseInt(p[1])-1] + ' ' + p[0]; }catch(e){}
-  // 1. Consultations / Patients
   db.ref('consultations').once('value', snapCons=>{
     let cons = snapCons.val()||{};
     let nbPatients=0, nbMeds=0, sommeMeds=0, diagMap={};
     for(let k in cons){ let c=cons[k]; if(!isInMois(c.date, mois)) continue; nbPatients++; if(c.meds){ c.meds.forEach(m=>{ nbMeds += m.qte||0; let pr=(m.prix&&m.prix>0)?m.prix:(postesData[m.key]?.prix||0); sommeMeds += pr*(m.qte||0); }); } if(c.diagnostic) diagMap[c.diagnostic]=(diagMap[c.diagnostic]||0)+1; }
     let topDiag = Object.keys(diagMap).sort((a,b)=>diagMap[b]-diagMap[a]).slice(0,5).map(d=>`<div>• ${d} : <b>${diagMap[d]}</b></div>`).join('') || 'Aucun diagnostic';
-    // 2. Caisse
     db.ref('caisse_entrees').once('value', snapE=>{
       let ent = snapE.val()||{}; let totalEntree=0;
       for(let k in ent){ if(isInMois(ent[k].date, mois)) totalEntree += parseInt(ent[k].montant)||0; }
@@ -300,19 +296,16 @@ function renderRapport(){
         let sor = snapS.val()||{}; let totalSortie=0;
         for(let k in sor){ if(isInMois(sor[k].date, mois)) totalSortie += parseInt(sor[k].montant)||0; }
         let resteCaisse = totalEntree - totalSortie;
-        // 3. Dettes
         db.ref('dettes_paye').once('value', snapDP=>{
           let dp = snapDP.val()||{}; let totalPaye=0, nbPaye=0;
           for(let k in dp){ if(isInMois(dp[k].date, mois)){ totalPaye += parseInt(dp[k].montant)||0; nbPaye++; } }
           db.ref('dettes_non_paye').once('value', snapNP=>{
             let np = snapNP.val()||{}; let totalResteDette=0, totalDetteNP=0, nbNP=0;
             for(let k in np){ totalDetteNP += parseInt(np[k].total)||0; let r = parseInt(np[k].reste); if(isNaN(r)) r = (parseInt(np[k].total)||0)-(parseInt(np[k].paye)||0); totalResteDette += r; if(isInMois(np[k].date, mois)) nbNP++; }
-            // 4. Presence
             db.ref('presence_600k').once('value', snapP=>{
               let pres = snapP.val()||{}; let nbRet=0, nbAbs=0, totalRetenue=0, totalEnv=0; let parPers={};
               for(let k in pres){ let p=pres[k]; if(!isInMois(p.date, mois) && !isInMois(p.dateFr, mois)) continue; if(p.statut==='Retard'||p.statut==='RETARD'){ nbRet++; totalRetenue+=5000; parPers[p.nom]=parPers[p.nom]||{ret:0,abs:0}; parPers[p.nom].ret++; } if(p.statut==='Absent'||p.statut==='ABSENCE'){ nbAbs++; totalRetenue+=20000; parPers[p.nom]=parPers[p.nom]||{ret:0,abs:0}; parPers[p.nom].abs++; } }
               for(let n in parPers){ let r = 600000 - (parPers[n].ret*5000 + parPers[n].abs*20000); if(r<0) r=0; totalEnv+=r; }
-              // 5. Stock - en direct
               let nbRupture=0, nbAlerte=0, nbOk=0, nbExpire=0, nbBientot=0, nbBon=0, totalStock=0;
               for(let k in postesData){ let q=postesData[k].quantite||0; let seuil=postesData[k].seuil; if(seuil===undefined||seuil==='') seuil=5; let p=postesData[k].prix||0; totalStock += q*p; if(q===0) nbRupture++; else if(q<=seuil) nbAlerte++; else nbOk++; let ex=getExpireStat(postesData[k].expiration||''); if(ex.etat==='expire') nbExpire++; else if(ex.etat==='bientot') nbBientot++; else if(ex.etat==='bon') nbBon++; }
               if(document.getElementById('rapportBox')){
@@ -323,8 +316,7 @@ function renderRapport(){
                 <div class="rapport-card"><h4>📒 3. DETTES</h4><div>Dettes Payées ce mois : <b>${nbPaye} - ${totalPaye.toLocaleString()} GNF</b></div><div>Dettes Non Payées (total) : <b>${nbNP} ce mois</b></div><div style="color:#c62828"><b>❌ Reste à récupérer (total) : ${totalResteDette.toLocaleString()} GNF</b></div></div>
                 <div class="rapport-card"><h4>✅ 4. PRÉSENCE</h4><div>Retards ce mois : <b>${nbRet} x 5 000 = ${(nbRet*5000).toLocaleString()} GNF retenue</b></div><div>Absences ce mois : <b>${nbAbs} x 20 000 = ${(nbAbs*20000).toLocaleString()} GNF retenue</b></div><div>Total Retenue : <b>- ${totalRetenue.toLocaleString()} GNF</b></div><div>Total Enveloppes à payer : <b>${totalEnv.toLocaleString()} GNF</b></div></div>
                 <div class="rapport-card"><h4>💊 5. STOCK (aujourd'hui)</h4><div>🔴 RUPTURE : <b>${nbRupture}</b> &nbsp; 🟠 ALERTE : <b>${nbAlerte}</b> &nbsp; 🟢 OK : <b>${nbOk}</b></div><div>🔴 EXPIRÉ : <b>${nbExpire}</b> &nbsp; 🟠 EXPIRE BIENTÔT : <b>${nbBientot}</b> &nbsp; 🟢 BON : <b>${nbBon}</b></div><div>Total valeur stock : <b>${totalStock.toLocaleString()} GNF</b></div></div>
-                <div class="total-box">✅ Fin du Rapport - ${moisLabel}</div>
-                `;
+                <div class="total-box">✅ Fin du Rapport - ${moisLabel}</div>`;
               }
             });
           });
@@ -333,7 +325,46 @@ function renderRapport(){
     });
   });
 }
-/* ===== FIN RAPPORT ===== */
+
+/* ===== SEULEMENT CARNET PATIENT / FICHE - NOUVEAU - LE DERNIER ===== */
+let carnetFiltre = '';
+let carnetPatientChoisi = '';
+function loadCarnet(){
+  document.getElementById('content').innerHTML = `
+  <h3>📋 Carnet Patient / Fiche</h3>
+  <p style="font-size:13px;margin:0">Tu tapes le nom, tu vois toute sa vie au Poste.</p>
+  <input id="carnetSearch" placeholder="🔍 Tape le nom du patient - ex: Moussa..." oninput="carnetFiltre=this.value; renderCarnetListe()">
+  <div id="carnetListe"></div>
+  <div id="carnetFiche"></div>
+  `;
+  db.ref('consultations').on('value', snap=>{ allCons = snap.val()||{}; renderCarnetListe(); if(carnetPatientChoisi) renderCarnetFiche(carnetPatientChoisi); });
+}
+function renderCarnetListe(){
+  let noms = {};
+  for(let k in allCons){ let n = (allCons[k].patient||'').trim(); if(!n) continue; if(!noms[n]) noms[n] = {nb:0, total:0, derniere:''}; noms[n].nb++; let somme=0; if(allCons[k].meds) allCons[k].meds.forEach(m=>{ let pr=(m.prix&&m.prix>0)?m.prix:(postesData[m.key]?.prix||0); somme += pr*(m.qte||0); }); noms[n].total += somme; noms[n].derniere = allCons[k].date; }
+  let liste = Object.keys(noms).sort();
+  if(carnetFiltre) liste = liste.filter(n=> n.toLowerCase().includes(carnetFiltre.toLowerCase()));
+  let h = `<div class="total-box">👥 ${Object.keys(noms).length} patients au total</div><table><tr><th>Patient</th><th>Visites</th><th>Total Payé</th><th>Dernière visite</th><th>Voir</th></tr>`;
+  for(let n of liste){ h += `<tr><td><b>${n}</b></td><td>${noms[n].nb}</td><td><b>${noms[n].total.toLocaleString()} GNF</b></td><td>${noms[n].derniere}</td><td><button class="btn btn-blue" style="padding:6px" onclick="renderCarnetFiche('${n.replace(/'/g,"\\'")}')">📋 VOIR FICHE</button></td></tr>`; }
+  h += '</table>';
+  if(document.getElementById('carnetListe')) document.getElementById('carnetListe').innerHTML = liste.length ? h : 'Aucun patient trouvé. Tape un autre nom.';
+}
+function renderCarnetFiche(nom){
+  carnetPatientChoisi = nom;
+  let visites = [];
+  for(let k in allCons){ if((allCons[k].patient||'').trim() === nom) visites.push({k:k, ...allCons[k]}); }
+  visites.sort((a,b)=> (b.date||'').localeCompare(a.date||''));
+  let total=0, nbMeds=0; let diagMap={};
+  visites.forEach(v=>{ if(v.meds) v.meds.forEach(m=>{ nbMeds += m.qte||0; let pr=(m.prix&&m.prix>0)?m.prix:(postesData[m.key]?.prix||0); total += pr*(m.qte||0); }); if(v.diagnostic) diagMap[v.diagnostic]=(diagMap[v.diagnostic]||0)+1; });
+  let premiere = visites.length ? visites[visites.length-1] : null;
+  let derniere = visites.length ? visites[0] : null;
+  let h = `<div class="carnet-fiche"><h3 style="margin:0">📋 FICHE - ${nom}</h3><div style="margin-top:8px">Première visite : <b>${premiere?premiere.date:'-'}</b><br>Dernière visite : <b>${derniere?derniere.date:'-'}</b><br>Sexe / Âge : <b>${derniere?(derniere.sexe||'')+' '+(derniere.age?derniere.age+' ans':''):''}</b></div><div class="total-box">Visites : <b>${visites.length}</b> &nbsp;|&nbsp; Médicaments : <b>${nbMeds}</b> &nbsp;|&nbsp; Total payé : <b>${total.toLocaleString()} GNF</b></div><button class="btn btn-green" onclick="window.print()">🖨️ IMPRIMER FICHE</button><h4>📋 HISTORIQUE COMPLET</h4>`;
+  for(let v of visites){ let medsTxt=''; let somme=0; if(v.meds) v.meds.forEach(m=>{ let pr=(m.prix&&m.prix>0)?m.prix:(postesData[m.key]?.prix||0); let pt=pr*(m.qte||0); somme+=pt; medsTxt+=`<div>• ${m.nom} : <b>${m.qte}</b> x ${pr.toLocaleString()} = ${pt.toLocaleString()} GNF</div>`; }); h += `<div class="carnet-card"><b>📅 ${v.date}</b><br>📝 Plainte : ${v.plainte||'-'}<br>🔬 Examen : ${v.examen||'-'}<br>🩺 Diagnostic : <b>${v.diagnostic||'-'}</b><br>💊 Traitement : ${medsTxt||'-'}<div class="somme-box">Somme : ${somme.toLocaleString()} GNF</div></div>`; }
+  h += '</div>';
+  if(document.getElementById('carnetFiche')) document.getElementById('carnetFiche').innerHTML = h;
+  document.getElementById('carnetFiche').scrollIntoView({behavior:'smooth'});
+}
+/* ===== FIN CARNET ===== */
 
 /* ===== DETTES - FINI, INTACT ===== */
 let dettesNonPayeData = {};
