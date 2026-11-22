@@ -34,12 +34,15 @@ table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px} th,td{b
 .badge-pres{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:bold;color:#fff}
 .badge-green{background:#42b72a}.badge-orange{background:#ff9800}.badge-red{background:#e74c3c}
 .pres-info{background:#e8f5e9;padding:10px;border-radius:8px;text-align:center;font-weight:bold;font-size:13px;margin-bottom:8px}
-/* SEULEMENT POUR DETTES */
 .dette-menu{display:flex;gap:6px;margin:8px 0}
 .dette-menu button{flex:1;padding:10px;border:1px solid #ddd;border-radius:20px;background:#f8f9fa;font-weight:bold;cursor:pointer}
 .dette-menu button.active{background:#1877f2;color:#fff}
 .dette-page{display:none}.dette-page.active{display:block}
 .reste-box{background:#ffebee;padding:10px;border-radius:8px;text-align:center;font-weight:bold;margin-top:8px;border:1px solid #e74c3c;color:#c62828}
+/* SEULEMENT STOCK PERMANENT - ALERTE PAR PRODUIT */
+.stock-alerte-box{display:flex;gap:6px;margin:8px 0}
+.stock-alerte-box div{flex:1;padding:10px;border-radius:8px;text-align:center;font-weight:bold;font-size:13px}
+.badge-stock{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:bold;color:#fff;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -87,11 +90,20 @@ function loadLocalisation(){
   });
 }
 let postesData={};
+
+/* ===== SEULEMENT STOCK PERMANENT - ALERTE PAR PRODUIT - LES AUTRES SONT INTACTS ===== */
 function loadMedicaments(){
 let h=`
 <div class="section">
 <b>STOCK PERMANENT</b>
-${isPatron?`<input id="newMedName" placeholder="Nom nouveau médicament"><input id="newMedPrix" type="number" placeholder="Prix unitaire ex: 500"><button class="btn btn-green" onclick="addMedicament()">AUGMENTER LA LISTE</button>`:''}
+<div id="stockAlerteResume"></div>
+<div style="display:flex;gap:6px;margin-top:6px">
+<button class="btn btn-blue" style="flex:1" onclick="filterStock('all')">TOUT</button>
+<button class="btn btn-red" style="flex:1" onclick="filterStock('rupture')">🔴 RUPTURE</button>
+<button class="btn btn-orange" style="flex:1" onclick="filterStock('alerte')">🟠 ALERTE</button>
+<button class="btn btn-green" style="flex:1" onclick="filterStock('ok')">🟢 OK</button>
+</div>
+${isPatron?`<input id="newMedName" placeholder="Nom nouveau médicament"><input id="newMedPrix" type="number" placeholder="Prix unitaire ex: 500"><input id="newMedSeuil" type="number" placeholder="Seuil Alerte pour ce produit ex: 10 (toi tu choisis)"><button class="btn btn-green" onclick="addMedicament()">AUGMENTER LA LISTE</button>`:''}
 <div id="medTable">Chargement...</div>
 <div id="totalStockBox"></div>
 <div id="totalJourBox"></div>
@@ -119,25 +131,39 @@ ${isPatron?`<input id="newMedName" placeholder="Nom nouveau médicament"><input 
 document.getElementById('content').innerHTML=h;
 loadStock(); loadConsultations(); addMedRow();
 }
+let stockFilter='all';
+function filterStock(f){ stockFilter=f; loadStock(); }
 function loadStock(){
  db.ref('postes').on('value',snap=>{
   postesData=snap.val()||{};
-  let t='<table><tr><th>Nom</th><th>Stock</th><th>Prix unitaire</th><th>Total de prix</th>'+(isPatron?'<th>X</th>':'')+'</tr>';
-  let grandTotal=0;
+  let t='<table><tr><th>Nom</th><th>Stock</th><th>Seuil Alerte<br><small>Toi tu modifies</small></th><th>État</th><th>Prix unitaire</th><th>Total de prix</th>'+(isPatron?'<th>X</th>':'')+'</tr>';
+  let grandTotal=0; let nbRupture=0, nbAlerte=0, nbOk=0;
   for(let k in postesData){
-    let q = postesData[k].quantite||0; let p = postesData[k].prix||0; let total = q * p; grandTotal += total;
-    t+=`<tr><td>${postesData[k].nom||k}</td><td>${isPatron?`<input id="q_${k}" type="number" value="${q}" onchange="updateQ('${k}')" style="padding:4px">`:`<b style="font-size:16px">${q}</b>`}</td><td>${isPatron?`<input id="p_${k}" type="number" value="${p}" onchange="updatePrix('${k}')" placeholder="0" style="padding:4px">`:`<b>${p.toLocaleString()} GNF</b>`}</td><td><b>${total.toLocaleString()} GNF</b></td>${isPatron?`<td><button onclick="deleteMed('${k}')">X</button></td>`:''}</tr>`;
+    let q = postesData[k].quantite||0; let p = postesData[k].prix||0; let seuil = postesData[k].seuil; if(seuil===undefined||seuil===null||seuil==='') seuil=5;
+    let total = q * p; grandTotal += total;
+    let etat='', bg='';
+    if(q===0){ etat='<span class="badge-stock badge-red">🔴 RUPTURE</span>'; bg='#ffebee'; nbRupture++; }
+    else if(q<=seuil){ etat='<span class="badge-stock badge-orange">🟠 ALERTE</span>'; bg='#fff3e0'; nbAlerte++; }
+    else { etat='<span class="badge-stock badge-green">🟢 OK</span>'; bg=''; nbOk++; }
+    if(stockFilter==='rupture' && q!==0) continue;
+    if(stockFilter==='alerte' && !(q>0 && q<=seuil)) continue;
+    if(stockFilter==='ok' && !(q>seuil)) continue;
+    t+=`<tr style="background:${bg}"><td><b>${postesData[k].nom||k}</b></td><td>${isPatron?`<input id="q_${k}" type="number" value="${q}" onchange="updateQ('${k}')" style="padding:4px">`:`<b style="font-size:16px">${q}</b>`}</td><td>${isPatron?`<input id="s_${k}" type="number" value="${seuil}" onchange="updateSeuil('${k}')" placeholder="5" style="padding:4px">`:`<b>${seuil}</b>`}</td><td>${etat}</td><td>${isPatron?`<input id="p_${k}" type="number" value="${p}" onchange="updatePrix('${k}')" placeholder="0" style="padding:4px">`:`<b>${p.toLocaleString()} GNF</b>`}</td><td><b>${total.toLocaleString()} GNF</b></td>${isPatron?`<td><button onclick="deleteMed('${k}')">X</button></td>`:''}</tr>`;
   }
   t+='</table>';
   document.getElementById('medTable').innerHTML=t;
   document.getElementById('totalStockBox').innerHTML=`<div class="total-box">💰 TOTAL STOCK : ${grandTotal.toLocaleString()} GNF</div>`;
+  if(document.getElementById('stockAlerteResume')){
+    document.getElementById('stockAlerteResume').innerHTML=`<div class="stock-alerte-box"><div style="background:#ffebee;color:#c62828">🔴 RUPTURE<br>${nbRupture}</div><div style="background:#fff3e0;color:#ef6c00">🟠 ALERTE<br>${nbAlerte}</div><div style="background:#e8f5e9;color:#2e7d32">🟢 OK<br>${nbOk}</div></div><p style="font-size:12px;margin:0;color:#666">Chaque produit a son propre Seuil. C'est toi qui modifies. Si Stock = 0 = Rupture. Si Stock <= Seuil = Alerte.</p>`;
+  }
   updateAllSelects(); if(document.getElementById('consultTable')) renderConsultations(allCons);
  });
 }
-function getSelectHTML(){ let html='<option value="">Choisir médicament</option>'; for(let k in postesData){ html+=`<option value="${k}">${postesData[k].nom||k} (stock:${postesData[k].quantite||0} - prix:${postesData[k].prix||0})</option>`; } return html; }
+function updateSeuil(k){ if(!isPatron) return alert('Seul le Patron'); let s=document.getElementById('s_'+k).value; db.ref('postes/'+k+'/seuil').set(parseInt(s)||0); }
+function getSelectHTML(){ let html='<option value="">Choisir médicament</option>'; for(let k in postesData){ let q=postesData[k].quantite||0; let seuil=postesData[k].seuil; if(seuil===undefined||seuil==='') seuil=5; let tag=''; if(q===0) tag=' 🔴 RUPTURE'; else if(q<=seuil) tag=' 🟠 ALERTE'; html+=`<option value="${k}">${postesData[k].nom||k} (stock:${q} - prix:${postesData[k].prix||0})${tag}</option>`; } return html; }
 function addMedRow(){ let div=document.createElement('div'); div.className='med-row'; div.innerHTML=`<select class="medSelect">${getSelectHTML()}</select><input type="number" class="medQte" placeholder="Qté" value="1" style="width:70px"><button class="btn btn-red" style="width:40px;padding:6px" onclick="this.parentElement.remove()">X</button>`; document.getElementById('medRows').appendChild(div); }
 function updateAllSelects(){ let selHTML=getSelectHTML(); document.querySelectorAll('.medSelect').forEach(sel=>{ let val=sel.value; sel.innerHTML=selHTML; sel.value=val; }); }
-function addMedicament(){ if(!isPatron) return alert('Seul le Patron'); let nom=document.getElementById('newMedName').value.trim(); let prix=parseInt(document.getElementById('newMedPrix').value)||0; if(!nom)return; let key=nom.replace(/[^a-zA-Z0-9]/g,'_')+'_'+Date.now(); db.ref('postes/'+key).set({nom:nom,quantite:0,prix:prix}).then(()=>{ document.getElementById('newMedName').value=''; document.getElementById('newMedPrix').value=''; }); }
+function addMedicament(){ if(!isPatron) return alert('Seul le Patron'); let nom=document.getElementById('newMedName').value.trim(); let prix=parseInt(document.getElementById('newMedPrix').value)||0; let seuil=parseInt(document.getElementById('newMedSeuil').value); if(isNaN(seuil)) seuil=5; if(!nom)return; let key=nom.replace(/[^a-zA-Z0-9]/g,'_')+'_'+Date.now(); db.ref('postes/'+key).set({nom:nom,quantite:0,prix:prix,seuil:seuil}).then(()=>{ document.getElementById('newMedName').value=''; document.getElementById('newMedPrix').value=''; document.getElementById('newMedSeuil').value=''; }); }
 function updateQ(k){ if(!isPatron) return alert('Seul le Patron peut changer le stock'); let q=document.getElementById('q_'+k).value; db.ref('postes/'+k+'/quantite').set(parseInt(q)||0); }
 function updatePrix(k){ if(!isPatron) return alert('Seul le Patron peut changer le prix'); let p=document.getElementById('p_'+k).value; db.ref('postes/'+k+'/prix').set(parseInt(p)||0); }
 function deleteMed(k){if(confirm('Supprimer?')) db.ref('postes/'+k).remove();}
@@ -163,8 +189,9 @@ function renderConsultations(data){
  h+='</table>'; if(document.getElementById('consultTable')) document.getElementById('consultTable').innerHTML = keys.length? h : 'Aucun patient encore'; if(document.getElementById('totalJourBox')){ document.getElementById('totalJourBox').innerHTML = `<div class="jour-box">💊 TOTAL MÉDICAMENTS VENDUS AUJOURD'HUI : ${qteJour} médicaments</div><div class="jour-box2">💰 SOMME TOTALE JOURNALIÈRE : ${totalJour.toLocaleString()} GNF</div>`; }
 }
 function filterPatients(){ let q=document.getElementById('searchPatient').value.toLowerCase(); let filtered={}; for(let k in allCons){ let txt=((allCons[k].patient||'')+' '+(allCons[k].diagnostic||'')+' '+(allCons[k].plainte||'')).toLowerCase(); if(txt.includes(q)) filtered[k]=allCons[k]; } renderConsultations(filtered); }
+/* ===== FIN STOCK PERMANENT ===== */
 
-/* ===== SEULEMENT DETTES - PRESENCE EST FINI, ON NE TOUCHE PAS ===== */
+/* ===== DETTES - FINI, INTACT ===== */
 let dettesNonPayeData = {};
 function loadDettes(){
   document.getElementById('content').innerHTML = `
@@ -173,7 +200,6 @@ function loadDettes(){
     <button class="active" onclick="showDettePage('dette-paye',this)">✅ Dettes Payées</button>
     <button onclick="showDettePage('dette-nonpaye',this)">❌ Dettes Non Payées</button>
   </div>
-
   <div id="dette-paye" class="dette-page active">
     <input id="dNom" placeholder="Nom">
     <input id="dMont" type="number" placeholder="Montant payé">
@@ -181,7 +207,6 @@ function loadDettes(){
     <div id="dList"></div>
     <div id="dTotalPaye"></div>
   </div>
-
   <div id="dette-nonpaye" class="dette-page">
     <p style="font-size:13px;font-weight:bold;color:#c62828;margin:0">Tu mets Total + Déjà payé, le Reste se calcule seul.</p>
     <input id="dnNom" placeholder="Nom du client">
@@ -199,57 +224,23 @@ function loadDettes(){
     if(document.getElementById('dList')) document.getElementById('dList').innerHTML=h+'</table>';
     if(document.getElementById('dTotalPaye')) document.getElementById('dTotalPaye').innerHTML=`<div class="total-box" style="background:#e8f5e9">✅ TOTAL DETTES PAYÉES : ${total.toLocaleString()} GNF</div>`;
   });
-  db.ref('dettes_non_paye').on('value', s=>{
-    dettesNonPayeData = s.val()||{};
-    renderDettesNonPaye();
-  });
+  db.ref('dettes_non_paye').on('value', s=>{ dettesNonPayeData = s.val()||{}; renderDettesNonPaye(); });
 }
-function showDettePage(id,btn){
-  document.querySelectorAll('.dette-page').forEach(p=>p.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  document.querySelectorAll('.dette-menu button').forEach(b=>b.classList.remove('active'));
-  if(btn) btn.classList.add('active');
-}
-function calcResteDette(){
-  let total = parseInt(document.getElementById('dnTotal').value)||0;
-  let paye = parseInt(document.getElementById('dnPaye').value)||0;
-  let reste = total - paye; if(reste<0) reste=0;
-  document.getElementById('dnReste').value = reste;
-}
+function showDettePage(id,btn){ document.querySelectorAll('.dette-page').forEach(p=>p.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.dette-menu button').forEach(b=>b.classList.remove('active')); if(btn) btn.classList.add('active'); }
+function calcResteDette(){ let total = parseInt(document.getElementById('dnTotal').value)||0; let paye = parseInt(document.getElementById('dnPaye').value)||0; let reste = total - paye; if(reste<0) reste=0; document.getElementById('dnReste').value = reste; }
 function renderDettesNonPaye(){
   let h='<table><tr><th>Client</th><th>Total</th><th>Déjà Payé</th><th>Reste</th><th>Date</th>'+(isPatron?'<th>Action</th>':'')+'</tr>';
   let totalReste=0, totalDette=0, totalPaye=0;
-  for(let k in dettesNonPayeData){
-    let d = dettesNonPayeData[k];
-    let tot = parseInt(d.total)||0, pay = parseInt(d.paye)||0, reste = parseInt(d.reste);
-    if(isNaN(reste)) reste = tot - pay;
-    totalDette+=tot; totalPaye+=pay; totalReste+=reste;
-    h+=`<tr><td><b>${d.nom}</b></td><td>${tot.toLocaleString()}</td><td>${pay.toLocaleString()}</td><td><b style="color:#c62828">${reste.toLocaleString()} GNF</b></td><td>${d.date}</td>${isPatron?`<td><button onclick="marquerDettePaye('${k}')" style="background:#42b72a;color:white;border:none;padding:6px 8px;border-radius:6px;font-weight:bold;cursor:pointer">✅ Payé</button> <button onclick="deleteDetteNonPaye('${k}')" style="background:#e74c3c;color:white;border:none;padding:6px 8px;border-radius:6px;font-weight:bold;cursor:pointer">X</button></td>`:''}</tr>`;
-  }
+  for(let k in dettesNonPayeData){ let d = dettesNonPayeData[k]; let tot = parseInt(d.total)||0, pay = parseInt(d.paye)||0, reste = parseInt(d.reste); if(isNaN(reste)) reste = tot - pay; totalDette+=tot; totalPaye+=pay; totalReste+=reste; h+=`<tr><td><b>${d.nom}</b></td><td>${tot.toLocaleString()}</td><td>${pay.toLocaleString()}</td><td><b style="color:#c62828">${reste.toLocaleString()} GNF</b></td><td>${d.date}</td>${isPatron?`<td><button onclick="marquerDettePaye('${k}')" style="background:#42b72a;color:white;border:none;padding:6px 8px;border-radius:6px;font-weight:bold;cursor:pointer">✅ Payé</button> <button onclick="deleteDetteNonPaye('${k}')" style="background:#e74c3c;color:white;border:none;padding:6px 8px;border-radius:6px;font-weight:bold;cursor:pointer">X</button></td>`:''}</tr>`; }
   h+='</table>';
   if(document.getElementById('dnList')) document.getElementById('dnList').innerHTML = Object.keys(dettesNonPayeData).length ? h : 'Aucune dette non payée';
   if(document.getElementById('dnTotalReste')) document.getElementById('dnTotalReste').innerHTML = `<div class="total-box">📒 Total Dettes : ${totalDette.toLocaleString()} GNF</div><div class="total-box" style="background:#fff3cd">💰 Déjà Payé : ${totalPaye.toLocaleString()} GNF</div><div class="reste-box">❌ TOTAL RESTE À RÉCUPÉRER : ${totalReste.toLocaleString()} GNF</div>`;
 }
 function saveDette(){let n=document.getElementById('dNom').value,m=document.getElementById('dMont').value; if(!n||!m)return; db.ref('dettes_paye').push({nom:n,montant:m,date:new Date().toLocaleString()}); document.getElementById('dNom').value=''; document.getElementById('dMont').value='';}
 function deleteDette(k){ if(confirm('Tu veux vraiment supprimer cette dette ?')){ db.ref('dettes_paye/'+k).remove(); } }
-function saveDetteNonPaye(){
-  let n=document.getElementById('dnNom').value.trim();
-  let tot=parseInt(document.getElementById('dnTotal').value)||0;
-  let pay=parseInt(document.getElementById('dnPaye').value)||0;
-  if(!n||!tot) return alert('Mets Nom + Montant total');
-  let reste = tot - pay; if(reste<0) reste=0;
-  db.ref('dettes_non_paye').push({nom:n,total:tot,paye:pay,reste:reste,date:new Date().toLocaleString()});
-  document.getElementById('dnNom').value=''; document.getElementById('dnTotal').value=''; document.getElementById('dnPaye').value=''; document.getElementById('dnReste').value='';
-  alert('✅ '+n+' - Reste : '+reste.toLocaleString()+' GNF');
-}
+function saveDetteNonPaye(){ let n=document.getElementById('dnNom').value.trim(); let tot=parseInt(document.getElementById('dnTotal').value)||0; let pay=parseInt(document.getElementById('dnPaye').value)||0; if(!n||!tot) return alert('Mets Nom + Montant total'); let reste = tot - pay; if(reste<0) reste=0; db.ref('dettes_non_paye').push({nom:n,total:tot,paye:pay,reste:reste,date:new Date().toLocaleString()}); document.getElementById('dnNom').value=''; document.getElementById('dnTotal').value=''; document.getElementById('dnPaye').value=''; document.getElementById('dnReste').value=''; alert('✅ '+n+' - Reste : '+reste.toLocaleString()+' GNF'); }
 function deleteDetteNonPaye(k){ if(confirm('Supprimer cette dette non payée ?')) db.ref('dettes_non_paye/'+k).remove(); }
-function marquerDettePaye(k){
-  let d = dettesNonPayeData[k]; if(!d) return;
-  if(!confirm(d.nom+' a tout payé ? On déplace en Dettes Payées ?')) return;
-  db.ref('dettes_paye').push({nom:d.nom,montant:d.total,date:new Date().toLocaleString()});
-  db.ref('dettes_non_paye/'+k).remove();
-}
-/* ===== FIN DETTES ===== */
+function marquerDettePaye(k){ let d = dettesNonPayeData[k]; if(!d) return; if(!confirm(d.nom+' a tout payé ? On déplace en Dettes Payées ?')) return; db.ref('dettes_paye').push({nom:d.nom,montant:d.total,date:new Date().toLocaleString()}); db.ref('dettes_non_paye/'+k).remove(); }
 
 function loadSuivi(){document.getElementById('content').innerHTML='<h3>📈 SUIVI LIVE</h3><div id="box"></div>'; db.ref('consultations').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Date</th><th>Patient</th><th>Plainte / Examen / Diagnostic</th><th>Médicaments</th><th>Somme Totale</th></tr>'; for(let k in d){ let txt=''; let somme=0; if(d[k].meds) d[k].meds.forEach(m=>{ let pr=(m.prix&&m.prix>0)?m.prix:(postesData[m.key]?.prix||0); let pt=pr*m.qte; somme+=pt; txt+=m.nom+':'+m.qte+' x '+pr+'='+pt+' '; }); else txt=d[k].med; h+=`<tr><td>${d[k].date}</td><td>${d[k].patient}<br><small>${d[k].sexe||''} ${d[k].age?d[k].age+' ans':''}</small></td><td>Plainte: ${d[k].plainte||'-'}<br>Examen: ${d[k].examen||'-'}<br><b>Diag: ${d[k].diagnostic||'-'}</b></td><td>${txt}</td><td><b>${somme.toLocaleString()} GNF</b></td></tr>`;} document.getElementById('box').innerHTML=h+'</table>';});}
 function loadPrimes(){document.getElementById('content').innerHTML='<h3>🏆 Primes</h3><input id="pNom" placeholder="Nom"><input id="pMont" type="number" placeholder="Montant"><button class="btn btn-blue" onclick="savePrime()">Enregistrer</button><div id="pList"></div>'; db.ref('primes').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Nom</th><th>Montant</th></tr>'; for(let k in d)h+=`<tr><td>${d[k].nom}</td><td>${d[k].montant}</td></tr>`; document.getElementById('pList').innerHTML=h+'</table>';});}
@@ -260,11 +251,7 @@ function saveObs(){let t=document.getElementById('oTxt').value; if(!t)return; db
 /* ===== PRESENCE - FINI, INTACT ===== */
 let presenceData = {};
 function loadPresence(){
-  let now = new Date();
-  let dateFr = now.toLocaleDateString('fr-FR');
-  let hh = String(now.getHours()).padStart(2,'0');
-  let mm = String(now.getMinutes()).padStart(2,'0');
-  let heureNow = hh + ':' + mm;
+  let now = new Date(); let dateFr = now.toLocaleDateString('fr-FR'); let hh = String(now.getHours()).padStart(2,'0'); let mm = String(now.getMinutes()).padStart(2,'0'); let heureNow = hh + ':' + mm;
   document.getElementById('content').innerHTML = `
   <h3>✅ Présence 600k</h3>
   <div class="pres-info">📍 08h00 = 0 &nbsp; | &nbsp; 08h01 = - 5 000 &nbsp; | &nbsp; Absent = - 20 000 &nbsp; | &nbsp; Départ 17h20 &nbsp; | &nbsp; Enveloppe 600 000 GNF</div>
@@ -292,15 +279,9 @@ function loadPresence(){
   `;
   db.ref('presence_600k').on('value', s=>{ presenceData = s.val() || {}; renderPresence(); });
 }
-function showPresPage(id, btn){
-  document.querySelectorAll('.pres-page').forEach(p=>p.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  document.querySelectorAll('.pres-menu button').forEach(b=>b.classList.remove('active'));
-  if(btn) btn.classList.add('active');
-}
+function showPresPage(id, btn){ document.querySelectorAll('.pres-page').forEach(p=>p.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.pres-menu button').forEach(b=>b.classList.remove('active')); if(btn) btn.classList.add('active'); }
 function renderPresence(){
-  let keys = Object.keys(presenceData).reverse();
-  let auj = new Date().toLocaleDateString('fr-FR');
+  let keys = Object.keys(presenceData).reverse(); let auj = new Date().toLocaleDateString('fr-FR');
   let liste = keys.filter(k=>{ let d = presenceData[k].date || ''; return d.includes(auj) || !presenceData[k].dateFr; });
   if(liste.length===0) liste = keys.slice(0,20);
   let hListe = '<table><tr><th>Nom</th><th>Heure d\'arrivée</th><th>Heure de départ</th><th>Statut</th><th>Retenue</th>'+(isPatron?'<th>X</th>':'')+'</tr>';
