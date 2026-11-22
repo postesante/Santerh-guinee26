@@ -27,7 +27,6 @@ table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px} th,td{b
 .somme-box{background:#e8f5e9;padding:6px;border-radius:6px;text-align:center;font-weight:bold;color:#2e7d32}
 .jour-box{background:#fff3cd;padding:10px;border-radius:8px;text-align:center;font-weight:bold;margin-top:8px;border:1px solid #ffca28}
 .jour-box2{background:#d4edda;padding:10px;border-radius:8px;text-align:center;font-weight:bold;margin-top:8px;border:1px solid #28a745}
-/* SEULEMENT POUR PRESENCE - ne touche pas aux autres */
 .pres-menu{display:flex;gap:6px;overflow-x:auto;margin:8px 0}
 .pres-menu button{white-space:nowrap;padding:9px 12px;border:1px solid #ddd;border-radius:20px;background:#f8f9fa;font-weight:bold;cursor:pointer}
 .pres-menu button.active{background:#1877f2;color:#fff;border-color:#1877f2}
@@ -35,6 +34,12 @@ table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px} th,td{b
 .badge-pres{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:bold;color:#fff}
 .badge-green{background:#42b72a}.badge-orange{background:#ff9800}.badge-red{background:#e74c3c}
 .pres-info{background:#e8f5e9;padding:10px;border-radius:8px;text-align:center;font-weight:bold;font-size:13px;margin-bottom:8px}
+/* SEULEMENT POUR DETTES */
+.dette-menu{display:flex;gap:6px;margin:8px 0}
+.dette-menu button{flex:1;padding:10px;border:1px solid #ddd;border-radius:20px;background:#f8f9fa;font-weight:bold;cursor:pointer}
+.dette-menu button.active{background:#1877f2;color:#fff}
+.dette-page{display:none}.dette-page.active{display:block}
+.reste-box{background:#ffebee;padding:10px;border-radius:8px;text-align:center;font-weight:bold;margin-top:8px;border:1px solid #e74c3c;color:#c62828}
 </style>
 </head>
 <body>
@@ -158,16 +163,101 @@ function renderConsultations(data){
  h+='</table>'; if(document.getElementById('consultTable')) document.getElementById('consultTable').innerHTML = keys.length? h : 'Aucun patient encore'; if(document.getElementById('totalJourBox')){ document.getElementById('totalJourBox').innerHTML = `<div class="jour-box">💊 TOTAL MÉDICAMENTS VENDUS AUJOURD'HUI : ${qteJour} médicaments</div><div class="jour-box2">💰 SOMME TOTALE JOURNALIÈRE : ${totalJour.toLocaleString()} GNF</div>`; }
 }
 function filterPatients(){ let q=document.getElementById('searchPatient').value.toLowerCase(); let filtered={}; for(let k in allCons){ let txt=((allCons[k].patient||'')+' '+(allCons[k].diagnostic||'')+' '+(allCons[k].plainte||'')).toLowerCase(); if(txt.includes(q)) filtered[k]=allCons[k]; } renderConsultations(filtered); }
-function loadDettes(){document.getElementById('content').innerHTML='<h3>📒 Dettes Payé</h3><input id="dNom" placeholder="Nom"><input id="dMont" type="number" placeholder="Montant"><button class="btn btn-blue" onclick="saveDette()">Enregistrer</button><div id="dList"></div>'; db.ref('dettes_paye').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Client</th><th>Montant</th><th>Date</th>'+(isPatron?'<th>X</th>':'')+'</tr>'; for(let k in d)h+=`<tr><td>${d[k].nom}</td><td>${d[k].montant}</td><td>${d[k].date}</td>${isPatron?`<td><button onclick="deleteDette('${k}')" style="background:#e74c3c;color:white;border:none;padding:6px 10px;border-radius:6px;font-weight:bold;cursor:pointer">X</button></td>`:''}</tr>`; document.getElementById('dList').innerHTML=h+'</table>';});}
-function saveDette(){let n=document.getElementById('dNom').value,m=document.getElementById('dMont').value; if(!n||!m)return; db.ref('dettes_paye').push({nom:n,montant:m,date:new Date().toLocaleString()});}
+
+/* ===== SEULEMENT DETTES - PRESENCE EST FINI, ON NE TOUCHE PAS ===== */
+let dettesNonPayeData = {};
+function loadDettes(){
+  document.getElementById('content').innerHTML = `
+  <h3>📒 Dettes</h3>
+  <div class="dette-menu">
+    <button class="active" onclick="showDettePage('dette-paye',this)">✅ Dettes Payées</button>
+    <button onclick="showDettePage('dette-nonpaye',this)">❌ Dettes Non Payées</button>
+  </div>
+
+  <div id="dette-paye" class="dette-page active">
+    <input id="dNom" placeholder="Nom">
+    <input id="dMont" type="number" placeholder="Montant payé">
+    <button class="btn btn-blue" onclick="saveDette()">Enregistrer Payé</button>
+    <div id="dList"></div>
+    <div id="dTotalPaye"></div>
+  </div>
+
+  <div id="dette-nonpaye" class="dette-page">
+    <p style="font-size:13px;font-weight:bold;color:#c62828;margin:0">Tu mets Total + Déjà payé, le Reste se calcule seul.</p>
+    <input id="dnNom" placeholder="Nom du client">
+    <input id="dnTotal" type="number" placeholder="Montant total de la dette" oninput="calcResteDette()">
+    <input id="dnPaye" type="number" placeholder="Montant déjà payé" oninput="calcResteDette()">
+    <input id="dnReste" type="number" placeholder="Reste à payer - automatique" readonly style="background:#ffebee;font-weight:bold">
+    <button class="btn btn-orange" onclick="saveDetteNonPaye()">Enregistrer Dette Non Payée</button>
+    <div id="dnList"></div>
+    <div id="dnTotalReste"></div>
+  </div>
+  `;
+  db.ref('dettes_paye').on('value', s=>{
+    let d=s.val()||{}, h='<table><tr><th>Client</th><th>Montant</th><th>Date</th>'+(isPatron?'<th>X</th>':'')+'</tr>'; let total=0;
+    for(let k in d){ let m=parseInt(d[k].montant)||0; total+=m; h+=`<tr><td>${d[k].nom}</td><td>${m.toLocaleString()} GNF</td><td>${d[k].date}</td>${isPatron?`<td><button onclick="deleteDette('${k}')" style="background:#e74c3c;color:white;border:none;padding:6px 10px;border-radius:6px;font-weight:bold;cursor:pointer">X</button></td>`:''}</tr>`; }
+    if(document.getElementById('dList')) document.getElementById('dList').innerHTML=h+'</table>';
+    if(document.getElementById('dTotalPaye')) document.getElementById('dTotalPaye').innerHTML=`<div class="total-box" style="background:#e8f5e9">✅ TOTAL DETTES PAYÉES : ${total.toLocaleString()} GNF</div>`;
+  });
+  db.ref('dettes_non_paye').on('value', s=>{
+    dettesNonPayeData = s.val()||{};
+    renderDettesNonPaye();
+  });
+}
+function showDettePage(id,btn){
+  document.querySelectorAll('.dette-page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.dette-menu button').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+}
+function calcResteDette(){
+  let total = parseInt(document.getElementById('dnTotal').value)||0;
+  let paye = parseInt(document.getElementById('dnPaye').value)||0;
+  let reste = total - paye; if(reste<0) reste=0;
+  document.getElementById('dnReste').value = reste;
+}
+function renderDettesNonPaye(){
+  let h='<table><tr><th>Client</th><th>Total</th><th>Déjà Payé</th><th>Reste</th><th>Date</th>'+(isPatron?'<th>Action</th>':'')+'</tr>';
+  let totalReste=0, totalDette=0, totalPaye=0;
+  for(let k in dettesNonPayeData){
+    let d = dettesNonPayeData[k];
+    let tot = parseInt(d.total)||0, pay = parseInt(d.paye)||0, reste = parseInt(d.reste);
+    if(isNaN(reste)) reste = tot - pay;
+    totalDette+=tot; totalPaye+=pay; totalReste+=reste;
+    h+=`<tr><td><b>${d.nom}</b></td><td>${tot.toLocaleString()}</td><td>${pay.toLocaleString()}</td><td><b style="color:#c62828">${reste.toLocaleString()} GNF</b></td><td>${d.date}</td>${isPatron?`<td><button onclick="marquerDettePaye('${k}')" style="background:#42b72a;color:white;border:none;padding:6px 8px;border-radius:6px;font-weight:bold;cursor:pointer">✅ Payé</button> <button onclick="deleteDetteNonPaye('${k}')" style="background:#e74c3c;color:white;border:none;padding:6px 8px;border-radius:6px;font-weight:bold;cursor:pointer">X</button></td>`:''}</tr>`;
+  }
+  h+='</table>';
+  if(document.getElementById('dnList')) document.getElementById('dnList').innerHTML = Object.keys(dettesNonPayeData).length ? h : 'Aucune dette non payée';
+  if(document.getElementById('dnTotalReste')) document.getElementById('dnTotalReste').innerHTML = `<div class="total-box">📒 Total Dettes : ${totalDette.toLocaleString()} GNF</div><div class="total-box" style="background:#fff3cd">💰 Déjà Payé : ${totalPaye.toLocaleString()} GNF</div><div class="reste-box">❌ TOTAL RESTE À RÉCUPÉRER : ${totalReste.toLocaleString()} GNF</div>`;
+}
+function saveDette(){let n=document.getElementById('dNom').value,m=document.getElementById('dMont').value; if(!n||!m)return; db.ref('dettes_paye').push({nom:n,montant:m,date:new Date().toLocaleString()}); document.getElementById('dNom').value=''; document.getElementById('dMont').value='';}
 function deleteDette(k){ if(confirm('Tu veux vraiment supprimer cette dette ?')){ db.ref('dettes_paye/'+k).remove(); } }
+function saveDetteNonPaye(){
+  let n=document.getElementById('dnNom').value.trim();
+  let tot=parseInt(document.getElementById('dnTotal').value)||0;
+  let pay=parseInt(document.getElementById('dnPaye').value)||0;
+  if(!n||!tot) return alert('Mets Nom + Montant total');
+  let reste = tot - pay; if(reste<0) reste=0;
+  db.ref('dettes_non_paye').push({nom:n,total:tot,paye:pay,reste:reste,date:new Date().toLocaleString()});
+  document.getElementById('dnNom').value=''; document.getElementById('dnTotal').value=''; document.getElementById('dnPaye').value=''; document.getElementById('dnReste').value='';
+  alert('✅ '+n+' - Reste : '+reste.toLocaleString()+' GNF');
+}
+function deleteDetteNonPaye(k){ if(confirm('Supprimer cette dette non payée ?')) db.ref('dettes_non_paye/'+k).remove(); }
+function marquerDettePaye(k){
+  let d = dettesNonPayeData[k]; if(!d) return;
+  if(!confirm(d.nom+' a tout payé ? On déplace en Dettes Payées ?')) return;
+  db.ref('dettes_paye').push({nom:d.nom,montant:d.total,date:new Date().toLocaleString()});
+  db.ref('dettes_non_paye/'+k).remove();
+}
+/* ===== FIN DETTES ===== */
+
 function loadSuivi(){document.getElementById('content').innerHTML='<h3>📈 SUIVI LIVE</h3><div id="box"></div>'; db.ref('consultations').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Date</th><th>Patient</th><th>Plainte / Examen / Diagnostic</th><th>Médicaments</th><th>Somme Totale</th></tr>'; for(let k in d){ let txt=''; let somme=0; if(d[k].meds) d[k].meds.forEach(m=>{ let pr=(m.prix&&m.prix>0)?m.prix:(postesData[m.key]?.prix||0); let pt=pr*m.qte; somme+=pt; txt+=m.nom+':'+m.qte+' x '+pr+'='+pt+' '; }); else txt=d[k].med; h+=`<tr><td>${d[k].date}</td><td>${d[k].patient}<br><small>${d[k].sexe||''} ${d[k].age?d[k].age+' ans':''}</small></td><td>Plainte: ${d[k].plainte||'-'}<br>Examen: ${d[k].examen||'-'}<br><b>Diag: ${d[k].diagnostic||'-'}</b></td><td>${txt}</td><td><b>${somme.toLocaleString()} GNF</b></td></tr>`;} document.getElementById('box').innerHTML=h+'</table>';});}
 function loadPrimes(){document.getElementById('content').innerHTML='<h3>🏆 Primes</h3><input id="pNom" placeholder="Nom"><input id="pMont" type="number" placeholder="Montant"><button class="btn btn-blue" onclick="savePrime()">Enregistrer</button><div id="pList"></div>'; db.ref('primes').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Nom</th><th>Montant</th></tr>'; for(let k in d)h+=`<tr><td>${d[k].nom}</td><td>${d[k].montant}</td></tr>`; document.getElementById('pList').innerHTML=h+'</table>';});}
 function savePrime(){let n=document.getElementById('pNom').value,m=document.getElementById('pMont').value; db.ref('primes').push({nom:n,montant:m,date:new Date().toLocaleString()});}
 function loadObservation(){document.getElementById('content').innerHTML='<h3>📝 Observation</h3><textarea id="oTxt" rows="3"></textarea><button class="btn btn-blue" onclick="saveObs()">Enregistrer</button><div id="oList"></div>'; db.ref('observations').on('value',s=>{let d=s.val()||{},h=''; for(let k in d)h+=`<div style="padding:6px;border-bottom:1px solid #eee"><b>${d[k].date}</b> ${d[k].texte}</div>`; document.getElementById('oList').innerHTML=h;});}
 function saveObs(){let t=document.getElementById('oTxt').value; if(!t)return; db.ref('observations').push({texte:t,date:new Date().toLocaleString()});}
 
-/* ===== SEULEMENT PRESENCE - TOUCHE ICI - LES AUTRES SONT INTACTS ===== */
+/* ===== PRESENCE - FINI, INTACT ===== */
 let presenceData = {};
 function loadPresence(){
   let now = new Date();
@@ -175,11 +265,9 @@ function loadPresence(){
   let hh = String(now.getHours()).padStart(2,'0');
   let mm = String(now.getMinutes()).padStart(2,'0');
   let heureNow = hh + ':' + mm;
-
   document.getElementById('content').innerHTML = `
   <h3>✅ Présence 600k</h3>
   <div class="pres-info">📍 08h00 = 0 &nbsp; | &nbsp; 08h01 = - 5 000 &nbsp; | &nbsp; Absent = - 20 000 &nbsp; | &nbsp; Départ 17h20 &nbsp; | &nbsp; Enveloppe 600 000 GNF</div>
-
   <div class="pres-menu">
     <button class="active" onclick="showPresPage('pres-pointer',this)">📍 POINTER</button>
     <button onclick="showPresPage('pres-liste',this)">📋 LISTE DU JOUR</button>
@@ -187,7 +275,6 @@ function loadPresence(){
     <button onclick="showPresPage('pres-absences',this)">🔴 ABSENCES</button>
     <button onclick="showPresPage('pres-enveloppes',this)">💰 ENVELOPPES</button>
   </div>
-
   <div id="pres-pointer" class="pres-page active">
     <p style="font-size:13px;color:#2e7d32;font-weight:bold;margin:0">✅ Tu écris SEULEMENT le nom. Date + heure viennent seules.</p>
     <input id="prNom" placeholder="Nom et Prénom *">
@@ -198,17 +285,12 @@ function loadPresence(){
     <select id="prSt"><option value="auto">Laisser l'application décider (Présent / Retard)</option><option value="Absent">Marquer ABSENT</option></select>
     <button class="btn btn-blue" onclick="savePres()">📍 POINTER ARRIVÉE MAINTENANT</button>
   </div>
-
   <div id="pres-liste" class="pres-page"><div id="presListeBox">Chargement...</div></div>
   <div id="pres-retards" class="pres-page"><div id="presRetardsBox">Chargement...</div></div>
   <div id="pres-absences" class="pres-page"><div id="presAbsencesBox">Chargement...</div></div>
   <div id="pres-enveloppes" class="pres-page"><div id="presEnveloppesBox">Chargement...</div></div>
   `;
-
-  db.ref('presence_600k').on('value', s=>{
-    presenceData = s.val() || {};
-    renderPresence();
-  });
+  db.ref('presence_600k').on('value', s=>{ presenceData = s.val() || {}; renderPresence(); });
 }
 function showPresPage(id, btn){
   document.querySelectorAll('.pres-page').forEach(p=>p.classList.remove('active'));
@@ -219,84 +301,50 @@ function showPresPage(id, btn){
 function renderPresence(){
   let keys = Object.keys(presenceData).reverse();
   let auj = new Date().toLocaleDateString('fr-FR');
-
-  // LISTE DU JOUR - on montre ceux d'aujourd'hui, sinon tout
-  let liste = keys.filter(k=>{
-    let d = presenceData[k].date || '';
-    return d.includes(auj) || !presenceData[k].dateFr;
-  });
+  let liste = keys.filter(k=>{ let d = presenceData[k].date || ''; return d.includes(auj) || !presenceData[k].dateFr; });
   if(liste.length===0) liste = keys.slice(0,20);
-
   let hListe = '<table><tr><th>Nom</th><th>Heure d\'arrivée</th><th>Heure de départ</th><th>Statut</th><th>Retenue</th>'+(isPatron?'<th>X</th>':'')+'</tr>';
   let hRet = '<table><tr><th>Nom</th><th>Date</th><th>Heure</th><th>Retenue</th></tr>';
   let hAbs = '<table><tr><th>Nom</th><th>Date</th><th>Retenue</th></tr>';
-  let parPersonne = {};
-  let nbRet=0, nbAbs=0;
-
+  let parPersonne = {}; let nbRet=0, nbAbs=0;
   for(let k of keys){
-    let p = presenceData[k];
-    let statut = p.statut || 'Présent';
-    let retenue = p.retenue || 0;
-    // compatibilité avec ancien code : Présent / Absent sans retenue
+    let p = presenceData[k]; let statut = p.statut || 'Présent'; let retenue = p.retenue || 0;
     if(statut==='Absent' && !p.retenue) retenue = 20000;
     if(statut==='Retard' || statut==='RETARD') retenue = 5000;
     if(statut==='Présent' || statut==="À L'HEURE") retenue = 0;
-
     let badge = '<span class="badge-pres badge-green">À L\'HEURE</span>';
     if(statut==='Absent' || statut==='ABSENCE') badge = '<span class="badge-pres badge-red">ABSENCE</span>';
     else if(statut==='Retard' || statut==='RETARD') badge = '<span class="badge-pres badge-orange">RETARD</span>';
-
-    if(liste.includes(k)){
-      hListe += `<tr><td><b>${p.nom||''}</b></td><td>${p.heureArrivee||p.heure||'—'}</td><td>17h20</td><td>${badge}</td><td>${retenue===0?'0 GNF':'- '+retenue.toLocaleString()+' GNF'}</td>${isPatron?`<td><button onclick="deletePres('${k}')">X</button></td>`:''}</tr>`;
-    }
+    if(liste.includes(k)){ hListe += `<tr><td><b>${p.nom||''}</b></td><td>${p.heureArrivee||p.heure||'—'}</td><td>17h20</td><td>${badge}</td><td>${retenue===0?'0 GNF':'- '+retenue.toLocaleString()+' GNF'}</td>${isPatron?`<td><button onclick="deletePres('${k}')">X</button></td>`:''}</tr>`; }
     if(statut==='Retard' || statut==='RETARD'){ nbRet++; hRet += `<tr><td>${p.nom||''}</td><td>${p.dateFr||p.date||''}</td><td>${p.heureArrivee||''}</td><td>- 5 000 GNF</td></tr>`; }
     if(statut==='Absent' || statut==='ABSENCE'){ nbAbs++; hAbs += `<tr><td>${p.nom||''}</td><td>${p.dateFr||p.date||''}</td><td>- 20 000 GNF</td></tr>`; }
-
-    // enveloppes par personne
-    let nom = p.nom || 'Inconnu';
-    if(!parPersonne[nom]) parPersonne[nom]={retards:0,absences:0,totalRetenue:0};
+    let nom = p.nom || 'Inconnu'; if(!parPersonne[nom]) parPersonne[nom]={retards:0,absences:0,totalRetenue:0};
     if(statut==='Retard' || statut==='RETARD'){ parPersonne[nom].retards++; parPersonne[nom].totalRetenue+=5000; }
     if(statut==='Absent' || statut==='ABSENCE'){ parPersonne[nom].absences++; parPersonne[nom].totalRetenue+=20000; }
   }
   hListe += '</table>'; hRet += '</table>'; hAbs += '</table>';
-
   if(document.getElementById('presListeBox')) document.getElementById('presListeBox').innerHTML = liste.length ? hListe : 'Aucun pointage aujourd\'hui';
   if(document.getElementById('presRetardsBox')) document.getElementById('presRetardsBox').innerHTML = '<div class="pres-info">🟠 Total retards : '+nbRet+' | 08h01 = - 5 000 GNF</div>' + (nbRet? hRet : 'Aucun retard');
   if(document.getElementById('presAbsencesBox')) document.getElementById('presAbsencesBox').innerHTML = '<div class="pres-info">🔴 Total absences : '+nbAbs+' | Absence = - 20 000 GNF</div>' + (nbAbs? hAbs : 'Aucune absence');
-
-  let hEnv = '<table><tr><th>Nom</th><th>Retards</th><th>Absences</th><th>Total Retenue</th><th>Reste à payer</th></tr>';
-  let totalEnv = 0;
-  for(let nom in parPersonne){
-    let pp = parPersonne[nom];
-    let reste = 600000 - pp.totalRetenue;
-    if(reste<0) reste=0;
-    totalEnv += reste;
-    hEnv += `<tr><td><b>${nom}</b></td><td>${pp.retards}</td><td>${pp.absences}</td><td>- ${pp.totalRetenue.toLocaleString()} GNF</td><td><b>${reste.toLocaleString()} GNF</b></td></tr>`;
-  }
+  let hEnv = '<table><tr><th>Nom</th><th>Retards</th><th>Absences</th><th>Total Retenue</th><th>Reste à payer</th></tr>'; let totalEnv = 0;
+  for(let nom in parPersonne){ let pp = parPersonne[nom]; let reste = 600000 - pp.totalRetenue; if(reste<0) reste=0; totalEnv += reste; hEnv += `<tr><td><b>${nom}</b></td><td>${pp.retards}</td><td>${pp.absences}</td><td>- ${pp.totalRetenue.toLocaleString()} GNF</td><td><b>${reste.toLocaleString()} GNF</b></td></tr>`; }
   hEnv += '</table>';
   if(document.getElementById('presEnveloppesBox')) document.getElementById('presEnveloppesBox').innerHTML = '<div class="pres-info">💰 Enveloppe de base : 600 000 GNF par personne</div>' + (Object.keys(parPersonne).length? hEnv : 'Aucune présence encore') + `<div class="total-box">💰 TOTAL ENVELOPPES À PAYER : ${totalEnv.toLocaleString()} GNF</div>`;
 }
 function savePres(){
-  let n = document.getElementById('prNom').value.trim();
-  if(!n) return alert('Écris le Nom et Prénom');
+  let n = document.getElementById('prNom').value.trim(); if(!n) return alert('Écris le Nom et Prénom');
   let heure = document.getElementById('prHeure').value || '08:00';
   let dateFr = document.getElementById('prDate').value || new Date().toLocaleDateString('fr-FR');
-  let choix = document.getElementById('prSt').value;
-  let statut, retenue;
-  let parts = heure.split(':');
-  let hh = parseInt(parts[0]||0), mm = parseInt(parts[1]||0);
+  let choix = document.getElementById('prSt').value; let statut, retenue; let parts = heure.split(':'); let hh = parseInt(parts[0]||0), mm = parseInt(parts[1]||0);
   if(choix==='Absent'){ statut='Absent'; retenue=20000; heure='Absent'; }
   else if(hh>8 || (hh===8 && mm>=1)){ statut='Retard'; retenue=5000; }
   else { statut='Présent'; retenue=0; }
   let heureAff = (heure==='Absent') ? 'Absent' : heure.replace(':','h');
   db.ref('presence_600k').push({nom:n, statut:statut, retenue:retenue, heureArrivee:heureAff, heure:heureAff, dateFr:dateFr, date:new Date().toLocaleString()});
-  document.getElementById('prNom').value='';
-  alert(n+' pointé à '+heureAff+' - '+statut);
+  document.getElementById('prNom').value=''; alert(n+' pointé à '+heureAff+' - '+statut);
   showPresPage('pres-liste', document.querySelectorAll('.pres-menu button')[1]);
 }
 function deletePres(k){ if(confirm('Supprimer ce pointage ?')) db.ref('presence_600k/'+k).remove(); }
-/* ===== FIN PRESENCE ===== */
-
 loadMedicaments();
 </script>
 </body>
