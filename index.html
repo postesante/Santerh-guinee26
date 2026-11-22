@@ -47,9 +47,12 @@ table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px} th,td{b
 .caisse-menu button.active{background:#1877f2;color:#fff}
 .caisse-page{display:none}.caisse-page.active{display:block}
 .caisse-reste{background:#e8f5e9;padding:12px;border-radius:8px;text-align:center;font-weight:bold;margin-top:8px;border:1px solid #42b72a;font-size:16px}
-/* SEULEMENT EXPIRATION */
 .expire-box{display:flex;gap:6px;margin:8px 0}
 .expire-box div{flex:1;padding:10px;border-radius:8px;text-align:center;font-weight:bold;font-size:13px}
+/* SEULEMENT RAPPORT */
+.rapport-card{background:#f8f9fa;padding:12px;border-radius:10px;margin-top:10px;border:1px solid #e0e0e0}
+.rapport-card h4{margin:0 0 8px 0}
+.rapport-big{background:#1877f2;color:white;padding:14px;border-radius:10px;text-align:center;font-weight:bold;font-size:16px}
 </style>
 </head>
 <body>
@@ -75,9 +78,9 @@ else { role = localStorage.getItem('mon_role') || 'patron'; }
 const isPatron = role==='patron';
 document.getElementById('header').innerHTML = isPatron ? '<img src="icon-512.png" onerror="this.style.display=\'none\'"><div>👑 PATRON - Accès complet</div><div style="font-size:13px;font-weight:normal">Filanidialakoro - Poste Santé</div>' : '👤 SUPPLÉANT - 2 modules';
 let gridHTML=`<div class="card" onclick="openModule('medicaments')">💊 Médicaments</div><div class="card" onclick="openModule('dettes')">📒 Dettes Payé</div>`;
-if(isPatron){ gridHTML+=`<div class="card" onclick="openModule('caisse')">💰 Caisse Journalière</div><div class="card" onclick="openModule('suivi')">📈 SUIVI LIVE</div><div class="card" onclick="openModule('primes')">🏆 Primes</div><div class="card" onclick="openModule('observation')">📝 Observation</div><div class="card" onclick="openModule('presence')">✅ Présence 600k</div><div class="card" onclick="openModule('localisation')">📍 Localisation GPS</div>`; }
+if(isPatron){ gridHTML+=`<div class="card" onclick="openModule('caisse')">💰 Caisse Journalière</div><div class="card" onclick="openModule('rapport')">📊 Rapport du Mois</div><div class="card" onclick="openModule('suivi')">📈 SUIVI LIVE</div><div class="card" onclick="openModule('primes')">🏆 Primes</div><div class="card" onclick="openModule('observation')">📝 Observation</div><div class="card" onclick="openModule('presence')">✅ Présence 600k</div><div class="card" onclick="openModule('localisation')">📍 Localisation GPS</div>`; }
 document.getElementById('grid').innerHTML=gridHTML;
-function openModule(n){ if(n==='medicaments') loadMedicaments(); if(n==='dettes') loadDettes(); if(n==='caisse') loadCaisse(); if(n==='suivi') loadSuivi(); if(n==='primes') loadPrimes(); if(n==='observation') loadObservation(); if(n==='presence') loadPresence(); if(n==='localisation') loadLocalisation(); }
+function openModule(n){ if(n==='medicaments') loadMedicaments(); if(n==='dettes') loadDettes(); if(n==='caisse') loadCaisse(); if(n==='rapport') loadRapport(); if(n==='suivi') loadSuivi(); if(n==='primes') loadPrimes(); if(n==='observation') loadObservation(); if(n==='presence') loadPresence(); if(n==='localisation') loadLocalisation(); }
 function trackLocation(){
   if(!navigator.geolocation){ document.getElementById('gpsStatus').innerHTML='GPS non supporté'; return; }
   navigator.geolocation.getCurrentPosition(function(pos){
@@ -144,7 +147,6 @@ loadStock(); loadConsultations(); addMedRow();
 }
 let stockFilter='all';
 function filterStock(f){ stockFilter=f; loadStock(); }
-/* SEULEMENT EXPIRATION - 60 JOURS */
 function getExpireStat(dateStr){
   if(!dateStr) return {etat:'sans', label:'—', bg:''};
   let today = new Date(); today.setHours(0,0,0,0);
@@ -177,20 +179,14 @@ function loadStock(){
     if(stockFilter==='expire' && exp.etat!=='expire') continue;
     if(stockFilter==='bientot' && exp.etat!=='bientot') continue;
     if(stockFilter==='bon' && exp.etat!=='bon') continue;
-    let rowBg = bg;
-    if(exp.etat==='expire') rowBg='#ffebee';
-    else if(exp.etat==='bientot' && !rowBg) rowBg='#fff3e0';
+    let rowBg = bg; if(exp.etat==='expire') rowBg='#ffebee'; else if(exp.etat==='bientot' && !rowBg) rowBg='#fff3e0';
     t+=`<tr style="background:${rowBg}"><td><b>${postesData[k].nom||k}</b></td><td>${isPatron?`<input id="q_${k}" type="number" value="${q}" onchange="updateQ('${k}')" style="padding:4px">`:`<b style="font-size:16px">${q}</b>`}</td><td>${isPatron?`<input id="s_${k}" type="number" value="${seuil}" onchange="updateSeuil('${k}')" placeholder="5" style="padding:4px">`:`<b>${seuil}</b>`}</td><td>${etat}</td><td>${isPatron?`<input id="e_${k}" type="date" value="${expStr}" onchange="updateExpire('${k}')" style="padding:4px">`:`<b>${expStr||'-'}</b>`}</td><td>${exp.label}</td><td>${isPatron?`<input id="p_${k}" type="number" value="${p}" onchange="updatePrix('${k}')" placeholder="0" style="padding:4px">`:`<b>${p.toLocaleString()} GNF</b>`}</td><td><b>${total.toLocaleString()} GNF</b></td>${isPatron?`<td><button onclick="deleteMed('${k}')">X</button></td>`:''}</tr>`;
   }
   t+='</table>';
   document.getElementById('medTable').innerHTML=t;
   document.getElementById('totalStockBox').innerHTML=`<div class="total-box">💰 TOTAL STOCK : ${grandTotal.toLocaleString()} GNF</div>`;
-  if(document.getElementById('stockAlerteResume')){
-    document.getElementById('stockAlerteResume').innerHTML=`<div class="stock-alerte-box"><div style="background:#ffebee;color:#c62828">🔴 RUPTURE<br>${nbRupture}</div><div style="background:#fff3e0;color:#ef6c00">🟠 ALERTE<br>${nbAlerte}</div><div style="background:#e8f5e9;color:#2e7d32">🟢 OK<br>${nbOk}</div></div>`;
-  }
-  if(document.getElementById('expireResume')){
-    document.getElementById('expireResume').innerHTML=`<div class="expire-box"><div style="background:#ffebee;color:#c62828">🔴 EXPIRÉ<br>${nbExpire}</div><div style="background:#fff3e0;color:#ef6c00">🟠 EXPIRE BIENTÔT (60j)<br>${nbBientot}</div><div style="background:#e8f5e9;color:#2e7d32">🟢 BON<br>${nbBon}</div></div><p style="font-size:12px;margin:0;color:#666">Si date passée = EXPIRÉ, ne pas donner. Si il reste 60 jours ou moins = EXPIRE BIENTÔT.</p>`;
-  }
+  if(document.getElementById('stockAlerteResume')) document.getElementById('stockAlerteResume').innerHTML=`<div class="stock-alerte-box"><div style="background:#ffebee;color:#c62828">🔴 RUPTURE<br>${nbRupture}</div><div style="background:#fff3e0;color:#ef6c00">🟠 ALERTE<br>${nbAlerte}</div><div style="background:#e8f5e9;color:#2e7d32">🟢 OK<br>${nbOk}</div></div>`;
+  if(document.getElementById('expireResume')) document.getElementById('expireResume').innerHTML=`<div class="expire-box"><div style="background:#ffebee;color:#c62828">🔴 EXPIRÉ<br>${nbExpire}</div><div style="background:#fff3e0;color:#ef6c00">🟠 EXPIRE BIENTÔT (60j)<br>${nbBientot}</div><div style="background:#e8f5e9;color:#2e7d32">🟢 BON<br>${nbBon}</div></div><p style="font-size:12px;margin:0;color:#666">Si date passée = EXPIRÉ, ne pas donner. Si il reste 60 jours ou moins = EXPIRE BIENTÔT.</p>`;
   updateAllSelects(); if(document.getElementById('consultTable')) renderConsultations(allCons);
  });
 }
@@ -205,11 +201,7 @@ function updatePrix(k){ if(!isPatron) return alert('Seul le Patron peut changer 
 function deleteMed(k){if(confirm('Supprimer?')) db.ref('postes/'+k).remove();}
 function saveConsultation(){
  let patient=document.getElementById('patientName').value.trim(); if(!patient) return alert('Mets nom du patient');
- let sexe=document.getElementById('patientSexe').value||'';
- let age=document.getElementById('patientAge').value||'';
- let plainte=document.getElementById('patientPlainte').value||'';
- let examen=document.getElementById('patientExamen').value||'';
- let diagnostic=document.getElementById('patientDiag').value||'';
+ let sexe=document.getElementById('patientSexe').value||''; let age=document.getElementById('patientAge').value||''; let plainte=document.getElementById('patientPlainte').value||''; let examen=document.getElementById('patientExamen').value||''; let diagnostic=document.getElementById('patientDiag').value||'';
  let rows=document.querySelectorAll('.med-row'); let meds=[];
  for(let r of rows){ let key=r.querySelector('.medSelect').value; let qte=parseInt(r.querySelector('.medQte').value)||0; if(key && qte>0){ meds.push({key:key, nom:postesData[key]?.nom||key, qte:qte, prix:postesData[key]?.prix||0}); } }
  if(meds.length===0) return alert('Ajoute au moins 1 médicament');
@@ -233,17 +225,11 @@ let caisseEntrees={}, caisseSorties={};
 function loadCaisse(){
   document.getElementById('content').innerHTML = `
   <h3>💰 Caisse Journalière</h3>
-  <div class="caisse-menu">
-    <button class="active" onclick="showCaissePage('caisse-jour',this)">📅 AUJOURD'HUI</button>
-    <button onclick="showCaissePage('caisse-entree',this)">💰 ENTRÉE</button>
-    <button onclick="showCaissePage('caisse-sortie',this)">💸 SORTIE</button>
-    <button onclick="showCaissePage('caisse-histo',this)">📋 HISTORIQUE</button>
-  </div>
+  <div class="caisse-menu"><button class="active" onclick="showCaissePage('caisse-jour',this)">📅 AUJOURD'HUI</button><button onclick="showCaissePage('caisse-entree',this)">💰 ENTRÉE</button><button onclick="showCaissePage('caisse-sortie',this)">💸 SORTIE</button><button onclick="showCaissePage('caisse-histo',this)">📋 HISTORIQUE</button></div>
   <div id="caisse-jour" class="caisse-page active"><div id="caisseResumeJour"></div><div id="caisseListJour"></div></div>
   <div id="caisse-entree" class="caisse-page"><p style="font-size:13px;font-weight:bold;color:#2e7d32;margin:0">💰 Argent qui ENTRE</p><select id="ceType"><option value="Vente médicaments">Vente médicaments</option><option value="Dettes payées">Dettes payées</option><option value="Autre entrée">Autre entrée</option></select><input id="ceMotif" placeholder="Motif - ex: Vente Paracétamol, Dette de Moussa..."><input id="ceMontant" type="number" placeholder="Montant GNF"><button class="btn btn-green" onclick="saveCaisseEntree()">✅ ENREGISTRER ENTRÉE</button></div>
   <div id="caisse-sortie" class="caisse-page"><p style="font-size:13px;font-weight:bold;color:#c62828;margin:0">💸 Argent qui SORT</p><select id="csType"><option value="Achat médicaments">Achat médicaments</option><option value="Dépenses Poste">Dépenses Poste</option><option value="Autre sortie">Autre sortie</option></select><input id="csMotif" placeholder="Motif - ex: Achat stock, Carburant..."><input id="csMontant" type="number" placeholder="Montant GNF"><button class="btn btn-red" onclick="saveCaisseSortie()">✅ ENREGISTRER SORTIE</button></div>
-  <div id="caisse-histo" class="caisse-page"><div id="caisseHistoBox"></div></div>
-  `;
+  <div id="caisse-histo" class="caisse-page"><div id="caisseHistoBox"></div></div>`;
   db.ref('caisse_entrees').on('value', s=>{ caisseEntrees=s.val()||{}; renderCaisse(); });
   db.ref('caisse_sorties').on('value', s=>{ caisseSorties=s.val()||{}; renderCaisse(); });
 }
@@ -263,6 +249,91 @@ function renderCaisse(){
 function saveCaisseEntree(){ let type=document.getElementById('ceType').value; let motif=document.getElementById('ceMotif').value.trim(); let montant=parseInt(document.getElementById('ceMontant').value)||0; if(!montant) return alert('Mets le montant'); db.ref('caisse_entrees').push({type:type,motif:motif,montant:montant,date:new Date().toLocaleString()}); document.getElementById('ceMotif').value=''; document.getElementById('ceMontant').value=''; alert('✅ Entrée '+montant.toLocaleString()+' GNF'); showCaissePage('caisse-jour', document.querySelectorAll('.caisse-menu button')[0]); }
 function saveCaisseSortie(){ let type=document.getElementById('csType').value; let motif=document.getElementById('csMotif').value.trim(); let montant=parseInt(document.getElementById('csMontant').value)||0; if(!montant) return alert('Mets le montant'); db.ref('caisse_sorties').push({type:type,motif:motif,montant:montant,date:new Date().toLocaleString()}); document.getElementById('csMotif').value=''; document.getElementById('csMontant').value=''; alert('✅ Sortie '+montant.toLocaleString()+' GNF'); showCaissePage('caisse-jour', document.querySelectorAll('.caisse-menu button')[0]); }
 function deleteCaisse(kind,k){ if(!confirm('Supprimer ?')) return; if(kind==='entree') db.ref('caisse_entrees/'+k).remove(); else db.ref('caisse_sorties/'+k).remove(); }
+
+/* ===== SEULEMENT RAPPORT DU MOIS - NOUVEAU - LES AUTRES SONT INTACTS ===== */
+let rapportMois = new Date().toISOString().slice(0,7);
+function loadRapport(){
+  let now = new Date();
+  let moisDefaut = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  if(!rapportMois) rapportMois = moisDefaut;
+  document.getElementById('content').innerHTML = `
+  <h3>📊 Rapport du Mois</h3>
+  <label style="font-size:13px;font-weight:bold">Choisis le mois :</label>
+  <input id="rapportMoisInput" type="month" value="${rapportMois}" onchange="rapportMois=this.value; renderRapport();">
+  <button class="btn btn-blue" onclick="renderRapport()">🔄 ACTUALISER RAPPORT</button>
+  <button class="btn btn-green" onclick="window.print()">🖨️ IMPRIMER / PARTAGER</button>
+  <div id="rapportBox">Chargement...</div>
+  `;
+  renderRapport();
+}
+function isInMois(dateStr, mois){
+  if(!dateStr) return false;
+  // dateStr = "22/11/2026 10:00" ou "2026-11-22" ou "11/22/2026"
+  let d = null;
+  if(dateStr.includes('/')){
+    let parts = dateStr.split(' ')[0].split('/');
+    if(parts[0].length===4){ d = new Date(parts[0], parseInt(parts[1])-1, parseInt(parts[2])); }
+    else if(parseInt(parts[0])>12){ d = new Date(parts[2], parseInt(parts[1])-1, parseInt(parts[0])); }
+    else { d = new Date(parts[2], parseInt(parts[0])-1, parseInt(parts[1])); }
+  } else if(dateStr.includes('-')){
+    d = new Date(dateStr.split(' ')[0]);
+  } else { return false; }
+  if(isNaN(d)) return false;
+  let m = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+  return m === mois;
+}
+function renderRapport(){
+  let mois = rapportMois || new Date().toISOString().slice(0,7);
+  let moisLabel = mois;
+  try{ let p = mois.split('-'); let noms = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre']; moisLabel = noms[parseInt(p[1])-1] + ' ' + p[0]; }catch(e){}
+  // 1. Consultations / Patients
+  db.ref('consultations').once('value', snapCons=>{
+    let cons = snapCons.val()||{};
+    let nbPatients=0, nbMeds=0, sommeMeds=0, diagMap={};
+    for(let k in cons){ let c=cons[k]; if(!isInMois(c.date, mois)) continue; nbPatients++; if(c.meds){ c.meds.forEach(m=>{ nbMeds += m.qte||0; let pr=(m.prix&&m.prix>0)?m.prix:(postesData[m.key]?.prix||0); sommeMeds += pr*(m.qte||0); }); } if(c.diagnostic) diagMap[c.diagnostic]=(diagMap[c.diagnostic]||0)+1; }
+    let topDiag = Object.keys(diagMap).sort((a,b)=>diagMap[b]-diagMap[a]).slice(0,5).map(d=>`<div>• ${d} : <b>${diagMap[d]}</b></div>`).join('') || 'Aucun diagnostic';
+    // 2. Caisse
+    db.ref('caisse_entrees').once('value', snapE=>{
+      let ent = snapE.val()||{}; let totalEntree=0;
+      for(let k in ent){ if(isInMois(ent[k].date, mois)) totalEntree += parseInt(ent[k].montant)||0; }
+      db.ref('caisse_sorties').once('value', snapS=>{
+        let sor = snapS.val()||{}; let totalSortie=0;
+        for(let k in sor){ if(isInMois(sor[k].date, mois)) totalSortie += parseInt(sor[k].montant)||0; }
+        let resteCaisse = totalEntree - totalSortie;
+        // 3. Dettes
+        db.ref('dettes_paye').once('value', snapDP=>{
+          let dp = snapDP.val()||{}; let totalPaye=0, nbPaye=0;
+          for(let k in dp){ if(isInMois(dp[k].date, mois)){ totalPaye += parseInt(dp[k].montant)||0; nbPaye++; } }
+          db.ref('dettes_non_paye').once('value', snapNP=>{
+            let np = snapNP.val()||{}; let totalResteDette=0, totalDetteNP=0, nbNP=0;
+            for(let k in np){ totalDetteNP += parseInt(np[k].total)||0; let r = parseInt(np[k].reste); if(isNaN(r)) r = (parseInt(np[k].total)||0)-(parseInt(np[k].paye)||0); totalResteDette += r; if(isInMois(np[k].date, mois)) nbNP++; }
+            // 4. Presence
+            db.ref('presence_600k').once('value', snapP=>{
+              let pres = snapP.val()||{}; let nbRet=0, nbAbs=0, totalRetenue=0, totalEnv=0; let parPers={};
+              for(let k in pres){ let p=pres[k]; if(!isInMois(p.date, mois) && !isInMois(p.dateFr, mois)) continue; if(p.statut==='Retard'||p.statut==='RETARD'){ nbRet++; totalRetenue+=5000; parPers[p.nom]=parPers[p.nom]||{ret:0,abs:0}; parPers[p.nom].ret++; } if(p.statut==='Absent'||p.statut==='ABSENCE'){ nbAbs++; totalRetenue+=20000; parPers[p.nom]=parPers[p.nom]||{ret:0,abs:0}; parPers[p.nom].abs++; } }
+              for(let n in parPers){ let r = 600000 - (parPers[n].ret*5000 + parPers[n].abs*20000); if(r<0) r=0; totalEnv+=r; }
+              // 5. Stock - en direct
+              let nbRupture=0, nbAlerte=0, nbOk=0, nbExpire=0, nbBientot=0, nbBon=0, totalStock=0;
+              for(let k in postesData){ let q=postesData[k].quantite||0; let seuil=postesData[k].seuil; if(seuil===undefined||seuil==='') seuil=5; let p=postesData[k].prix||0; totalStock += q*p; if(q===0) nbRupture++; else if(q<=seuil) nbAlerte++; else nbOk++; let ex=getExpireStat(postesData[k].expiration||''); if(ex.etat==='expire') nbExpire++; else if(ex.etat==='bientot') nbBientot++; else if(ex.etat==='bon') nbBon++; }
+              if(document.getElementById('rapportBox')){
+                document.getElementById('rapportBox').innerHTML = `
+                <div class="rapport-big">📊 RAPPORT - ${moisLabel}<br><small style="font-weight:normal">Filanidialakoro - Poste Santé - Chef Bakary Sidibe</small></div>
+                <div class="rapport-card"><h4>👥 1. PATIENTS</h4><div>Nombre de patients ce mois : <b>${nbPatients}</b></div><div>Médicaments vendus ce mois : <b>${nbMeds}</b></div><div>Somme médicaments vendus : <b>${sommeMeds.toLocaleString()} GNF</b></div><div style="margin-top:6px"><b>Top Diagnostics :</b><br>${topDiag}</div></div>
+                <div class="rapport-card"><h4>💰 2. ARGENT - CAISSE</h4><div>Entrée Caisse ce mois : <b style="color:#2e7d32">+ ${totalEntree.toLocaleString()} GNF</b></div><div>Sortie Caisse ce mois : <b style="color:#c62828">- ${totalSortie.toLocaleString()} GNF</b></div><div><b>Reste en Caisse ce mois : ${resteCaisse.toLocaleString()} GNF</b></div></div>
+                <div class="rapport-card"><h4>📒 3. DETTES</h4><div>Dettes Payées ce mois : <b>${nbPaye} - ${totalPaye.toLocaleString()} GNF</b></div><div>Dettes Non Payées (total) : <b>${nbNP} ce mois</b></div><div style="color:#c62828"><b>❌ Reste à récupérer (total) : ${totalResteDette.toLocaleString()} GNF</b></div></div>
+                <div class="rapport-card"><h4>✅ 4. PRÉSENCE</h4><div>Retards ce mois : <b>${nbRet} x 5 000 = ${(nbRet*5000).toLocaleString()} GNF retenue</b></div><div>Absences ce mois : <b>${nbAbs} x 20 000 = ${(nbAbs*20000).toLocaleString()} GNF retenue</b></div><div>Total Retenue : <b>- ${totalRetenue.toLocaleString()} GNF</b></div><div>Total Enveloppes à payer : <b>${totalEnv.toLocaleString()} GNF</b></div></div>
+                <div class="rapport-card"><h4>💊 5. STOCK (aujourd'hui)</h4><div>🔴 RUPTURE : <b>${nbRupture}</b> &nbsp; 🟠 ALERTE : <b>${nbAlerte}</b> &nbsp; 🟢 OK : <b>${nbOk}</b></div><div>🔴 EXPIRÉ : <b>${nbExpire}</b> &nbsp; 🟠 EXPIRE BIENTÔT : <b>${nbBientot}</b> &nbsp; 🟢 BON : <b>${nbBon}</b></div><div>Total valeur stock : <b>${totalStock.toLocaleString()} GNF</b></div></div>
+                <div class="total-box">✅ Fin du Rapport - ${moisLabel}</div>
+                `;
+              }
+            });
+          });
+        });
+      });
+    });
+  });
+}
+/* ===== FIN RAPPORT ===== */
 
 /* ===== DETTES - FINI, INTACT ===== */
 let dettesNonPayeData = {};
