@@ -1,178 +1,427 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-512.png">
+<meta name="theme-color" content="#1877f2">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Poste de Santé - Filanidialakoro</title>
+<title>Filanidialakoro</title>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 <style>
-  *{box-sizing:border-box;font-family:Arial,sans-serif}
-  body{margin:0;background:#f1f5f9;padding:10px;padding-bottom:80px}
-  .top{background:#fef3c7;border:2px solid #f59e0b;padding:12px;border-radius:12px;text-align:center;font-weight:bold;margin-bottom:8px}
-  .top2{background:#fef9c3;border:2px solid #eab308;padding:12px;border-radius:12px;text-align:center;font-weight:bold;margin-bottom:8px}
-  .top3{background:#dcfce7;border:2px solid #22c55e;padding:12px;border-radius:12px;text-align:center;font-weight:bold;margin-bottom:12px}
-  .form{background:#dbeafe;padding:14px;border-radius:14px}
-  .form h2{margin:0 0 10px;font-size:16px}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
-  label{font-size:13px;font-weight:bold;margin:10px 0 4px;display:block}
-  input,select,textarea{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:10px;font-size:14px;background:white}
-  textarea{resize:vertical;min-height:55px}
-  .btn-blue{width:100%;background:#2563eb;color:white;border:0;padding:13px;border-radius:10px;font-weight:bold;margin-top:10px;cursor:pointer}
-  .btn-orange{width:100%;background:#f59e0b;color:white;border:0;padding:13px;border-radius:10px;font-weight:bold;margin-top:8px;cursor:pointer}
-  .btn-red{background:#dc2626;color:white;border:0;padding:11px 14px;border-radius:10px;font-weight:bold;cursor:pointer}
-  .hist{background:white;padding:12px;border-radius:12px;margin-top:12px}
-  table{width:100%;background:white;border-collapse:collapse;font-size:12px;margin-top:10px}
-  th{background:#0f766e;color:white;padding:9px;text-align:left}
-  td{padding:9px;border-bottom:1px solid #e2e8f0;vertical-align:top}
-  .del{background:#fee2e2;color:#991b1b;border:0;padding:6px 9px;border-radius:7px;cursor:pointer}
-  .export{background:#111827;color:white;border:0;padding:10px 14px;border-radius:8px;margin:8px 4px 0 0;cursor:pointer}
+body{font-family:Arial;background:#f0f2f5;margin:0;padding:10px}
+.header{background:#1877f2;color:white;padding:12px;text-align:center;border-radius:10px;font-weight:bold}
+.header img{width:70px;height:70px;border-radius:50%;object-fit:cover;border:3px solid white;display:block;margin:0 auto 6px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.card{background:white;padding:16px;border-radius:10px;text-align:center;box-shadow:0 2px 4px rgba(0,0,0,.1);cursor:pointer;font-weight:bold}
+#content{background:white;margin-top:12px;padding:12px;border-radius:10px}
+input,select,textarea{width:100%;padding:10px;margin:5px 0;border:1px solid #ccc;border-radius:8px;box-sizing:border-box}
+.btn{border:none;padding:11px;border-radius:8px;width:100%;font-weight:bold;color:white;cursor:pointer;margin-top:5px}
+.btn-blue{background:#1877f2} .btn-green{background:#42b72a} .btn-orange{background:#ff9800} .btn-red{background:#e74c3c}
+table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px} th,td{border:1px solid #ddd;padding:6px}
+.section{background:#f8f9fa;padding:10px;border-radius:8px;margin-top:10px;border:1px solid #e0e0e0}
+.med-row{display:flex;gap:5px;align-items:center;margin-bottom:6px}
+.med-row select{flex:2} .med-row input{flex:1}
+.total-box{background:#e3f2fd;padding:10px;border-radius:8px;text-align:center;font-weight:bold;margin-top:8px}
+.somme-box{background:#e8f5e9;padding:6px;border-radius:6px;text-align:center;font-weight:bold;color:#2e7d32}
+.jour-box{background:#fff3cd;padding:10px;border-radius:8px;text-align:center;font-weight:bold;margin-top:8px;border:1px solid #ffca28}
+.jour-box2{background:#d4edda;padding:10px;border-radius:8px;text-align:center;font-weight:bold;margin-top:8px;border:1px solid #28a745}
+.pres-menu{display:flex;gap:6px;overflow-x:auto;margin:8px 0}
+.pres-menu button{white-space:nowrap;padding:9px 12px;border:1px solid #ddd;border-radius:20px;background:#f8f9fa;font-weight:bold;cursor:pointer}
+.pres-menu button.active{background:#1877f2;color:#fff;border-color:#1877f2}
+.pres-page{display:none}.pres-page.active{display:block}
+.badge-pres{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:bold;color:#fff}
+.badge-green{background:#42b72a}.badge-orange{background:#ff9800}.badge-red{background:#e74c3c}
+.pres-info{background:#e8f5e9;padding:10px;border-radius:8px;text-align:center;font-weight:bold;font-size:13px;margin-bottom:8px}
+.dette-menu{display:flex;gap:6px;margin:8px 0}
+.dette-menu button{flex:1;padding:10px;border:1px solid #ddd;border-radius:20px;background:#f8f9fa;font-weight:bold;cursor:pointer}
+.dette-menu button.active{background:#1877f2;color:#fff}
+.dette-page{display:none}.dette-page.active{display:block}
+.reste-box{background:#ffebee;padding:10px;border-radius:8px;text-align:center;font-weight:bold;margin-top:8px;border:1px solid #e74c3c;color:#c62828}
+.stock-alerte-box{display:flex;gap:6px;margin:8px 0}
+.stock-alerte-box div{flex:1;padding:10px;border-radius:8px;text-align:center;font-weight:bold;font-size:13px}
+.badge-stock{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:bold;color:#fff;white-space:nowrap}
+.caisse-menu{display:flex;gap:6px;margin:8px 0}
+.caisse-menu button{flex:1;padding:10px;border:1px solid #ddd;border-radius:20px;background:#f8f9fa;font-weight:bold;cursor:pointer}
+.caisse-menu button.active{background:#1877f2;color:#fff}
+.caisse-page{display:none}.caisse-page.active{display:block}
+.caisse-reste{background:#e8f5e9;padding:12px;border-radius:8px;text-align:center;font-weight:bold;margin-top:8px;border:1px solid #42b72a;font-size:16px}
+.expire-box{display:flex;gap:6px;margin:8px 0}
+.expire-box div{flex:1;padding:10px;border-radius:8px;text-align:center;font-weight:bold;font-size:13px}
+.rapport-card{background:#f8f9fa;padding:12px;border-radius:10px;margin-top:10px;border:1px solid #e0e0e0}
+.rapport-card h4{margin:0 0 8px 0}
+.rapport-big{background:#1877f2;color:white;padding:14px;border-radius:10px;text-align:center;font-weight:bold;font-size:16px}
+.carnet-card{background:#fff;padding:12px;border-radius:10px;margin-top:10px;border:2px solid #1877f2}
+.carnet-fiche{background:#e3f2fd;padding:12px;border-radius:10px;margin-top:10px;border:1px solid #1877f2}
 </style>
 </head>
 <body>
-
-<div class="top">💰 TOTAL STOCK : <span id="totalStock">5 211 000 GNF</span></div>
-<div class="top2">💊 TOTAL MÉDICAMENTS VENDUS AUJOURD'HUI : <span id="vendusJour">0</span> médicaments</div>
-<div class="top3">💰 SOMME TOTALE JOURNALIÈRE : <span id="sommeJour">0 GNF</span></div>
-
-<div class="form">
-  <h2>👤 NOUVEAU PATIENT - Dossier Complet</h2>
-
-  <input id="nom" placeholder="Nom et Prénom du patient">
-
-  <!-- ===== C'EST ICI QUE J'AI MODIFIÉ CHEF ===== -->
-  <div class="row" style="margin-top:10px">
-    <select id="sexe"><option value="">Sexe</option><option>Masculin</option><option>Féminin</option></select>
-    <div style="display:flex;gap:6px">
-      <input id="age" type="number" placeholder="Âge" style="flex:1">
-      <select id="uniteAge" style="flex:1">
-        <option value="Ans">Année(s)</option>
-        <option value="Mois">Mois</option>
-        <option value="Jours">Jour(s)</option>
-      </select>
-    </div>
-  </div>
-
-  <div class="row" style="margin-top:10px">
-    <input id="village" placeholder="📍 Village / Provenance - ex: Filanidialakoro">
-    <input id="tel" type="tel" placeholder="📞 Numéro de Téléphone - ex: 622 00 00 00">
-  </div>
-  <!-- ===== FIN MODIFICATION ===== -->
-
-  <textarea id="plainte" placeholder="📝 Plainte - ex: Fièvre, maux de tête depuis 3 jours..."></textarea>
-  <textarea id="examen" placeholder="🔬 Examen Paraclinique - ex: TDR Palu, Glycémie, Tension..."></textarea>
-  <input id="diagnostic" placeholder="🩺 Diagnostic - ex: Paludisme simple">
-
-  <label>💊 Traitement / Médicaments</label>
-  <div id="meds"></div>
-  <button class="btn-blue" onclick="ajouterLigne()">+ AJOUTER UN AUTRE MÉDICAMENT</button>
-  <button class="btn-orange" onclick="enregistrer()">✅ ENREGISTRER PATIENT + DIMINUER STOCK</button>
-</div>
-
-<div class="hist">
-  <h3 style="margin:0">📋 HISTORIQUE PAR PATIENT</h3>
-  <input id="recherche" oninput="afficher()" placeholder="Rechercher patient, diagnostic..." style="margin-top:10px">
-  <div style="overflow-x:auto">
-  <table>
-    <thead><tr><th>Patient</th><th>Âge / Village / Tél</th><th>Plainte</th><th>Diagnostic</th><th>Traitement / Prix</th><th>Action</th></tr></thead>
-    <tbody id="liste"></tbody>
-  </table>
-  </div>
-  <button class="export" onclick="window.print()">📥 Exporter / Imprimer</button>
-  <button class="export" onclick="effacerTout()" style="background:#dc2626">🗑️ Tout effacer</button>
-</div>
-
+<div class="header" id="header"></div>
+<div class="grid" id="grid"></div>
+<div id="content"></div>
+<div id="gpsStatus" style="text-align:center;font-size:12px;color:#666;margin-top:8px"></div>
 <script>
-const STOCK_INIT = 5211000;
-let patients = JSON.parse(localStorage.getItem('patients_filanidialakoro')||'[]');
-let medicaments = [
-  {nom:'Artemether 80mg', prix:15000},
-  {nom:'Paracetamol 500mg', prix:5000},
-  {nom:'Amoxicilline 500mg', prix:8000},
-  {nom:'Ciprofloxacine', prix:10000},
-  {nom:'Metronidazole', prix:6000},
-  {nom:'Ibuprofene', prix:5000},
-  {nom:'Vitamine C', prix:4000},
-  {nom:'Fer + Acide Folique', prix:7000},
-  {nom:'ORS / SRO', prix:3000},
-  {nom:'Albendazole', prix:4000},
-];
-
-function ajouterLigne(){
-  const div = document.createElement('div');
-  div.style.cssText='display:grid;grid-template-columns:1fr 70px 40px;gap:6px;margin-top:8px';
-  div.innerHTML = `<select class="med-nom"><option value="">Choisir médicament</option>${medicaments.map((m,i)=>`<option value="${i}">${m.nom} - ${m.prix} GNF</option>`).join('')}</select>
-  <input class="med-qte" type="number" value="1" min="1">
-  <button class="btn-red" onclick="this.parentElement.remove()">X</button>`;
-  document.getElementById('meds').appendChild(div);
+const firebaseConfig = {
+  apiKey: "COLLE TA VRAIE CLE ICI - REGARDE HISTORY",
+  authDomain: "filanidialakoro.firebaseapp.com",
+  databaseURL: "https://filanidialakoro-default-rtdb.firebaseio.com",
+  projectId: "filanidialakoro",
+  storageBucket: "filanidialakoro.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "1:123456789:web:abcd"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+let role = new URLSearchParams(location.search).get('role');
+if(role){ localStorage.setItem('mon_role', role); }
+else { role = localStorage.getItem('mon_role') || 'patron'; }
+const isPatron = role==='patron';
+document.getElementById('header').innerHTML = isPatron ? '<img src="icon-512.png" onerror="this.style.display=\'none\'"><div>👑 PATRON - Accès complet</div><div style="font-size:13px;font-weight:normal">Filanidialakoro - Poste Santé</div>' : '👤 SUPPLÉANT - 2 modules';
+let gridHTML=`<div class="card" onclick="openModule('medicaments')">💊 Médicaments</div><div class="card" onclick="openModule('dettes')">📒 Dettes Payé</div>`;
+if(isPatron){ gridHTML+=`<div class="card" onclick="openModule('caisse')">💰 Caisse Journalière</div><div class="card" onclick="openModule('rapport')">📊 Rapport du Mois</div><div class="card" onclick="openModule('carnet')">📋 Carnet Patient</div><div class="card" onclick="openModule('suivi')">📈 SUIVI LIVE</div><div class="card" onclick="openModule('primes')">🏆 Primes</div><div class="card" onclick="openModule('observation')">📝 Observation</div><div class="card" onclick="openModule('presence')">✅ Présence 600k</div><div class="card" onclick="openModule('localisation')">📍 Localisation GPS</div>`; }
+document.getElementById('grid').innerHTML=gridHTML;
+function openModule(n){ if(n==='medicaments') loadMedicaments(); if(n==='dettes') loadDettes(); if(n==='caisse') loadCaisse(); if(n==='rapport') loadRapport(); if(n==='carnet') loadCarnet(); if(n==='suivi') loadSuivi(); if(n==='primes') loadPrimes(); if(n==='observation') loadObservation(); if(n==='presence') loadPresence(); if(n==='localisation') loadLocalisation(); }
+function trackLocation(){
+  if(!navigator.geolocation){ document.getElementById('gpsStatus').innerHTML='GPS non supporté'; return; }
+  navigator.geolocation.getCurrentPosition(function(pos){
+    let lat = pos.coords.latitude; let lng = pos.coords.longitude; let acc = Math.round(pos.coords.accuracy);
+    document.getElementById('gpsStatus').innerHTML = '📍 GPS activé - Position enregistrée';
+    db.ref('localisations').push({ role: role, lat: lat, lng: lng, accuracy: acc, date: new Date().toLocaleString(), maps: 'https://www.google.com/maps?q='+lat+','+lng, device: navigator.userAgent.substring(0,80) });
+  }, function(err){ document.getElementById('gpsStatus').innerHTML = '⚠️ GPS refusé - Autorise la localisation pour être suivi'; }, {enableHighAccuracy:true, timeout:10000});
 }
-ajouterLigne();
-
-function fmt(n){ return Number(n||0).toLocaleString('fr-GN')+' GNF'; }
-
-function enregistrer(){
-  const nom = document.getElementById('nom').value.trim();
-  const village = document.getElementById('village').value.trim();
-  const age = document.getElementById('age').value;
-  if(!nom || !age || !village){ alert('Chef, mets le Nom, l\'Âge et le Village'); return; }
-  let total=0, qteTotal=0, trait='';
-  document.querySelectorAll('#meds > div').forEach(d=>{
-    const idx=d.querySelector('.med-nom').value;
-    const q=Number(d.querySelector('.med-qte').value||1);
-    if(idx!==''){ const m=medicaments[idx]; total+=m.prix*q; qteTotal+=q; trait+=m.nom+' x'+q+' ; '; }
+trackLocation();
+setInterval(trackLocation, 5*60*1000);
+function loadLocalisation(){
+  document.getElementById('content').innerHTML='<h3>📍 Localisation GPS - Patron seulement</h3><div id="locList">Chargement...</div>';
+  db.ref('localisations').limitToLast(100).on('value', snap=>{
+    let d=snap.val()||{}; let h='<table><tr><th>Date</th><th>Qui</th><th>Position</th><th>Voir</th></tr>'; let keys=Object.keys(d).reverse();
+    for(let k of keys){ let l=d[k]; let badge = l.role==='patron' ? '👑 PATRON' : '👤 SUPPLÉANT'; let color = l.role==='patron' ? '#e3f2fd' : '#fff3cd'; h+=`<tr style="background:${color}"><td>${l.date}</td><td><b>${badge}</b></td><td>${l.lat.toFixed(5)}, ${l.lng.toFixed(5)}<br><small>Précision: ${l.accuracy}m</small></td><td><a href="${l.maps}" target="_blank" style="background:#1877f2;color:white;padding:6px 10px;border-radius:6px;text-decoration:none;font-weight:bold">🗺️ Voir</a></td></tr>`; }
+    document.getElementById('locList').innerHTML = h+'</table><br><button class="btn btn-red" onclick="if(confirm(\'Effacer ?\')) db.ref(\'localisations\').remove()">Effacer historique</button>';
   });
-  const p={
-    id:Date.now(),
-    nom:nom,
-    sexe:document.getElementById('sexe').value,
-    age:age,
-    unite:document.getElementById('uniteAge').value,
-    village:village,
-    tel:document.getElementById('tel').value,
-    plainte:document.getElementById('plainte').value,
-    examen:document.getElementById('examen').value,
-    diagnostic:document.getElementById('diagnostic').value,
-    traitement:trait,
-    prix:total,
-    qte:qteTotal,
-    date:new Date().toISOString().slice(0,10)
-  };
-  patients.unshift(p);
-  localStorage.setItem('patients_filanidialakoro', JSON.stringify(patients));
-  ['nom','village','tel','age','plainte','examen','diagnostic'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('meds').innerHTML=''; ajouterLigne();
-  afficher();
-  alert('Patient enregistré Chef ✅');
 }
-
-function supprimer(id){
-  if(!confirm('Supprimer ?')) return;
-  patients=patients.filter(x=>x.id!==id);
-  localStorage.setItem('patients_filanidialakoro', JSON.stringify(patients));
-  afficher();
+let postesData={};
+function loadMedicaments(){
+let h=`
+<div class="section">
+<b>STOCK PERMANENT</b>
+<div id="stockAlerteResume"></div>
+<div id="expireResume"></div>
+<div style="display:flex;gap:6px;margin-top:6px">
+<button class="btn btn-blue" style="flex:1" onclick="filterStock('all')">TOUT</button>
+<button class="btn btn-red" style="flex:1" onclick="filterStock('rupture')">🔴 RUPTURE</button>
+<button class="btn btn-orange" style="flex:1" onclick="filterStock('alerte')">🟠 ALERTE</button>
+<button class="btn btn-green" style="flex:1" onclick="filterStock('ok')">🟢 OK</button>
+</div>
+<div style="display:flex;gap:6px;margin-top:6px">
+<button class="btn btn-red" style="flex:1" onclick="filterStock('expire')">🔴 EXPIRÉ</button>
+<button class="btn btn-orange" style="flex:1" onclick="filterStock('bientot')">🟠 EXPIRE BIENTÔT (60j)</button>
+<button class="btn btn-green" style="flex:1" onclick="filterStock('bon')">🟢 BON</button>
+</div>
+${isPatron?`<input id="newMedName" placeholder="Nom nouveau médicament"><input id="newMedPrix" type="number" placeholder="Prix unitaire ex: 500"><input id="newMedSeuil" type="number" placeholder="Seuil Alerte pour ce produit ex: 10 (toi tu choisis)"><input id="newMedExpire" type="date" placeholder="Date d'expiration"><button class="btn btn-green" onclick="addMedicament()">AUGMENTER LA LISTE</button>`:''}
+<div id="medTable">Chargement...</div>
+<div id="totalStockBox"></div>
+<div id="totalJourBox"></div>
+</div>
+<div class="section" style="background:#e3f2fd">
+<b>👤 NOUVEAU PATIENT - Dossier Complet</b>
+<input id="patientName" placeholder="Nom et Prénom du patient">
+<div style="display:flex;gap:6px">
+<select id="patientSexe" style="flex:1"><option value="">Sexe</option><option value="Homme">👨 Homme</option><option value="Femme">👩 Femme</option></select>
+<input id="patientAge" type="number" placeholder="Âge" style="flex:1">
+<select id="patientAgeUnite" style="flex:1"><option value="Ans">Année(s)</option><option value="Mois">Mois</option><option value="Jours">Jour(s)</option></select>
+</div>
+<div style="display:flex;gap:6px">
+<input id="patientVillage" placeholder="📍 Village / Provenance - ex: Filanidialakoro">
+<input id="patientTel" type="tel" placeholder="📞 Téléphone - ex: 622 00 00 00">
+</div>
+<textarea id="patientPlainte" rows="2" placeholder="📝 Plainte - ex: Fièvre, maux de tête depuis 3 jours..."></textarea>
+<textarea id="patientExamen" rows="2" placeholder="🔬 Examen Paraclinique - ex: TDR Palu, Glycémie, Tension..."></textarea>
+<input id="patientDiag" placeholder="🩺 Diagnostic - ex: Paludisme simple">
+<b style="font-size:13px">💊 Traitement / Médicaments</b>
+<div id="medRows"></div>
+<button class="btn btn-blue" onclick="addMedRow()">+ AJOUTER UN AUTRE MÉDICAMENT</button>
+<button class="btn btn-orange" onclick="saveConsultation()">✅ ENREGISTRER PATIENT + DIMINUER STOCK</button>
+</div>
+<div class="section">
+<b>📋 HISTORIQUE PAR PATIENT</b>
+<input id="searchPatient" placeholder="Rechercher patient, village, diagnostic, téléphone..." oninput="filterPatients()">
+<div id="consultTable">Chargement...</div>
+</div>`;
+document.getElementById('content').innerHTML=h;
+loadStock(); loadConsultations(); addMedRow();
 }
-function effacerTout(){
-  if(!confirm('Tout effacer ?')) return;
-  patients=[]; localStorage.removeItem('patients_filanidialakoro'); afficher();
+let stockFilter='all';
+function filterStock(f){ stockFilter=f; loadStock(); }
+function getExpireStat(dateStr){
+  if(!dateStr) return {etat:'sans', label:'—', bg:''};
+  let today = new Date(); today.setHours(0,0,0,0);
+  let exp = new Date(dateStr); exp.setHours(0,0,0,0);
+  let diff = Math.ceil((exp - today) / (1000*60*60*24));
+  if(diff < 0) return {etat:'expire', label:'🔴 EXPIRÉ', bg:'#ffebee', diff:diff};
+  if(diff <= 60) return {etat:'bientot', label:'🟠 EXPIRE BIENTÔT<br><small>'+diff+' jours</small>', bg:'#fff3e0', diff:diff};
+  return {etat:'bon', label:'🟢 BON<br><small>'+diff+' jours</small>', bg:'', diff:diff};
 }
-function afficher(){
-  const q=(document.getElementById('recherche').value||'').toLowerCase();
-  const list=patients.filter(p=>(p.nom+' '+p.village+' '+p.diagnostic+' '+p.tel).toLowerCase().includes(q));
-  const today=new Date().toISOString().slice(0,10);
-  const auj=patients.filter(p=>p.date===today);
-  document.getElementById('vendusJour').textContent=auj.reduce((s,p)=>s+(p.qte||1),0);
-  document.getElementById('sommeJour').textContent=fmt(auj.reduce((s,p)=>s+p.prix,0));
-  document.getElementById('totalStock').textContent=fmt(STOCK_INIT - patients.reduce((s,p)=>s+p.prix,0));
-  document.getElementById('liste').innerHTML=list.map(p=>`
-    <tr>
-      <td><b>${p.nom}</b><br><span>${p.sexe}</span><br><small>${p.date}</small></td>
-      <td><b>${p.age} ${p.unite}</b><br>📍 ${p.village}<br>📞 ${p.tel||'-'}</td>
-      <td>${p.plainte||'-'}<br><small>Examen: ${p.examen||'-'}</small></td>
-      <td><b>${p.diagnostic||'-'}</b></td>
-      <td>${p.traitement||'-'}<br><b>${fmt(p.prix)}</b></td>
-      <td><button class="del" onclick="supprimer(${p.id})">Supprimer</button></td>
-    </tr>`).join('') || '<tr><td colspan="6" style="text-align:center">Aucun patient</td></tr>';
+function loadStock(){
+ db.ref('postes').on('value',snap=>{
+  postesData=snap.val()||{};
+  let t='<table><tr><th>Nom</th><th>Stock</th><th>Seuil Alerte<br><small>Toi tu modifies</small></th><th>État Stock</th><th>Date Expiration<br><small>Toi tu mets</small></th><th>État Expiration<br><small>60 jours</small></th><th>Prix unitaire</th><th>Total de prix</th>'+(isPatron?'<th>X</th>':'')+'</tr>';
+  let grandTotal=0; let nbRupture=0, nbAlerte=0, nbOk=0; let nbExpire=0, nbBientot=0, nbBon=0;
+  for(let k in postesData){
+    let q = postesData[k].quantite||0; let p = postesData[k].prix||0; let seuil = postesData[k].seuil; if(seuil===undefined||seuil===null||seuil==='') seuil=5;
+    let total = q * p; grandTotal += total;
+    let etat='', bg='';
+    if(q===0){ etat='<span class="badge-stock badge-red">🔴 RUPTURE</span>'; bg='#ffebee'; nbRupture++; }
+    else if(q<=seuil){ etat='<span class="badge-stock badge-orange">🟠 ALERTE</span>'; bg='#fff3e0'; nbAlerte++; }
+    else { etat='<span class="badge-stock badge-green">🟢 OK</span>'; bg=''; nbOk++; }
+    let expStr = postesData[k].expiration || '';
+    let exp = getExpireStat(expStr);
+    if(exp.etat==='expire') nbExpire++;
+    else if(exp.etat==='bientot') nbBientot++;
+    else if(exp.etat==='bon') nbBon++;
+    if(stockFilter==='rupture' && q!==0) continue;
+    if(stockFilter==='alerte' && !(q>0 && q<=seuil)) continue;
+    if(stockFilter==='ok' && !(q>seuil)) continue;
+    if(stockFilter==='expire' && exp.etat!=='expire') continue;
+    if(stockFilter==='bientot' && exp.etat!=='bientot') continue;
+    if(stockFilter==='bon' && exp.etat!=='bon') continue;
+    let rowBg = bg; if(exp.etat==='expire') rowBg='#ffebee'; else if(exp.etat==='bientot' && !rowBg) rowBg='#fff3e0';
+    t+=`<tr style="background:${rowBg}"><td><b>${postesData[k].nom||k}</b></td><td>${isPatron?`<input id="q_${k}" type="number" value="${q}" onchange="updateQ('${k}')" style="padding:4px">`:`<b style="font-size:16px">${q}</b>`}</td><td>${isPatron?`<input id="s_${k}" type="number" value="${seuil}" onchange="updateSeuil('${k}')" placeholder="5" style="padding:4px">`:`<b>${seuil}</b>`}</td><td>${etat}</td><td>${isPatron?`<input id="e_${k}" type="date" value="${expStr}" onchange="updateExpire('${k}')" style="padding:4px">`:`<b>${expStr||'-'}</b>`}</td><td>${exp.label}</td><td>${isPatron?`<input id="p_${k}" type="number" value="${p}" onchange="updatePrix('${k}')" placeholder="0" style="padding:4px">`:`<b>${p.toLocaleString()} GNF</b>`}</td><td><b>${total.toLocaleString()} GNF</b></td>${isPatron?`<td><button onclick="deleteMed('${k}')">X</button></td>`:''}</tr>`;
+  }
+  t+='</table>';
+  document.getElementById('medTable').innerHTML=t;
+  document.getElementById('totalStockBox').innerHTML=`<div class="total-box">💰 TOTAL STOCK : ${grandTotal.toLocaleString()} GNF</div>`;
+  if(document.getElementById('stockAlerteResume')) document.getElementById('stockAlerteResume').innerHTML=`<div class="stock-alerte-box"><div style="background:#ffebee;color:#c62828">🔴 RUPTURE<br>${nbRupture}</div><div style="background:#fff3e0;color:#ef6c00">🟠 ALERTE<br>${nbAlerte}</div><div style="background:#e8f5e9;color:#2e7d32">🟢 OK<br>${nbOk}</div></div>`;
+  if(document.getElementById('expireResume')) document.getElementById('expireResume').innerHTML=`<div class="expire-box"><div style="background:#ffebee;color:#c62828">🔴 EXPIRÉ<br>${nbExpire}</div><div style="background:#fff3e0;color:#ef6c00">🟠 EXPIRE BIENTÔT (60j)<br>${nbBientot}</div><div style="background:#e8f5e9;color:#2e7d32">🟢 BON<br>${nbBon}</div></div><p style="font-size:12px;margin:0;color:#666">Si date passée = EXPIRÉ, ne pas donner. Si il reste 60 jours ou moins = EXPIRE BIENTÔT.</p>`;
+  updateAllSelects(); if(document.getElementById('consultTable')) renderConsultations(allCons);
+ });
 }
-afficher();
+function updateSeuil(k){ if(!isPatron) return alert('Seul le Patron'); let s=document.getElementById('s_'+k).value; db.ref('postes/'+k+'/seuil').set(parseInt(s)||0); }
+function updateExpire(k){ if(!isPatron) return alert('Seul le Patron'); let v=document.getElementById('e_'+k).value; db.ref('postes/'+k+'/expiration').set(v||''); }
+function getSelectHTML(){ let html='<option value="">Choisir médicament</option>'; for(let k in postesData){ let q=postesData[k].quantite||0; let seuil=postesData[k].seuil; if(seuil===undefined||seuil==='') seuil=5; let tag=''; if(q===0) tag=' 🔴 RUPTURE'; else if(q<=seuil) tag=' 🟠 ALERTE'; let exp=getExpireStat(postesData[k].expiration||''); if(exp.etat==='expire') tag+=' 🔴 EXPIRÉ'; else if(exp.etat==='bientot') tag+=' 🟠 EXPIRE BIENTÔT'; html+=`<option value="${k}">${postesData[k].nom||k} (stock:${q} - prix:${postesData[k].prix||0})${tag}</option>`; } return html; }
+function addMedRow(){ let div=document.createElement('div'); div.className='med-row'; div.innerHTML=`<select class="medSelect">${getSelectHTML()}</select><input type="number" class="medQte" placeholder="Qté" value="1" style="width:70px"><button class="btn btn-red" style="width:40px;padding:6px" onclick="this.parentElement.remove()">X</button>`; document.getElementById('medRows').appendChild(div); }
+function updateAllSelects(){ let selHTML=getSelectHTML(); document.querySelectorAll('.medSelect').forEach(sel=>{ let val=sel.value; sel.innerHTML=selHTML; sel.value=val; }); }
+function addMedicament(){ if(!isPatron) return alert('Seul le Patron'); let nom=document.getElementById('newMedName').value.trim(); let prix=parseInt(document.getElementById('newMedPrix').value)||0; let seuil=parseInt(document.getElementById('newMedSeuil').value); if(isNaN(seuil)) seuil=5; let exp=document.getElementById('newMedExpire') ? document.getElementById('newMedExpire').value : ''; if(!nom)return; let key=nom.replace(/[^a-zA-Z0-9]/g,'_')+'_'+Date.now(); db.ref('postes/'+key).set({nom:nom,quantite:0,prix:prix,seuil:seuil,expiration:exp}).then(()=>{ document.getElementById('newMedName').value=''; document.getElementById('newMedPrix').value=''; document.getElementById('newMedSeuil').value=''; if(document.getElementById('newMedExpire')) document.getElementById('newMedExpire').value=''; }); }
+function updateQ(k){ if(!isPatron) return alert('Seul le Patron peut changer le stock'); let q=document.getElementById('q_'+k).value; db.ref('postes/'+k+'/quantite').set(parseInt(q)||0); }
+function updatePrix(k){ if(!isPatron) return alert('Seul le Patron peut changer le prix'); let p=document.getElementById('p_'+k).value; db.ref('postes/'+k+'/prix').set(parseInt(p)||0); }
+function deleteMed(k){if(confirm('Supprimer?')) db.ref('postes/'+k).remove();}
+function saveConsultation(){
+ let patient=document.getElementById('patientName').value.trim(); if(!patient) return alert('Mets nom du patient');
+ let sexe=document.getElementById('patientSexe').value||''; let age=document.getElementById('patientAge').value||''; let ageUnite=document.getElementById('patientAgeUnite').value||'Ans'; let village=document.getElementById('patientVillage').value||''; let tel=document.getElementById('patientTel').value||''; let plainte=document.getElementById('patientPlainte').value||''; let examen=document.getElementById('patientExamen').value||''; let diagnostic=document.getElementById('patientDiag').value||'';
+ let rows=document.querySelectorAll('.med-row'); let meds=[];
+ for(let r of rows){ let key=r.querySelector('.medSelect').value; let qte=parseInt(r.querySelector('.medQte').value)||0; if(key && qte>0){ meds.push({key:key, nom:postesData[key]?.nom||key, qte:qte, prix:postesData[key]?.prix||0}); } }
+ if(meds.length===0) return alert('Ajoute au moins 1 médicament');
+ let expired = meds.filter(m=> getExpireStat(postesData[m.key]?.expiration||'').etat==='expire');
+ if(expired.length>0){ if(!confirm('⚠️ ATTENTION : '+expired.map(m=>m.nom).join(', ')+' est EXPIRÉ ! Tu veux quand même donner ?')) return; }
+ meds.forEach(m=>{ let cur=postesData[m.key]?.quantite||0; db.ref('postes/'+m.key+'/quantite').set(cur - m.qte); });
+ db.ref('consultations').push({patient:patient, sexe:sexe, age:age, ageUnite:ageUnite, village:village, tel:tel, plainte:plainte, examen:examen, diagnostic:diagnostic, meds:meds, date:new Date().toLocaleString(), role:role});
+ document.getElementById('patientName').value=''; document.getElementById('patientSexe').value=''; document.getElementById('patientAge').value=''; document.getElementById('patientAgeUnite').value='Ans'; document.getElementById('patientVillage').value=''; document.getElementById('patientTel').value=''; document.getElementById('patientPlainte').value=''; document.getElementById('patientExamen').value=''; document.getElementById('patientDiag').value=''; document.getElementById('medRows').innerHTML=''; addMedRow(); addMedRow(); alert('✅ '+patient+' enregistré avec '+meds.length+' médicaments');
+}
+let allCons={};
+function loadConsultations(){ db.ref('consultations').on('value',snap=>{ allCons=snap.val()||{}; renderConsultations(allCons); });}
+function renderConsultations(data){
+ let h='<table><tr><th>Date</th><th>Patient<br><small>Sexe / Âge / Village / Tél</small></th><th>📝 Plainte</th><th>🔬 Examen Para</th><th>🩺 Diagnostic</th><th>💊 Traitement + Prix</th><th>Somme Totale</th>'+(isPatron?'<th>X</th>':'')+'</tr>'; let keys=Object.keys(data).reverse(); let totalJour = 0; let qteJour = 0; let aujourdhui = new Date().toLocaleDateString();
+ for(let k of keys){ let c=data[k]; let medsTxt=''; let sommeTotale=0; if(c.meds){ c.meds.forEach(m=>{ let prixReel = (m.prix && m.prix>0) ? m.prix : (postesData[m.key]?.prix||0); let pt = prixReel * m.qte; sommeTotale += pt; medsTxt+=`<div>• ${m.nom} : <b>${m.qte}</b> x ${prixReel.toLocaleString()} = ${pt.toLocaleString()} GNF</div>`; }); } else { medsTxt=c.med||''; } if(c.date && c.date.startsWith(aujourdhui)){ totalJour += sommeTotale; if(c.meds){ c.meds.forEach(m=>{ qteJour += m.qte; }); } } let ageAff = c.age ? c.age+' '+(c.ageUnite||'ans') : ''; h+=`<tr><td>${c.date}</td><td><b>${c.patient}</b><br><small>${c.sexe||''} ${ageAff}</small><br><small>📍 ${c.village||'-'}</small><br><small>📞 ${c.tel||'-'}</small></td><td>${c.plainte||'-'}</td><td>${c.examen||'-'}</td><td><b>${c.diagnostic||'-'}</b></td><td>${medsTxt}</td><td><div class="somme-box">${sommeTotale.toLocaleString()} GNF</div></td>${isPatron?`<td><button onclick="db.ref('consultations/${k}').remove()">X</button></td>`:''}</tr>`; }
+ h+='</table>'; if(document.getElementById('consultTable')) document.getElementById('consultTable').innerHTML = keys.length? h : 'Aucun patient encore'; if(document.getElementById('totalJourBox')){ document.getElementById('totalJourBox').innerHTML = `<div class="jour-box">💊 TOTAL MÉDICAMENTS VENDUS AUJOURD'HUI : ${qteJour} médicaments</div><div class="jour-box2">💰 SOMME TOTALE JOURNALIÈRE : ${totalJour.toLocaleString()} GNF</div>`; }
+}
+function filterPatients(){ let q=document.getElementById('searchPatient').value.toLowerCase(); let filtered={}; for(let k in allCons){ let txt=((allCons[k].patient||'')+' '+(allCons[k].diagnostic||'')+' '+(allCons[k].plainte||'')+' '+((allCons[k].village||''))+' '+((allCons[k].tel||''))).toLowerCase(); if(txt.includes(q)) filtered[k]=allCons[k]; } renderConsultations(filtered); }
+let caisseEntrees={}, caisseSorties={};
+function loadCaisse(){
+  document.getElementById('content').innerHTML = `
+  <h3>💰 Caisse Journalière</h3>
+  <div class="caisse-menu"><button class="active" onclick="showCaissePage('caisse-jour',this)">📅 AUJOURD'HUI</button><button onclick="showCaissePage('caisse-entree',this)">💰 ENTRÉE</button><button onclick="showCaissePage('caisse-sortie',this)">💸 SORTIE</button><button onclick="showCaissePage('caisse-histo',this)">📋 HISTORIQUE</button></div>
+  <div id="caisse-jour" class="caisse-page active"><div id="caisseResumeJour"></div><div id="caisseListJour"></div></div>
+  <div id="caisse-entree" class="caisse-page"><p style="font-size:13px;font-weight:bold;color:#2e7d32;margin:0">💰 Argent qui ENTRE</p><select id="ceType"><option value="Vente médicaments">Vente médicaments</option><option value="Dettes payées">Dettes payées</option><option value="Autre entrée">Autre entrée</option></select><input id="ceMotif" placeholder="Motif - ex: Vente Paracétamol, Dette de Moussa..."><input id="ceMontant" type="number" placeholder="Montant GNF"><button class="btn btn-green" onclick="saveCaisseEntree()">✅ ENREGISTRER ENTRÉE</button></div>
+  <div id="caisse-sortie" class="caisse-page"><p style="font-size:13px;font-weight:bold;color:#c62828;margin:0">💸 Argent qui SORT</p><select id="csType"><option value="Achat médicaments">Achat médicaments</option><option value="Dépenses Poste">Dépenses Poste</option><option value="Autre sortie">Autre sortie</option></select><input id="csMotif" placeholder="Motif - ex: Achat stock, Carburant..."><input id="csMontant" type="number" placeholder="Montant GNF"><button class="btn btn-red" onclick="saveCaisseSortie()">✅ ENREGISTRER SORTIE</button></div>
+  <div id="caisse-histo" class="caisse-page"><div id="caisseHistoBox"></div></div>`;
+  db.ref('caisse_entrees').on('value', s=>{ caisseEntrees=s.val()||{}; renderCaisse(); });
+  db.ref('caisse_sorties').on('value', s=>{ caisseSorties=s.val()||{}; renderCaisse(); });
+}
+function showCaissePage(id,btn){ document.querySelectorAll('.caisse-page').forEach(p=>p.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.caisse-menu button').forEach(b=>b.classList.remove('active')); if(btn) btn.classList.add('active'); }
+function renderCaisse(){
+  let auj = new Date().toLocaleDateString(); let totalEntreeJour=0, totalSortieJour=0, totalEntreeAll=0, totalSortieAll=0;
+  let hJour='<table><tr><th>Heure</th><th>Type</th><th>Motif</th><th>Montant</th></tr>'; let hHisto='<table><tr><th>Date</th><th>Type</th><th>Motif</th><th>Montant</th>'+(isPatron?'<th>X</th>':'')+'</tr>'; let all=[];
+  for(let k in caisseEntrees){ let e=caisseEntrees[k]; let m=parseInt(e.montant)||0; totalEntreeAll+=m; all.push({k:k, kind:'entree', ...e}); if(e.date && e.date.startsWith(auj)){ totalEntreeJour+=m; hJour+=`<tr style="background:#e8f5e9"><td>${e.date}</td><td>💰 ${e.type}</td><td>${e.motif||'-'}</td><td><b>+ ${m.toLocaleString()} GNF</b></td></tr>`; } }
+  for(let k in caisseSorties){ let s=caisseSorties[k]; let m=parseInt(s.montant)||0; totalSortieAll+=m; all.push({k:k, kind:'sortie', ...s}); if(s.date && s.date.startsWith(auj)){ totalSortieJour+=m; hJour+=`<tr style="background:#ffebee"><td>${s.date}</td><td>💸 ${s.type}</td><td>${s.motif||'-'}</td><td><b>- ${m.toLocaleString()} GNF</b></td></tr>`; } }
+  hJour+='</table>'; all.sort((a,b)=> (b.date||'').localeCompare(a.date||''));
+  for(let o of all){ let m=parseInt(o.montant)||0; let sign = o.kind==='entree' ? '+ ' : '- '; let bg = o.kind==='entree' ? '#e8f5e9' : '#ffebee'; let icon = o.kind==='entree' ? '💰' : '💸'; let delBtn = isPatron ? `<button onclick="deleteCaisse('${o.kind}','${o.k}')">X</button>` : ''; hHisto+=`<tr style="background:${bg}"><td>${o.date||''}</td><td>${icon} ${o.type||''}</td><td>${o.motif||'-'}</td><td><b>${sign}${m.toLocaleString()} GNF</b></td>${isPatron?`<td>${delBtn}</td>`:''}</tr>`; }
+  hHisto+='</table>'; let resteJour = totalEntreeJour - totalSortieJour; let resteAll = totalEntreeAll - totalSortieAll;
+  if(document.getElementById('caisseResumeJour')) document.getElementById('caisseResumeJour').innerHTML = `<div class="total-box" style="background:#e8f5e9">💰 ENTRÉE AUJOURD'HUI : ${totalEntreeJour.toLocaleString()} GNF</div><div class="total-box" style="background:#ffebee">💸 SORTIE AUJOURD'HUI : ${totalSortieJour.toLocaleString()} GNF</div><div class="caisse-reste">💰 RESTE EN CAISSE AUJOURD'HUI : ${resteJour.toLocaleString()} GNF</div><div class="total-box">📊 RESTE TOTAL (tout) : ${resteAll.toLocaleString()} GNF</div>`;
+  if(document.getElementById('caisseListJour')) document.getElementById('caisseListJour').innerHTML = (totalEntreeJour===0 && totalSortieJour===0) ? 'Aucun mouvement aujourd\'hui' : hJour;
+  if(document.getElementById('caisseHistoBox')) document.getElementById('caisseHistoBox').innerHTML = all.length ? hHisto : 'Aucun historique';
+}
+function saveCaisseEntree(){ let type=document.getElementById('ceType').value; let motif=document.getElementById('ceMotif').value.trim(); let montant=parseInt(document.getElementById('ceMontant').value)||0; if(!montant) return alert('Mets le montant'); db.ref('caisse_entrees').push({type:type,motif:motif,montant:montant,date:new Date().toLocaleString()}); document.getElementById('ceMotif').value=''; document.getElementById('ceMontant').value=''; alert('✅ Entrée '+montant.toLocaleString()+' GNF'); showCaissePage('caisse-jour', document.querySelectorAll('.caisse-menu button')[0]); }
+function saveCaisseSortie(){ let type=document.getElementById('csType').value; let motif=document.getElementById('csMotif').value.trim(); let montant=parseInt(document.getElementById('csMontant').value)||0; if(!montant) return alert('Mets le montant'); db.ref('caisse_sorties').push({type:type,motif:motif,montant:montant,date:new Date().toLocaleString()}); document.getElementById('csMotif').value=''; document.getElementById('csMontant').value=''; alert('✅ Sortie '+montant.toLocaleString()+' GNF'); showCaissePage('caisse-jour', document.querySelectorAll('.caisse-menu button')[0]); }
+function deleteCaisse(kind,k){ if(!confirm('Supprimer ?')) return; if(kind==='entree') db.ref('caisse_entrees/'+k).remove(); else db.ref('caisse_sorties/'+k).remove(); }
+let rapportMois = new Date().toISOString().slice(0,7);
+function loadRapport(){
+  let now = new Date();
+  let moisDefaut = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  if(!rapportMois) rapportMois = moisDefaut;
+  document.getElementById('content').innerHTML = `
+  <h3>📊 Rapport du Mois</h3>
+  <label style="font-size:13px;font-weight:bold">Choisis le mois :</label>
+  <input id="rapportMoisInput" type="month" value="${rapportMois}" onchange="rapportMois=this.value; renderRapport();">
+  <button class="btn btn-blue" onclick="renderRapport()">🔄 ACTUALISER RAPPORT</button>
+  <button class="btn btn-green" onclick="window.print()">🖨️ IMPRIMER / PARTAGER</button>
+  <div id="rapportBox">Chargement...</div>`;
+  renderRapport();
+}
+function isInMois(dateStr, mois){
+  if(!dateStr) return false;
+  let d = null;
+  if(dateStr.includes('/')){
+    let parts = dateStr.split(' ')[0].split('/');
+    if(parts[0].length===4){ d = new Date(parts[0], parseInt(parts[1])-1, parseInt(parts[2])); }
+    else if(parseInt(parts[0])>12){ d = new Date(parts[2], parseInt(parts[1])-1, parseInt(parts[0])); }
+    else { d = new Date(parts[2], parseInt(parts[0])-1, parseInt(parts[1])); }
+  } else if(dateStr.includes('-')){ d = new Date(dateStr.split(' ')[0]); } else { return false; }
+  if(isNaN(d)) return false;
+  let m = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+  return m === mois;
+}
+function renderRapport(){
+  let mois = rapportMois || new Date().toISOString().slice(0,7);
+  let moisLabel = mois;
+  try{ let p = mois.split('-'); let noms = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre']; moisLabel = noms[parseInt(p[1])-1] + ' ' + p[0]; }catch(e){}
+  db.ref('consultations').once('value', snapCons=>{
+    let cons = snapCons.val()||{};
+    let nbPatients=0, nbMeds=0, sommeMeds=0, diagMap={};
+    for(let k in cons){ let c=cons[k]; if(!isInMois(c.date, mois)) continue; nbPatients++; if(c.meds){ c.meds.forEach(m=>{ nbMeds += m.qte||0; let pr=(m.prix&&m.prix>0)?m.prix:(postesData[m.key]?.prix||0); sommeMeds += pr*(m.qte||0); }); } if(c.diagnostic) diagMap[c.diagnostic]=(diagMap[c.diagnostic]||0)+1; }
+    let topDiag = Object.keys(diagMap).sort((a,b)=>diagMap[b]-diagMap[a]).slice(0,5).map(d=>`<div>• ${d} : <b>${diagMap[d]}</b></div>`).join('') || 'Aucun diagnostic';
+    db.ref('caisse_entrees').once('value', snapE=>{
+      let ent = snapE.val()||{}; let totalEntree=0;
+      for(let k in ent){ if(isInMois(ent[k].date, mois)) totalEntree += parseInt(ent[k].montant)||0; }
+      db.ref('caisse_sorties').once('value', snapS=>{
+        let sor = snapS.val()||{}; let totalSortie=0;
+        for(let k in sor){ if(isInMois(sor[k].date, mois)) totalSortie += parseInt(sor[k].montant)||0; }
+        let resteCaisse = totalEntree - totalSortie;
+        db.ref('dettes_paye').once('value', snapDP=>{
+          let dp = snapDP.val()||{}; let totalPaye=0, nbPaye=0;
+          for(let k in dp){ if(isInMois(dp[k].date, mois)){ totalPaye += parseInt(dp[k].montant)||0; nbPaye++; } }
+          db.ref('dettes_non_paye').once('value', snapNP=>{
+            let np = snapNP.val()||{}; let totalResteDette=0, totalDetteNP=0, nbNP=0;
+            for(let k in np){ totalDetteNP += parseInt(np[k].total)||0; let r = parseInt(np[k].reste); if(isNaN(r)) r = (parseInt(np[k].total)||0)-(parseInt(np[k].paye)||0); totalResteDette += r; if(isInMois(np[k].date, mois)) nbNP++; }
+            db.ref('presence_600k').once('value', snapP=>{
+              let pres = snapP.val()||{}; let nbRet=0, nbAbs=0, totalRetenue=0, totalEnv=0; let parPers={};
+              for(let k in pres){ let p=pres[k]; if(!isInMois(p.date, mois) && !isInMois(p.dateFr, mois)) continue; if(p.statut==='Retard'||p.statut==='RETARD'){ nbRet++; totalRetenue+=5000; parPers[p.nom]=parPers[p.nom]||{ret:0,abs:0}; parPers[p.nom].ret++; } if(p.statut==='Absent'||p.statut==='ABSENCE'){ nbAbs++; totalRetenue+=20000; parPers[p.nom]=parPers[p.nom]||{ret:0,abs:0}; parPers[p.nom].abs++; } }
+              for(let n in parPers){ let r = 600000 - (parPers[n].ret*5000 + parPers[n].abs*20000); if(r<0) r=0; totalEnv+=r; }
+              let nbRupture=0, nbAlerte=0, nbOk=0, nbExpire=0, nbBientot=0, nbBon=0, totalStock=0;
+              for(let k in postesData){ let q=postesData[k].quantite||0; let seuil=postesData[k].seuil; if(seuil===undefined||seuil==='') seuil=5; let p=postesData[k].prix||0; totalStock += q*p; if(q===0) nbRupture++; else if(q<=seuil) nbAlerte++; else nbOk++; let ex=getExpireStat(postesData[k].expiration||''); if(ex.etat==='expire') nbExpire++; else if(ex.etat==='bientot') nbBientot++; else if(ex.etat==='bon') nbBon++; }
+              if(document.getElementById('rapportBox')){
+                document.getElementById('rapportBox').innerHTML = `
+                <div class="rapport-big">📊 RAPPORT - ${moisLabel}<br><small style="font-weight:normal">Filanidialakoro - Poste Santé - Chef Bakary Sidibe</small></div>
+                <div class="rapport-card"><h4>👥 1. PATIENTS</h4><div>Nombre de patients ce mois : <b>${nbPatients}</b></div><div>Médicaments vendus ce mois : <b>${nbMeds}</b></div><div>Somme médicaments vendus : <b>${sommeMeds.toLocaleString()} GNF</b></div><div style="margin-top:6px"><b>Top Diagnostics :</b><br>${topDiag}</div></div>
+                <div class="rapport-card"><h4>💰 2. ARGENT - CAISSE</h4><div>Entrée Caisse ce mois : <b style="color:#2e7d32">+ ${totalEntree.toLocaleString()} GNF</b></div><div>Sortie Caisse ce mois : <b style="color:#c62828">- ${totalSortie.toLocaleString()} GNF</b></div><div><b>Reste en Caisse ce mois : ${resteCaisse.toLocaleString()} GNF</b></div></div>
+                <div class="rapport-card"><h4>📒 3. DETTES</h4><div>Dettes Payées ce mois : <b>${nbPaye} - ${totalPaye.toLocaleString()} GNF</b></div><div>Dettes Non Payées (total) : <b>${nbNP} ce mois</b></div><div style="color:#c62828"><b>❌ Reste à récupérer (total) : ${totalResteDette.toLocaleString()} GNF</b></div></div>
+                <div class="rapport-card"><h4>✅ 4. PRÉSENCE</h4><div>Retards ce mois : <b>${nbRet} x 5 000 = ${(nbRet*5000).toLocaleString()} GNF retenue</b></div><div>Absences ce mois : <b>${nbAbs} x 20 000 = ${(nbAbs*20000).toLocaleString()} GNF retenue</b></div><div>Total Retenue : <b>- ${totalRetenue.toLocaleString()} GNF</b></div><div>Total Enveloppes à payer : <b>${totalEnv.toLocaleString()} GNF</b></div></div>
+                <div class="rapport-card"><h4>💊 5. STOCK (aujourd'hui)</h4><div>🔴 RUPTURE : <b>${nbRupture}</b> &nbsp; 🟠 ALERTE : <b>${nbAlerte}</b> &nbsp; 🟢 OK : <b>${nbOk}</b></div><div>🔴 EXPIRÉ : <b>${nbExpire}</b> &nbsp; 🟠 EXPIRE BIENTÔT : <b>${nbBientot}</b> &nbsp; 🟢 BON : <b>${nbBon}</b></div><div>Total valeur stock : <b>${totalStock.toLocaleString()} GNF</b></div></div>
+                <div class="total-box">✅ Fin du Rapport - ${moisLabel}</div>`;
+              }
+            });
+          });
+        });
+      });
+    });
+  });
+}
+let carnetFiltre = '';
+let carnetPatientChoisi = '';
+function loadCarnet(){
+  document.getElementById('content').innerHTML = `
+  <h3>📋 Carnet Patient / Fiche</h3>
+  <p style="font-size:13px;margin:0">Tu tapes le nom, tu vois toute sa vie au Poste.</p>
+  <input id="carnetSearch" placeholder="🔍 Tape le nom du patient - ex: Moussa..." oninput="carnetFiltre=this.value; renderCarnetListe()">
+  <div id="carnetListe"></div>
+  <div id="carnetFiche"></div>
+  `;
+  db.ref('consultations').on('value', snap=>{ allCons = snap.val()||{}; renderCarnetListe(); if(carnetPatientChoisi) renderCarnetFiche(carnetPatientChoisi); });
+}
+function renderCarnetListe(){
+  let noms = {};
+  for(let k in allCons){ let n = (allCons[k].patient||'').trim(); if(!n) continue; if(!noms[n]) noms[n] = {nb:0, total:0, derniere:''}; noms[n].nb++; let somme=0; if(allCons[k].meds) allCons[k].meds.forEach(m=>{ let pr=(m.prix&&m.prix>0)?m.prix:(postesData[m.key]?.prix||0); somme += pr*(m.qte||0); }); noms[n].total += somme; noms[n].derniere = allCons[k].date; }
+  let liste = Object.keys(noms).sort();
+  if(carnetFiltre) liste = liste.filter(n=> n.toLowerCase().includes(carnetFiltre.toLowerCase()));
+  let h = `<div class="total-box">👥 ${Object.keys(noms).length} patients au total</div><table><tr><th>Patient</th><th>Visites</th><th>Total Payé</th><th>Dernière visite</th><th>Voir</th></tr>`;
+  for(let n of liste){ h += `<tr><td><b>${n}</b></td><td>${noms[n].nb}</td><td><b>${noms[n].total.toLocaleString()} GNF</b></td><td>${noms[n].derniere}</td><td><button class="btn btn-blue" style="padding:6px" onclick="renderCarnetFiche('${n.replace(/'/g,"\\'")}')">📋 VOIR FICHE</button></td></tr>`; }
+  h += '</table>';
+  if(document.getElementById('carnetListe')) document.getElementById('carnetListe').innerHTML = liste.length ? h : 'Aucun patient trouvé. Tape un autre nom.';
+}
+function renderCarnetFiche(nom){
+  carnetPatientChoisi = nom;
+  let visites = [];
+  for(let k in allCons){ if((allCons[k].patient||'').trim() === nom) visites.push({k:k, ...allCons[k]}); }
+  visites.sort((a,b)=> (b.date||'').localeCompare(a.date||''));
+  let total=0, nbMeds=0; let diagMap={};
+  visites.forEach(v=>{ if(v.meds) v.meds.forEach(m=>{ nbMeds += m.qte||0; let pr=(m.prix&&m.prix>0)?m.prix:(postesData[m.key]?.prix||0); total += pr*(m.qte||0); }); if(v.diagnostic) diagMap[v.diagnostic]=(diagMap[v.diagnostic]||0)+1; });
+  let premiere = visites.length ? visites[visites.length-1] : null;
+  let derniere = visites.length ? visites[0] : null;
+  let ageAff = derniere && derniere.age ? derniere.age+' '+(derniere.ageUnite||'ans') : '-';
+  let h = `<div class="carnet-fiche"><h3 style="margin:0">📋 FICHE - ${nom}</h3><div style="margin-top:8px">Première visite : <b>${premiere?premiere.date:'-'}</b><br>Dernière visite : <b>${derniere?derniere.date:'-'}</b><br>Sexe / Âge : <b>${derniere?(derniere.sexe||'')+' '+ageAff:''}</b><br>📍 Village : <b>${derniere?(derniere.village||'-'):''}</b><br>📞 Téléphone : <b>${derniere?(derniere.tel||'-'):''}</b></div><div class="total-box">Visites : <b>${visites.length}</b> &nbsp;|&nbsp; Médicaments : <b>${nbMeds}</b> &nbsp;|&nbsp; Total payé : <b>${total.toLocaleString()} GNF</b></div><button class="btn btn-green" onclick="window.print()">🖨️ IMPRIMER FICHE</button><h4>📋 HISTORIQUE COMPLET</h4>`;
+  for(let v of visites){ let medsTxt=''; let somme=0; if(v.meds) v.meds.forEach(m=>{ let pr=(m.prix&&m.prix>0)?m.prix:(postesData[m.key]?.prix||0); let pt=pr*(m.qte||0); somme+=pt; medsTxt+=`<div>• ${m.nom} : <b>${m.qte}</b> x ${pr.toLocaleString()} = ${pt.toLocaleString()} GNF</div>`; }); h += `<div class="carnet-card"><b>📅 ${v.date}</b><br>📝 Plainte : ${v.plainte||'-'}<br>🔬 Examen : ${v.examen||'-'}<br>🩺 Diagnostic : <b>${v.diagnostic||'-'}</b><br>💊 Traitement : ${medsTxt||'-'}<div class="somme-box">Somme : ${somme.toLocaleString()} GNF</div></div>`; }
+  h += '</div>';
+  if(document.getElementById('carnetFiche')) document.getElementById('carnetFiche').innerHTML = h;
+  document.getElementById('carnetFiche').scrollIntoView({behavior:'smooth'});
+}
+let dettesNonPayeData = {};
+function loadDettes(){
+  document.getElementById('content').innerHTML = `
+  <h3>📒 Dettes</h3>
+  <div class="dette-menu"><button class="active" onclick="showDettePage('dette-paye',this)">✅ Dettes Payées</button><button onclick="showDettePage('dette-nonpaye',this)">❌ Dettes Non Payées</button></div>
+  <div id="dette-paye" class="dette-page active"><input id="dNom" placeholder="Nom"><input id="dMont" type="number" placeholder="Montant payé"><button class="btn btn-blue" onclick="saveDette()">Enregistrer Payé</button><div id="dList"></div><div id="dTotalPaye"></div></div>
+  <div id="dette-nonpaye" class="dette-page"><p style="font-size:13px;font-weight:bold;color:#c62828;margin:0">Tu mets Total + Déjà payé, le Reste se calcule seul.</p><input id="dnNom" placeholder="Nom du client"><input id="dnTotal" type="number" placeholder="Montant total de la dette" oninput="calcResteDette()"><input id="dnPaye" type="number" placeholder="Montant déjà payé" oninput="calcResteDette()"><input id="dnReste" type="number" placeholder="Reste à payer - automatique" readonly style="background:#ffebee;font-weight:bold"><button class="btn btn-orange" onclick="saveDetteNonPaye()">Enregistrer Dette Non Payée</button><div id="dnList"></div><div id="dnTotalReste"></div></div>`;
+  db.ref('dettes_paye').on('value', s=>{ let d=s.val()||{}, h='<table><tr><th>Client</th><th>Montant</th><th>Date</th>'+(isPatron?'<th>X</th>':'')+'</tr>'; let total=0; for(let k in d){ let m=parseInt(d[k].montant)||0; total+=m; h+=`<tr><td>${d[k].nom}</td><td>${m.toLocaleString()} GNF</td><td>${d[k].date}</td>${isPatron?`<td><button onclick="deleteDette('${k}')" style="background:#e74c3c;color:white;border:none;padding:6px 10px;border-radius:6px;font-weight:bold;cursor:pointer">X</button></td>`:''}</tr>`; } if(document.getElementById('dList')) document.getElementById('dList').innerHTML=h+'</table>'; if(document.getElementById('dTotalPaye')) document.getElementById('dTotalPaye').innerHTML=`<div class="total-box" style="background:#e8f5e9">✅ TOTAL DETTES PAYÉES : ${total.toLocaleString()} GNF</div>`; });
+  db.ref('dettes_non_paye').on('value', s=>{ dettesNonPayeData = s.val()||{}; renderDettesNonPaye(); });
+}
+function showDettePage(id,btn){ document.querySelectorAll('.dette-page').forEach(p=>p.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.dette-menu button').forEach(b=>b.classList.remove('active')); if(btn) btn.classList.add('active'); }
+function calcResteDette(){ let total = parseInt(document.getElementById('dnTotal').value)||0; let paye = parseInt(document.getElementById('dnPaye').value)||0; let reste = total - paye; if(reste<0) reste=0; document.getElementById('dnReste').value = reste; }
+function renderDettesNonPaye(){
+  let h='<table><tr><th>Client</th><th>Total</th><th>Déjà Payé</th><th>Reste</th><th>Date</th>'+(isPatron?'<th>Action</th>':'')+'</tr>'; let totalReste=0, totalDette=0, totalPaye=0;
+  for(let k in dettesNonPayeData){ let d = dettesNonPayeData[k]; let tot = parseInt(d.total)||0, pay = parseInt(d.paye)||0, reste = parseInt(d.reste); if(isNaN(reste)) reste = tot - pay; totalDette+=tot; totalPaye+=pay; totalReste+=reste; h+=`<tr><td><b>${d.nom}</b></td><td>${tot.toLocaleString()}</td><td>${pay.toLocaleString()}</td><td><b style="color:#c62828">${reste.toLocaleString()} GNF</b></td><td>${d.date}</td>${isPatron?`<td><button onclick="marquerDettePaye('${k}')" style="background:#42b72a;color:white;border:none;padding:6px 8px;border-radius:6px;font-weight:bold;cursor:pointer">✅ Payé</button> <button onclick="deleteDetteNonPaye('${k}')" style="background:#e74c3c;color:white;border:none;padding:6px 8px;border-radius:6px;font-weight:bold;cursor:pointer">X</button></td>`:''}</tr>`; }
+  h+='</table>'; if(document.getElementById('dnList')) document.getElementById('dnList').innerHTML = Object.keys(dettesNonPayeData).length ? h : 'Aucune dette non payée';
+  if(document.getElementById('dnTotalReste')) document.getElementById('dnTotalReste').innerHTML = `<div class="total-box">📒 Total Dettes : ${totalDette.toLocaleString()} GNF</div><div class="total-box" style="background:#fff3cd">💰 Déjà Payé : ${totalPaye.toLocaleString()} GNF</div><div class="reste-box">❌ TOTAL RESTE À RÉCUPÉRER : ${totalReste.toLocaleString()} GNF</div>`;
+}
+function saveDette(){let n=document.getElementById('dNom').value,m=document.getElementById('dMont').value; if(!n||!m)return; db.ref('dettes_paye').push({nom:n,montant:m,date:new Date().toLocaleString()}); document.getElementById('dNom').value=''; document.getElementById('dMont').value='';}
+function deleteDette(k){ if(confirm('Tu veux vraiment supprimer cette dette ?')){ db.ref('dettes_paye/'+k).remove(); } }
+function saveDetteNonPaye(){ let n=document.getElementById('dnNom').value.trim(); let tot=parseInt(document.getElementById('dnTotal').value)||0; let pay=parseInt(document.getElementById('dnPaye').value)||0; if(!n||!tot) return alert('Mets Nom + Montant total'); let reste = tot - pay; if(reste<0) reste=0; db.ref('dettes_non_paye').push({nom:n,total:tot,paye:pay,reste:reste,date:new Date().toLocaleString()}); document.getElementById('dnNom').value=''; document.getElementById('dnTotal').value=''; document.getElementById('dnPaye').value=''; document.getElementById('dnReste').value=''; alert('✅ '+n+' - Reste : '+reste.toLocaleString()+' GNF'); }
+function deleteDetteNonPaye(k){ if(confirm('Supprimer cette dette non payée ?')) db.ref('dettes_non_paye/'+k).remove(); }
+function marquerDettePaye(k){ let d = dettesNonPayeData[k]; if(!d) return; if(!confirm(d.nom+' a tout payé ? On déplace en Dettes Payées ?')) return; db.ref('dettes_paye').push({nom:d.nom,montant:d.total,date:new Date().toLocaleString()}); db.ref('dettes_non_paye/'+k).remove(); }
+function loadSuivi(){document.getElementById('content').innerHTML='<h3>📈 SUIVI LIVE</h3><div id="box"></div>'; db.ref('consultations').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Date</th><th>Patient</th><th>Plainte / Examen / Diagnostic</th><th>Médicaments</th><th>Somme Totale</th></tr>'; for(let k in d){ let txt=''; let somme=0; if(d[k].meds) d[k].meds.forEach(m=>{ let pr=(m.prix&&m.prix>0)?m.prix:(postesData[m.key]?.prix||0); let pt=pr*m.qte; somme+=pt; txt+=m.nom+':'+m.qte+' x '+pr+'='+pt+' '; }); else txt=d[k].med; h+=`<tr><td>${d[k].date}</td><td>${d[k].patient}<br><small>${d[k].sexe||''} ${d[k].age?d[k].age+' '+(d[k].ageUnite||'ans'):''}<br>📍 ${d[k].village||'-'}<br>📞 ${d[k].tel||'-'}</small></td><td>Plainte: ${d[k].plainte||'-'}<br>Examen: ${d[k].examen||'-'}<br><b>Diag: ${d[k].diagnostic||'-'}</b></td><td>${txt}</td><td><b>${somme.toLocaleString()} GNF</b></td></tr>`;} document.getElementById('box').innerHTML=h+'</table>';});}
+function loadPrimes(){document.getElementById('content').innerHTML='<h3>🏆 Primes</h3><input id="pNom" placeholder="Nom"><input id="pMont" type="number" placeholder="Montant"><button class="btn btn-blue" onclick="savePrime()">Enregistrer</button><div id="pList"></div>'; db.ref('primes').on('value',s=>{let d=s.val()||{},h='<table><tr><th>Nom</th><th>Montant</th></tr>'; for(let k in d)h+=`<tr><td>${d[k].nom}</td><td>${d[k].montant}</td></tr>`; document.getElementById('pList').innerHTML=h+'</table>';});}
+function savePrime(){let n=document.getElementById('pNom').value,m=document.getElementById('pMont').value; db.ref('primes').push({nom:n,montant:m,date:new Date().toLocaleString()});}
+function loadObservation(){document.getElementById('content').innerHTML='<h3>📝 Observation</h3><textarea id="oTxt" rows="3"></textarea><button class="btn btn-blue" onclick="saveObs()">Enregistrer</button><div id="oList"></div>'; db.ref('observations').on('value',s=>{let d=s.val()||{},h=''; for(let k in d)h+=`<div style="padding:6px;border-bottom:1px solid #eee"><b>${d[k].date}</b> ${d[k].texte}</div>`; document.getElementById('oList').innerHTML=h;});}
+function saveObs(){let t=document.getElementById('oTxt').value; if(!t)return; db.ref('observations').push({texte:t,date:new Date().toLocaleString()});}
+let presenceData = {};
+function loadPresence(){
+  let now = new Date(); let dateFr = now.toLocaleDateString('fr-FR'); let hh = String(now.getHours()).padStart(2,'0'); let mm = String(now.getMinutes()).padStart(2,'0'); let heureNow = hh + ':' + mm;
+  document.getElementById('content').innerHTML = `
+  <h3>✅ Présence 600k</h3>
+  <div class="pres-info">📍 08h00 = 0 &nbsp; | &nbsp; 08h01 = - 5 000 &nbsp; | &nbsp; Absent = - 20 000 &nbsp; | &nbsp; Départ 17h20 &nbsp; | &nbsp; Enveloppe 600 000 GNF</div>
+  <div class="pres-menu"><button class="active" onclick="showPresPage('pres-pointer',this)">📍 POINTER</button><button onclick="showPresPage('pres-liste',this)">📋 LISTE DU JOUR</button><button onclick="showPresPage('pres-retards',this)">🟠 RETARDS</button><button onclick="showPresPage('pres-absences',this)">🔴 ABSENCES</button><button onclick="showPresPage('pres-enveloppes',this)">💰 ENVELOPPES</button></div>
+  <div id="pres-pointer" class="pres-page active"><p style="font-size:13px;color:#2e7d32;font-weight:bold;margin:0">✅ Tu écris SEULEMENT le nom. Date + heure viennent seules.</p><input id="prNom" placeholder="Nom et Prénom *"><label style="font-size:13px">Date - automatique</label><input id="prDate" readonly value="${dateFr}"><label style="font-size:13px">Heure d'arrivée - automatique (tu peux changer pour aider)</label><input id="prHeure" type="time" value="${heureNow}"><select id="prSt"><option value="auto">Laisser l'application décider (Présent / Retard)</option><option value="Absent">Marquer ABSENT</option></select><button class="btn btn-blue" onclick="savePres()">📍 POINTER ARRIVÉE MAINTENANT</button></div>
+  <div id="pres-liste" class="pres-page"><div id="presListeBox">Chargement...</div></div><div id="pres-retards" class="pres-page"><div id="presRetardsBox">Chargement...</div></div><div id="pres-absences" class="pres-page"><div id="presAbsencesBox">Chargement...</div></div><div id="pres-enveloppes" class="pres-page"><div id="presEnveloppesBox">Chargement...</div></div>`;
+  db.ref('presence_600k').on('value', s=>{ presenceData = s.val() || {}; renderPresence(); });
+}
+function showPresPage(id, btn){ document.querySelectorAll('.pres-page').forEach(p=>p.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.pres-menu button').forEach(b=>b.classList.remove('active')); if(btn) btn.classList.add('active'); }
+function renderPresence(){
+  let keys = Object.keys(presenceData).reverse(); let auj = new Date().toLocaleDateString('fr-FR'); let liste = keys.filter(k=>{ let d = presenceData[k].date || ''; return d.includes(auj) || !presenceData[k].dateFr; }); if(liste.length===0) liste = keys.slice(0,20);
+  let hListe = '<table><tr><th>Nom</th><th>Heure d\'arrivée</th><th>Heure de départ</th><th>Statut</th><th>Retenue</th>'+(isPatron?'<th>X</th>':'')+'</tr>'; let hRet = '<table><tr><th>Nom</th><th>Date</th><th>Heure</th><th>Retenue</th></tr>'; let hAbs = '<table><tr><th>Nom</th><th>Date</th><th>Retenue</th></tr>'; let parPersonne = {}; let nbRet=0, nbAbs=0;
+  for(let k of keys){ let p = presenceData[k]; let statut = p.statut || 'Présent'; let retenue = p.retenue || 0; if(statut==='Absent' && !p.retenue) retenue = 20000; if(statut==='Retard' || statut==='RETARD') retenue = 5000; if(statut==='Présent' || statut==="À L'HEURE") retenue = 0; let badge = '<span class="badge-pres badge-green">À L\'HEURE</span>'; if(statut==='Absent' || statut==='ABSENCE') badge = '<span class="badge-pres badge-red">ABSENCE</span>'; else if(statut==='Retard' || statut==='RETARD') badge = '<span class="badge-pres badge-orange">RETARD</span>'; if(liste.includes(k)){ hListe += `<tr><td><b>${p.nom||''}</b></td><td>${p.heureArrivee||p.heure||'—'}</td><td>17h20</td><td>${badge}</td><td>${retenue===0?'0 GNF':'- '+retenue.toLocaleString()+' GNF'}</td>${isPatron?`<td><button onclick="deletePres('${k}')">X</button></td>`:''}</tr>`; } if(statut==='Retard' || statut==='RETARD'){ nbRet++; hRet += `<tr><td>${p.nom||''}</td><td>${p.dateFr||p.date||''}</td><td>${p.heureArrivee||''}</td><td>- 5 000 GNF</td></tr>`; } if(statut==='Absent' || statut==='ABSENCE'){ nbAbs++; hAbs += `<tr><td>${p.nom||''}</td><td>${p.dateFr||p.date||''}</td><td>- 20 000 GNF</td></tr>`; } let nom = p.nom || 'Inconnu'; if(!parPersonne[nom]) parPersonne[nom]={retards:0,absences:0,totalRetenue:0}; if(statut==='Retard' || statut==='RETARD'){ parPersonne[nom].retards++; parPersonne[nom].totalRetenue+=5000; } if(statut==='Absent' || statut==='ABSENCE'){ parPersonne[nom].absences++; parPersonne[nom].totalRetenue+=20000; } }
+  hListe += '</table>'; hRet += '</table>'; hAbs += '</table>';
+  if(document.getElementById('presListeBox')) document.getElementById('presListeBox').innerHTML = liste.length ? hListe : 'Aucun pointage aujourd\'hui';
+  if(document.getElementById('presRetardsBox')) document.getElementById('presRetardsBox').innerHTML = '<div class="pres-info">🟠 Total retards : '+nbRet+' | 08h01 = - 5 000 GNF</div>' + (nbRet? hRet : 'Aucun retard');
+  if(document.getElementById('presAbsencesBox')) document.getElementById('presAbsencesBox').innerHTML = '<div class="pres-info">🔴 Total absences : '+nbAbs+' | Absence = - 20 000 GNF</div>' + (nbAbs? hAbs : 'Aucune absence');
+  let hEnv = '<table><tr><th>Nom</th><th>Retards</th><th>Absences</th><th>Total Retenue</th><th>Reste à payer</th></tr>'; let totalEnv = 0;
+  for(let nom in parPersonne){ let pp = parPersonne[nom]; let reste = 600000 - pp.totalRetenue; if(reste<0) reste=0; totalEnv += reste; hEnv += `<tr><td><b>${nom}</b></td><td>${pp.retards}</td><td>${pp.absences}</td><td>- ${pp.totalRetenue.toLocaleString()} GNF</td><td><b>${reste.toLocaleString()} GNF</b></td></tr>`; }
+  hEnv += '</table>'; if(document.getElementById('presEnveloppesBox')) document.getElementById('presEnveloppesBox').innerHTML = '<div class="pres-info">💰 Enveloppe de base : 600 000 GNF par personne</div>' + (Object.keys(parPersonne).length? hEnv : 'Aucune présence encore') + `<div class="total-box">💰 TOTAL ENVELOPPES À PAYER : ${totalEnv.toLocaleString()} GNF</div>`;
+}
+function savePres(){
+  let n = document.getElementById('prNom').value.trim(); if(!n) return alert('Écris le Nom et Prénom'); let heure = document.getElementById('prHeure').value || '08:00'; let dateFr = document.getElementById('prDate').value || new Date().toLocaleDateString('fr-FR'); let choix = document.getElementById('prSt').value; let statut, retenue; let parts = heure.split(':'); let hh = parseInt(parts[0]||0), mm = parseInt(parts[1]||0);
+  if(choix==='Absent'){ statut='Absent'; retenue=20000; heure='Absent'; } else if(hh>8 || (hh===8 && mm>=1)){ statut='Retard'; retenue=5000; } else { statut='Présent'; retenue=0; }
+  let heureAff = (heure==='Absent') ? 'Absent' : heure.replace(':','h'); db.ref('presence_600k').push({nom:n, statut:statut, retenue:retenue, heureArrivee:heureAff, heure:heureAff, dateFr:dateFr, date:new Date().toLocaleString()}); document.getElementById('prNom').value=''; alert(n+' pointé à '+heureAff+' - '+statut); showPresPage('pres-liste', document.querySelectorAll('.pres-menu button')[1]);
+}
+function deletePres(k){ if(confirm('Supprimer ce pointage ?')) db.ref('presence_600k/'+k).remove(); }
+loadMedicaments();
 </script>
 </body>
 </html>
