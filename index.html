@@ -165,7 +165,6 @@ function getExpireStat(dateStr){
 function loadStock(){
  db.ref('postes').on('value',snap=>{
   postesData=snap.val()||{};
-  // ===== N° D'ORDRE AJOUTÉ ICI - CHEF BAKARY =====
   let t='<table><tr><th>N°</th><th>Nom</th><th>Stock</th><th>Seuil Alerte<br><small>Toi tu modifies</small></th><th>État Stock</th><th>Date Expiration<br><small>Toi tu mets</small></th><th>État Expiration<br><small>60 jours</small></th><th>Prix unitaire</th><th>Total de prix</th>'+(isPatron?'<th>X</th>':'')+'</tr>';
   let grandTotal=0; let nbRupture=0, nbAlerte=0, nbOk=0; let nbExpire=0, nbBientot=0, nbBon=0;
   let numeroOrdre = 0;
@@ -431,7 +430,7 @@ function loadAchats(){
   <p style="font-size:13px;margin:0">Quand tu achètes, ça entre <b>directement et automatiquement</b> dans ton <b>Stock Permanent</b>.</p>
   <div class="section" style="background:#fff3cd;border:1px solid #ffca28">
   <b>📦 COMMANDE AUTOMATIQUE - Le diable prépare tout seul</b>
-  <p style="font-size:13px;margin:4px 0">Il regarde RUPTURE + ALERTE dans ton Stock Permanent. Tu coches, tu mets le fournisseur, tu envoies.</p>
+  <p style="font-size:13px;margin:4px 0">Il regarde RUPTURE + ALERTE dans ton Stock Permanent. Tu coches, tu mets le fournisseur, tu mets le prix d'achat de CHAQUE produit, tu envoies.</p>
   <input id="cmdFournisseur" placeholder="Fournisseur pour cette commande - ex: Pharmacie Siguiri">
   <input id="cmdTelFour" placeholder="📞 Téléphone Fournisseur">
   <div id="cmdAutoList">Chargement...</div>
@@ -459,9 +458,10 @@ function loadAchats(){
   db.ref('commandes_fournisseur').on('value', s=>{ commandesData = s.val()||{}; renderCommandesAuto(); renderCommandesEnAttente(); });
   db.ref('postes').once('value', ()=>{ renderCommandesAuto(); });
 }
+// ===== CORRECTION CHEF : PRIX D'ACHAT DIFFERENT PAR PRODUIT =====
 function renderCommandesAuto(){
   let el = document.getElementById('cmdAutoList'); if(!el) return;
-  let h = '<table><tr><th>✅</th><th>Médicament</th><th>Stock</th><th>Seuil</th><th>État</th><th>Qté à commander</th></tr>';
+  let h = '<table><tr><th>✅</th><th>Médicament</th><th>Stock</th><th>Seuil</th><th>État</th><th>Qté à commander</th><th>Prix Achat Unitaire<br><small>Chaque produit son prix</small></th><th>Total Achat</th></tr>';
   let nb = 0;
   for(let k in postesData){
     let m = postesData[k]; let q = m.quantite||0; let seuil = m.seuil; if(seuil===undefined||seuil==='') seuil=5;
@@ -469,48 +469,68 @@ function renderCommandesAuto(){
     nb++;
     let etat = q===0 ? '🔴 RUPTURE' : '🟠 ALERTE';
     let sugg = (seuil*2 - q); if(sugg<10) sugg=10;
-    h += `<tr><td><input type="checkbox" class="cmdCheck" data-key="${k}" checked style="width:20px;height:20px"></td><td><b>${m.nom}</b></td><td><b>${q}</b></td><td>${seuil}</td><td>${etat}</td><td><input type="number" class="cmdQte" data-key="${k}" value="${sugg}" style="padding:6px"></td></tr>`;
+    let prixMemo = m.prixAchat || '';
+    h += `<tr><td><input type="checkbox" class="cmdCheck" data-key="${k}" checked style="width:20px;height:20px"></td><td><b>${m.nom}</b></td><td><b>${q}</b></td><td>${seuil}</td><td>${etat}</td><td><input type="number" class="cmdQte" data-key="${k}" value="${sugg}" oninput="calcTotalCmd('${k}')" style="padding:6px"></td><td><input type="number" class="cmdPrix" data-key="${k}" placeholder="Ex: 15000" value="${prixMemo}" oninput="calcTotalCmd('${k}'); savePrixAchatMemo('${k}', this.value)" style="padding:6px;background:#fffde7"></td><td><b id="cmdTotal_${k}">-</b></td></tr>`;
   }
   h += '</table>';
   el.innerHTML = nb ? h : '<div class="total-box" style="background:#e8f5e9">✅ Aucune RUPTURE / ALERTE. Ton stock est bon Chef !</div>';
+  for(let k in postesData){ calcTotalCmd(k); }
+}
+function calcTotalCmd(k){
+  let qEl = document.querySelector('.cmdQte[data-key="'+k+'"]');
+  let pEl = document.querySelector('.cmdPrix[data-key="'+k+'"]');
+  let tEl = document.getElementById('cmdTotal_'+k);
+  if(!qEl || !pEl || !tEl) return;
+  let q = parseInt(qEl.value)||0; let p = parseInt(pEl.value)||0;
+  tEl.innerText = (q*p>0) ? (q*p).toLocaleString()+' GNF' : '-';
+}
+function savePrixAchatMemo(k, val){
+  if(!val) return;
+  db.ref('postes/'+k+'/prixAchat').set(parseInt(val)||0);
 }
 function envoyerCommandes(){
   let four = document.getElementById('cmdFournisseur').value.trim();
   let telF = document.getElementById('cmdTelFour').value.trim();
   if(!four) return alert('Mets le nom du Fournisseur pour la commande');
   let checks = document.querySelectorAll('.cmdCheck');
-  let envoyes = 0;
+  let envoyes = 0; let totalCmd = 0;
   checks.forEach(ch=>{
     if(!ch.checked) return;
     let k = ch.getAttribute('data-key');
     let qteInput = document.querySelector('.cmdQte[data-key="'+k+'"]');
+    let prixInput = document.querySelector('.cmdPrix[data-key="'+k+'"]');
     let qte = parseInt(qteInput?.value)||0;
+    let prixAchat = parseInt(prixInput?.value)||0;
     if(!qte) return;
+    if(!prixAchat){ alert('Mets le prix d’achat pour '+(postesData[k]?.nom||k)); return; }
     let medNom = postesData[k]?.nom||k;
-    db.ref('commandes_fournisseur').push({fournisseur:four, telFour:telF, medKey:k, medNom:medNom, qte:qte, statut:'En Attente', date:new Date().toLocaleString()});
+    let totalLigne = qte * prixAchat; totalCmd += totalLigne;
+    db.ref('commandes_fournisseur').push({fournisseur:four, telFour:telF, medKey:k, medNom:medNom, qte:qte, prixAchat:prixAchat, total:totalLigne, statut:'En Attente', date:new Date().toLocaleString()});
     envoyes++;
   });
   if(!envoyes) return alert('Coche au moins 1 médicament');
-  alert('✅ COMMANDE ENVOYÉE Chef !\n\n'+envoyes+' médicaments envoyés à '+four+'\nIls sont dans Achat / Fournisseur -> En Attente.\nQuand il te livre, clique ✅ Reçu.');
+  alert('✅ COMMANDE ENVOYÉE Chef !\n\n'+envoyes+' médicaments envoyés à '+four+'\nTotal commande : '+totalCmd.toLocaleString()+' GNF\nIls sont dans En Attente.\nQuand il te livre, clique ✅ Reçu.');
 }
 function renderCommandesEnAttente(){
   let el = document.getElementById('cmdEnAttente'); if(!el) return;
   let keys = Object.keys(commandesData);
   if(!keys.length){ el.innerHTML=''; return; }
-  let h = '<div class="total-box" style="background:#fff3cd">⏳ COMMANDES EN ATTENTE : '+keys.length+'</div><table><tr><th>Date</th><th>Fournisseur</th><th>Médicament</th><th>Qté commandée</th><th>Action</th></tr>';
+  let h = '<div class="total-box" style="background:#fff3cd">⏳ COMMANDES EN ATTENTE : '+keys.length+'</div><table><tr><th>Date</th><th>Fournisseur</th><th>Médicament</th><th>Qté</th><th>Prix Achat Unitaire</th><th>Total</th><th>Action</th></tr>';
   keys.reverse().forEach(k=>{
     let c = commandesData[k];
-    h += `<tr><td>${c.date}</td><td><b>${c.fournisseur}</b><br><small>📞 ${c.telFour||'-'}</small></td><td>${c.medNom}</td><td><b>${c.qte}</b></td><td><button class="btn btn-green" style="padding:8px" onclick="recevoirCommande('${k}')">✅ REÇU - ENTRER DANS STOCK</button><br><button class="btn btn-red" style="padding:6px;margin-top:4px" onclick="annulerCommande('${k}')">X Annuler</button></td></tr>`;
+    let prixAff = c.prixAchat ? c.prixAchat.toLocaleString()+' GNF' : '-';
+    let totalAff = c.total ? c.total.toLocaleString()+' GNF' : ((c.qte||0)*(c.prixAchat||0)).toLocaleString()+' GNF';
+    h += `<tr><td>${c.date}</td><td><b>${c.fournisseur}</b><br><small>📞 ${c.telFour||'-'}</small></td><td>${c.medNom}</td><td><b>${c.qte}</b></td><td><b>${prixAff}</b></td><td><b>${totalAff}</b></td><td><button class="btn btn-green" style="padding:8px" onclick="recevoirCommande('${k}')">✅ REÇU - ENTRER DANS STOCK</button><br><button class="btn btn-red" style="padding:6px;margin-top:4px" onclick="annulerCommande('${k}')">X Annuler</button></td></tr>`;
   });
   h += '</table>';
   el.innerHTML = h;
 }
 function recevoirCommande(cmdKey){
   let c = commandesData[cmdKey]; if(!c) return;
-  let prixAchat = parseInt(prompt('Prix d’achat unitaire pour '+c.medNom+' chez '+c.fournisseur+' ?', '4000'))||0;
+  let prixAchat = c.prixAchat || parseInt(prompt('Prix d’achat unitaire pour '+c.medNom+' chez '+c.fournisseur+' ?', '4000'))||0;
   if(!prixAchat) return alert('Mets le prix d’achat');
-  let prixVente = parseInt(prompt('Nouveau prix de vente (laisse vide si tu ne changes pas) ?', ''))||0;
-  let expire = prompt('Date expiration (AAAA-MM-JJ, laisse vide si tu ne changes pas) ?', '')||'';
+  let prixVente = parseInt(prompt('Nouveau prix de vente pour '+c.medNom+' (laisse vide si tu ne changes pas) ?', ''))||0;
+  let expire = prompt('Date expiration pour '+c.medNom+' (AAAA-MM-JJ, laisse vide si tu ne changes pas) ?', '')||'';
   let medKey = c.medKey;
   let qte = c.qte;
   let medNom = c.medNom;
@@ -518,12 +538,12 @@ function recevoirCommande(cmdKey){
   let ancienStock = postesData[medKey]?.quantite||0;
   let nouveauStock = ancienStock + qte;
   db.ref('achats_fournisseur').push({fournisseur:c.fournisseur, telFour:c.telFour||'', medKey:medKey, medNom:medNom, qte:qte, prixAchat:prixAchat, prixVente:prixVente, total:totalAchat, expiration:expire, note:'Commande Automatique - Reçu', ancienStock:ancienStock, nouveauStock:nouveauStock, date:new Date().toLocaleString(), dateISO:new Date().toISOString().split('T')[0]});
-  let update = {quantite:nouveauStock};
+  let update = {quantite:nouveauStock, prixAchat:prixAchat};
   if(prixVente>0) update.prix = prixVente;
   if(expire) update.expiration = expire;
   db.ref('postes/'+medKey).update(update);
   db.ref('commandes_fournisseur/'+cmdKey).remove();
-  alert('✅ REÇU Chef !\n\n'+medNom+' x '+qte+' de '+c.fournisseur+'\nTotal: '+totalAchat.toLocaleString()+' GNF\n\n📦 STOCK PERMANENT : '+ancienStock+' -> '+nouveauStock+' (Automatique)');
+  alert('✅ REÇU Chef !\n\n'+medNom+' x '+qte+' de '+c.fournisseur+'\nPrix Achat : '+prixAchat.toLocaleString()+' GNF\nTotal: '+totalAchat.toLocaleString()+' GNF\n\n📦 STOCK PERMANENT : '+ancienStock+' -> '+nouveauStock+' (Automatique)');
 }
 function annulerCommande(k){ if(!confirm('Annuler cette commande ?')) return; db.ref('commandes_fournisseur/'+k).remove(); }
 function fillAchatSelect(){
@@ -560,11 +580,11 @@ function saveAchat(){
   let ancienStock = postesData[medKey]?.quantite||0;
   let nouveauStock = ancienStock + qte;
   db.ref('achats_fournisseur').push({fournisseur:four, telFour:telF, medKey:medKey, medNom:medNom, qte:qte, prixAchat:prixAchat, prixVente:prixVente, total:totalAchat, expiration:expire, note:note, ancienStock:ancienStock, nouveauStock:nouveauStock, date:new Date().toLocaleString(), dateISO:new Date().toISOString().split('T')[0]});
-  let update = {quantite:nouveauStock};
+  let update = {quantite:nouveauStock, prixAchat:prixAchat};
   if(prixVente>0) update.prix = prixVente;
   if(expire) update.expiration = expire;
   db.ref('postes/'+medKey).update(update);
-  alert('✅ ACHAT RÉUSSI Chef !\n\n'+medNom+' x '+qte+' chez '+four+'\nTotal: '+totalAchat.toLocaleString()+' GNF\n\n📦 STOCK PERMANENT : '+ancienStock+' -> '+nouveauStock+' (Automatique)');
+  alert('✅ ACHAT RÉUSSI Chef !\n\n'+medNom+' x '+qte+' chez '+four+'\nPrix Achat : '+prixAchat.toLocaleString()+' GNF\nTotal: '+totalAchat.toLocaleString()+' GNF\n\n📦 STOCK PERMANENT : '+ancienStock+' -> '+nouveauStock+' (Automatique)');
   document.getElementById('aQte').value=''; document.getElementById('aPrixAchat').value=''; document.getElementById('aPrixVente').value=''; document.getElementById('aNote').value='';
 }
 function renderAchats(){
