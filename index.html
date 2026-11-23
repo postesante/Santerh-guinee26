@@ -422,14 +422,23 @@ function savePres(){
 }
 function deletePres(k){ if(confirm('Supprimer ce pointage ?')) db.ref('presence_600k/'+k).remove(); }
 
-/* ===== 🛒 ACHATS / FOURNISSEUR - NOUVEAU - INSÉRÉ SEULEMENT ICI ===== */
-let achatsData = {};
+/* ===== 🛒 ACHATS / FOURNISSEUR + 📦 COMMANDE AUTOMATIQUE - INSÉRÉ SEULEMENT ICI ===== */
+let achatsData = {}; let commandesData = {};
 function loadAchats(){
   document.getElementById('content').innerHTML = `
   <h3>🛒 Achats / Fournisseur</h3>
   <p style="font-size:13px;margin:0">Quand tu achètes, ça entre <b>directement et automatiquement</b> dans ton <b>Stock Permanent</b>.</p>
+  <div class="section" style="background:#fff3cd;border:1px solid #ffca28">
+  <b>📦 COMMANDE AUTOMATIQUE - Le diable prépare tout seul</b>
+  <p style="font-size:13px;margin:4px 0">Il regarde RUPTURE + ALERTE dans ton Stock Permanent. Tu coches, tu mets le fournisseur, tu envoies.</p>
+  <input id="cmdFournisseur" placeholder="Fournisseur pour cette commande - ex: Pharmacie Siguiri">
+  <input id="cmdTelFour" placeholder="📞 Téléphone Fournisseur">
+  <div id="cmdAutoList">Chargement...</div>
+  <button class="btn btn-orange" onclick="envoyerCommandes()">📤 ENVOYER COMMANDE -> ACHAT / FOURNISSEUR</button>
+  <div id="cmdEnAttente"></div>
+  </div>
   <div class="section" style="background:#e3f2fd">
-  <b>➕ NOUVEL ACHAT</b>
+  <b>➕ NOUVEL ACHAT DIRECT</b>
   <input id="aFournisseur" placeholder="Nom du Fournisseur - ex: Pharmacie Siguiri, Grossiste Mandiana...">
   <input id="aTelFour" placeholder="📞 Téléphone Fournisseur - ex: 622...">
   <select id="aMed"><option value="">Choisir médicament à acheter...</option></select>
@@ -437,7 +446,7 @@ function loadAchats(){
   <input id="aQte" type="number" placeholder="Quantité achetée - ex: 50" style="flex:1">
   <input id="aPrixAchat" type="number" placeholder="Prix d'achat unitaire - ex: 4000" style="flex:1">
   </div>
-  <input id="aPrixVente" type="number" placeholder="Nouveau prix de vente (optionnel) - ex: 5000 - laisse vide si tu ne veux pas changer">
+  <input id="aPrixVente" type="number" placeholder="Nouveau prix de vente (optionnel) - ex: 5000">
   <input id="aDateExpire" type="date">
   <input id="aNote" placeholder="Note - ex: Payé cash / Dette / Transport 20000">
   <button class="btn btn-green" onclick="saveAchat()">✅ ENREGISTRER ACHAT + ENTRER DANS STOCK PERMANENT</button>
@@ -446,7 +455,76 @@ function loadAchats(){
   <div class="section"><b>📋 HISTORIQUE DES ACHATS</b><input id="aSearch" placeholder="Rechercher fournisseur, médicament..." oninput="renderAchats()"><div id="aList">Chargement...</div></div>`;
   fillAchatSelect();
   db.ref('achats_fournisseur').on('value', s=>{ achatsData = s.val()||{}; renderAchats(); });
+  db.ref('commandes_fournisseur').on('value', s=>{ commandesData = s.val()||{}; renderCommandesAuto(); renderCommandesEnAttente(); });
+  db.ref('postes').once('value', ()=>{ renderCommandesAuto(); });
 }
+function renderCommandesAuto(){
+  let el = document.getElementById('cmdAutoList'); if(!el) return;
+  let h = '<table><tr><th>✅</th><th>Médicament</th><th>Stock</th><th>Seuil</th><th>État</th><th>Qté à commander</th></tr>';
+  let nb = 0;
+  for(let k in postesData){
+    let m = postesData[k]; let q = m.quantite||0; let seuil = m.seuil; if(seuil===undefined||seuil==='') seuil=5;
+    if(q>seuil) continue;
+    nb++;
+    let etat = q===0 ? '🔴 RUPTURE' : '🟠 ALERTE';
+    let sugg = (seuil*2 - q); if(sugg<10) sugg=10;
+    h += `<tr><td><input type="checkbox" class="cmdCheck" data-key="${k}" checked style="width:20px;height:20px"></td><td><b>${m.nom}</b></td><td><b>${q}</b></td><td>${seuil}</td><td>${etat}</td><td><input type="number" class="cmdQte" data-key="${k}" value="${sugg}" style="padding:6px"></td></tr>`;
+  }
+  h += '</table>';
+  el.innerHTML = nb ? h : '<div class="total-box" style="background:#e8f5e9">✅ Aucune RUPTURE / ALERTE. Ton stock est bon Chef !</div>';
+}
+function envoyerCommandes(){
+  let four = document.getElementById('cmdFournisseur').value.trim();
+  let telF = document.getElementById('cmdTelFour').value.trim();
+  if(!four) return alert('Mets le nom du Fournisseur pour la commande');
+  let checks = document.querySelectorAll('.cmdCheck');
+  let envoyes = 0;
+  checks.forEach(ch=>{
+    if(!ch.checked) return;
+    let k = ch.getAttribute('data-key');
+    let qteInput = document.querySelector('.cmdQte[data-key="'+k+'"]');
+    let qte = parseInt(qteInput?.value)||0;
+    if(!qte) return;
+    let medNom = postesData[k]?.nom||k;
+    db.ref('commandes_fournisseur').push({fournisseur:four, telFour:telF, medKey:k, medNom:medNom, qte:qte, statut:'En Attente', date:new Date().toLocaleString()});
+    envoyes++;
+  });
+  if(!envoyes) return alert('Coche au moins 1 médicament');
+  alert('✅ COMMANDE ENVOYÉE Chef !\n\n'+envoyes+' médicaments envoyés à '+four+'\nIls sont dans Achat / Fournisseur -> En Attente.\nQuand il te livre, clique ✅ Reçu.');
+}
+function renderCommandesEnAttente(){
+  let el = document.getElementById('cmdEnAttente'); if(!el) return;
+  let keys = Object.keys(commandesData);
+  if(!keys.length){ el.innerHTML=''; return; }
+  let h = '<div class="total-box" style="background:#fff3cd">⏳ COMMANDES EN ATTENTE : '+keys.length+'</div><table><tr><th>Date</th><th>Fournisseur</th><th>Médicament</th><th>Qté commandée</th><th>Action</th></tr>';
+  keys.reverse().forEach(k=>{
+    let c = commandesData[k];
+    h += `<tr><td>${c.date}</td><td><b>${c.fournisseur}</b><br><small>📞 ${c.telFour||'-'}</small></td><td>${c.medNom}</td><td><b>${c.qte}</b></td><td><button class="btn btn-green" style="padding:8px" onclick="recevoirCommande('${k}')">✅ REÇU - ENTRER DANS STOCK</button><br><button class="btn btn-red" style="padding:6px;margin-top:4px" onclick="annulerCommande('${k}')">X Annuler</button></td></tr>`;
+  });
+  h += '</table>';
+  el.innerHTML = h;
+}
+function recevoirCommande(cmdKey){
+  let c = commandesData[cmdKey]; if(!c) return;
+  let prixAchat = parseInt(prompt('Prix d’achat unitaire pour '+c.medNom+' chez '+c.fournisseur+' ?', '4000'))||0;
+  if(!prixAchat) return alert('Mets le prix d’achat');
+  let prixVente = parseInt(prompt('Nouveau prix de vente (laisse vide si tu ne changes pas) ?', ''))||0;
+  let expire = prompt('Date expiration (AAAA-MM-JJ, laisse vide si tu ne changes pas) ?', '')||'';
+  let medKey = c.medKey;
+  let qte = c.qte;
+  let medNom = c.medNom;
+  let totalAchat = qte * prixAchat;
+  let ancienStock = postesData[medKey]?.quantite||0;
+  let nouveauStock = ancienStock + qte;
+  db.ref('achats_fournisseur').push({fournisseur:c.fournisseur, telFour:c.telFour||'', medKey:medKey, medNom:medNom, qte:qte, prixAchat:prixAchat, prixVente:prixVente, total:totalAchat, expiration:expire, note:'Commande Automatique - Reçu', ancienStock:ancienStock, nouveauStock:nouveauStock, date:new Date().toLocaleString(), dateISO:new Date().toISOString().split('T')[0]});
+  let update = {quantite:nouveauStock};
+  if(prixVente>0) update.prix = prixVente;
+  if(expire) update.expiration = expire;
+  db.ref('postes/'+medKey).update(update);
+  db.ref('commandes_fournisseur/'+cmdKey).remove();
+  alert('✅ REÇU Chef !\n\n'+medNom+' x '+qte+' de '+c.fournisseur+'\nTotal: '+totalAchat.toLocaleString()+' GNF\n\n📦 STOCK PERMANENT : '+ancienStock+' -> '+nouveauStock+' (Automatique)');
+}
+function annulerCommande(k){ if(!confirm('Annuler cette commande ?')) return; db.ref('commandes_fournisseur/'+k).remove(); }
 function fillAchatSelect(){
   let sel = document.getElementById('aMed'); if(!sel) return;
   let old = sel.value;
@@ -506,7 +584,7 @@ function renderAchats(){
   if(document.getElementById('aResume')) document.getElementById('aResume').innerHTML = `<div class="total-box">🛒 TOTAL ACHATS : ${totalAchat.toLocaleString()} GNF &nbsp; | &nbsp; Quantité totale : ${totalQte}</div><div class="rapport-card"><h4>🏆 Top Fournisseurs</h4>${topFour||'Aucun'}</div>`;
 }
 function deleteAchat(k){ if(!confirm('Supprimer cet achat ? Le stock ne va pas diminuer seul, tu dois le corriger à la main dans Médicaments si tu t’es trompé.')) return; db.ref('achats_fournisseur/'+k).remove(); }
-/* ===== FIN ACHATS / FOURNISSEUR ===== */
+/* ===== FIN ACHATS / COMMANDE AUTOMATIQUE ===== */
 
 loadMedicaments();
 </script>
