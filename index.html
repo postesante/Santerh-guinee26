@@ -165,8 +165,10 @@ function getExpireStat(dateStr){
 function loadStock(){
  db.ref('postes').on('value',snap=>{
   postesData=snap.val()||{};
-  let t='<table><tr><th>Nom</th><th>Stock</th><th>Seuil Alerte<br><small>Toi tu modifies</small></th><th>État Stock</th><th>Date Expiration<br><small>Toi tu mets</small></th><th>État Expiration<br><small>60 jours</small></th><th>Prix unitaire</th><th>Total de prix</th>'+(isPatron?'<th>X</th>':'')+'</tr>';
+  // ===== N° D'ORDRE AJOUTÉ ICI - CHEF BAKARY =====
+  let t='<table><tr><th>N°</th><th>Nom</th><th>Stock</th><th>Seuil Alerte<br><small>Toi tu modifies</small></th><th>État Stock</th><th>Date Expiration<br><small>Toi tu mets</small></th><th>État Expiration<br><small>60 jours</small></th><th>Prix unitaire</th><th>Total de prix</th>'+(isPatron?'<th>X</th>':'')+'</tr>';
   let grandTotal=0; let nbRupture=0, nbAlerte=0, nbOk=0; let nbExpire=0, nbBientot=0, nbBon=0;
+  let numeroOrdre = 0;
   for(let k in postesData){
     let q = postesData[k].quantite||0; let p = postesData[k].prix||0; let seuil = postesData[k].seuil; if(seuil===undefined||seuil===null||seuil==='') seuil=5;
     let total = q * p; grandTotal += total;
@@ -185,8 +187,9 @@ function loadStock(){
     if(stockFilter==='expire' && exp.etat!=='expire') continue;
     if(stockFilter==='bientot' && exp.etat!=='bientot') continue;
     if(stockFilter==='bon' && exp.etat!=='bon') continue;
+    numeroOrdre++;
     let rowBg = bg; if(exp.etat==='expire') rowBg='#ffebee'; else if(exp.etat==='bientot' && !rowBg) rowBg='#fff3e0';
-    t+=`<tr style="background:${rowBg}"><td><b>${postesData[k].nom||k}</b></td><td>${isPatron?`<input id="q_${k}" type="number" value="${q}" onchange="updateQ('${k}')" style="padding:4px">`:`<b style="font-size:16px">${q}</b>`}</td><td>${isPatron?`<input id="s_${k}" type="number" value="${seuil}" onchange="updateSeuil('${k}')" placeholder="5" style="padding:4px">`:`<b>${seuil}</b>`}</td><td>${etat}</td><td>${isPatron?`<input id="e_${k}" type="date" value="${expStr}" onchange="updateExpire('${k}')" style="padding:4px">`:`<b>${expStr||'-'}</b>`}</td><td>${exp.label}</td><td>${isPatron?`<input id="p_${k}" type="number" value="${p}" onchange="updatePrix('${k}')" placeholder="0" style="padding:4px">`:`<b>${p.toLocaleString()} GNF</b>`}</td><td><b>${total.toLocaleString()} GNF</b></td>${isPatron?`<td><button onclick="deleteMed('${k}')">X</button></td>`:''}</tr>`;
+    t+=`<tr style="background:${rowBg}"><td><b style="background:#1877f2;color:white;padding:4px 8px;border-radius:50%">${numeroOrdre}</b></td><td><b>${postesData[k].nom||k}</b></td><td>${isPatron?`<input id="q_${k}" type="number" value="${q}" onchange="updateQ('${k}')" style="padding:4px">`:`<b style="font-size:16px">${q}</b>`}</td><td>${isPatron?`<input id="s_${k}" type="number" value="${seuil}" onchange="updateSeuil('${k}')" placeholder="5" style="padding:4px">`:`<b>${seuil}</b>`}</td><td>${etat}</td><td>${isPatron?`<input id="e_${k}" type="date" value="${expStr}" onchange="updateExpire('${k}')" style="padding:4px">`:`<b>${expStr||'-'}</b>`}</td><td>${exp.label}</td><td>${isPatron?`<input id="p_${k}" type="number" value="${p}" onchange="updatePrix('${k}')" placeholder="0" style="padding:4px">`:`<b>${p.toLocaleString()} GNF</b>`}</td><td><b>${total.toLocaleString()} GNF</b></td>${isPatron?`<td><button onclick="deleteMed('${k}')">X</button></td>`:''}</tr>`;
   }
   t+='</table>';
   document.getElementById('medTable').innerHTML=t;
@@ -421,8 +424,6 @@ function savePres(){
   let heureAff = (heure==='Absent') ? 'Absent' : heure.replace(':','h'); db.ref('presence_600k').push({nom:n, statut:statut, retenue:retenue, heureArrivee:heureAff, heure:heureAff, dateFr:dateFr, date:new Date().toLocaleString()}); document.getElementById('prNom').value=''; alert(n+' pointé à '+heureAff+' - '+statut); showPresPage('pres-liste', document.querySelectorAll('.pres-menu button')[1]);
 }
 function deletePres(k){ if(confirm('Supprimer ce pointage ?')) db.ref('presence_600k/'+k).remove(); }
-
-/* ===== 🛒 ACHATS / FOURNISSEUR + 📦 COMMANDE AUTOMATIQUE - INSÉRÉ SEULEMENT ICI ===== */
 let achatsData = {}; let commandesData = {};
 function loadAchats(){
   document.getElementById('content').innerHTML = `
@@ -584,8 +585,6 @@ function renderAchats(){
   if(document.getElementById('aResume')) document.getElementById('aResume').innerHTML = `<div class="total-box">🛒 TOTAL ACHATS : ${totalAchat.toLocaleString()} GNF &nbsp; | &nbsp; Quantité totale : ${totalQte}</div><div class="rapport-card"><h4>🏆 Top Fournisseurs</h4>${topFour||'Aucun'}</div>`;
 }
 function deleteAchat(k){ if(!confirm('Supprimer cet achat ? Le stock ne va pas diminuer seul, tu dois le corriger à la main dans Médicaments si tu t’es trompé.')) return; db.ref('achats_fournisseur/'+k).remove(); }
-/* ===== FIN ACHATS / COMMANDE AUTOMATIQUE ===== */
-
 loadMedicaments();
 </script>
 </body>
