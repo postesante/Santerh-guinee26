@@ -79,9 +79,9 @@ else { role = localStorage.getItem('mon_role') || 'patron'; }
 const isPatron = role==='patron';
 document.getElementById('header').innerHTML = isPatron ? '<img src="icon-512.png" onerror="this.style.display=\'none\'"><div>👑 PATRON - Accès complet</div><div style="font-size:13px;font-weight:normal">Filanidialakoro - Poste Santé</div>' : '👤 SUPPLÉANT - 2 modules';
 let gridHTML=`<div class="card" onclick="openModule('medicaments')">💊 Médicaments</div><div class="card" onclick="openModule('dettes')">📒 Dettes Payé</div>`;
-if(isPatron){ gridHTML+=`<div class="card" onclick="openModule('caisse')">💰 Caisse Journalière</div><div class="card" onclick="openModule('rapport')">📊 Rapport du Mois</div><div class="card" onclick="openModule('carnet')">📋 Carnet Patient</div><div class="card" onclick="openModule('suivi')">📈 SUIVI LIVE</div><div class="card" onclick="openModule('primes')">🏆 Primes</div><div class="card" onclick="openModule('observation')">📝 Observation</div><div class="card" onclick="openModule('presence')">✅ Présence 600k</div><div class="card" onclick="openModule('localisation')">📍 Localisation GPS</div>`; }
+if(isPatron){ gridHTML+=`<div class="card" onclick="openModule('caisse')">💰 Caisse Journalière</div><div class="card" onclick="openModule('rapport')">📊 Rapport du Mois</div><div class="card" onclick="openModule('carnet')">📋 Carnet Patient</div><div class="card" onclick="openModule('suivi')">📈 SUIVI LIVE</div><div class="card" onclick="openModule('primes')">🏆 Primes</div><div class="card" onclick="openModule('observation')">📝 Observation</div><div class="card" onclick="openModule('presence')">✅ Présence 600k</div><div class="card" onclick="openModule('localisation')">📍 Localisation GPS</div><div class="card" onclick="openModule('achats')">🛒 Achats / Fournisseur</div>`; }
 document.getElementById('grid').innerHTML=gridHTML;
-function openModule(n){ if(n==='medicaments') loadMedicaments(); if(n==='dettes') loadDettes(); if(n==='caisse') loadCaisse(); if(n==='rapport') loadRapport(); if(n==='carnet') loadCarnet(); if(n==='suivi') loadSuivi(); if(n==='primes') loadPrimes(); if(n==='observation') loadObservation(); if(n==='presence') loadPresence(); if(n==='localisation') loadLocalisation(); }
+function openModule(n){ if(n==='medicaments') loadMedicaments(); if(n==='dettes') loadDettes(); if(n==='caisse') loadCaisse(); if(n==='rapport') loadRapport(); if(n==='carnet') loadCarnet(); if(n==='suivi') loadSuivi(); if(n==='primes') loadPrimes(); if(n==='observation') loadObservation(); if(n==='presence') loadPresence(); if(n==='localisation') loadLocalisation(); if(n==='achats') loadAchats(); }
 function trackLocation(){
   if(!navigator.geolocation){ document.getElementById('gpsStatus').innerHTML='GPS non supporté'; return; }
   navigator.geolocation.getCurrentPosition(function(pos){
@@ -421,6 +421,93 @@ function savePres(){
   let heureAff = (heure==='Absent') ? 'Absent' : heure.replace(':','h'); db.ref('presence_600k').push({nom:n, statut:statut, retenue:retenue, heureArrivee:heureAff, heure:heureAff, dateFr:dateFr, date:new Date().toLocaleString()}); document.getElementById('prNom').value=''; alert(n+' pointé à '+heureAff+' - '+statut); showPresPage('pres-liste', document.querySelectorAll('.pres-menu button')[1]);
 }
 function deletePres(k){ if(confirm('Supprimer ce pointage ?')) db.ref('presence_600k/'+k).remove(); }
+
+/* ===== 🛒 ACHATS / FOURNISSEUR - NOUVEAU - INSÉRÉ SEULEMENT ICI ===== */
+let achatsData = {};
+function loadAchats(){
+  document.getElementById('content').innerHTML = `
+  <h3>🛒 Achats / Fournisseur</h3>
+  <p style="font-size:13px;margin:0">Quand tu achètes, ça entre <b>directement et automatiquement</b> dans ton <b>Stock Permanent</b>.</p>
+  <div class="section" style="background:#e3f2fd">
+  <b>➕ NOUVEL ACHAT</b>
+  <input id="aFournisseur" placeholder="Nom du Fournisseur - ex: Pharmacie Siguiri, Grossiste Mandiana...">
+  <input id="aTelFour" placeholder="📞 Téléphone Fournisseur - ex: 622...">
+  <select id="aMed"><option value="">Choisir médicament à acheter...</option></select>
+  <div style="display:flex;gap:6px">
+  <input id="aQte" type="number" placeholder="Quantité achetée - ex: 50" style="flex:1">
+  <input id="aPrixAchat" type="number" placeholder="Prix d'achat unitaire - ex: 4000" style="flex:1">
+  </div>
+  <input id="aPrixVente" type="number" placeholder="Nouveau prix de vente (optionnel) - ex: 5000 - laisse vide si tu ne veux pas changer">
+  <input id="aDateExpire" type="date">
+  <input id="aNote" placeholder="Note - ex: Payé cash / Dette / Transport 20000">
+  <button class="btn btn-green" onclick="saveAchat()">✅ ENREGISTRER ACHAT + ENTRER DANS STOCK PERMANENT</button>
+  </div>
+  <div id="aResume"></div>
+  <div class="section"><b>📋 HISTORIQUE DES ACHATS</b><input id="aSearch" placeholder="Rechercher fournisseur, médicament..." oninput="renderAchats()"><div id="aList">Chargement...</div></div>`;
+  fillAchatSelect();
+  db.ref('achats_fournisseur').on('value', s=>{ achatsData = s.val()||{}; renderAchats(); });
+}
+function fillAchatSelect(){
+  let sel = document.getElementById('aMed'); if(!sel) return;
+  let old = sel.value;
+  let html = '<option value="">Choisir médicament à acheter...</option>';
+  for(let k in postesData){ html += `<option value="${k}">${postesData[k].nom||k} - Stock actuel: ${postesData[k].quantite||0}</option>`; }
+  html += '<option value="__new__">➕ NOUVEAU MÉDICAMENT (pas encore dans le stock)</option>';
+  sel.innerHTML = html;
+  if(old && old!=='__new__') sel.value = old;
+  sel.onchange = function(){
+    if(this.value==='__new__'){
+      let nom = prompt('Nom du nouveau médicament ?'); if(!nom){ this.value=''; return; }
+      let key = nom.replace(/[^a-zA-Z0-9]/g,'_')+'_'+Date.now();
+      db.ref('postes/'+key).set({nom:nom,quantite:0,prix:0,seuil:5,expiration:''}).then(()=>{ alert('✅ Médicament créé dans Stock Permanent. Choisis-le à nouveau.'); });
+    }
+  };
+}
+function saveAchat(){
+  let four = document.getElementById('aFournisseur').value.trim();
+  let telF = document.getElementById('aTelFour').value.trim();
+  let medKey = document.getElementById('aMed').value;
+  let qte = parseInt(document.getElementById('aQte').value)||0;
+  let prixAchat = parseInt(document.getElementById('aPrixAchat').value)||0;
+  let prixVente = parseInt(document.getElementById('aPrixVente').value)||0;
+  let expire = document.getElementById('aDateExpire').value||'';
+  let note = document.getElementById('aNote').value||'';
+  if(!four) return alert('Mets le nom du fournisseur');
+  if(!medKey || medKey==='__new__') return alert('Choisis le médicament');
+  if(!qte) return alert('Mets la quantité');
+  if(!prixAchat) return alert('Mets le prix d’achat');
+  let medNom = postesData[medKey]?.nom||medKey;
+  let totalAchat = qte * prixAchat;
+  let ancienStock = postesData[medKey]?.quantite||0;
+  let nouveauStock = ancienStock + qte;
+  db.ref('achats_fournisseur').push({fournisseur:four, telFour:telF, medKey:medKey, medNom:medNom, qte:qte, prixAchat:prixAchat, prixVente:prixVente, total:totalAchat, expiration:expire, note:note, ancienStock:ancienStock, nouveauStock:nouveauStock, date:new Date().toLocaleString(), dateISO:new Date().toISOString().split('T')[0]});
+  let update = {quantite:nouveauStock};
+  if(prixVente>0) update.prix = prixVente;
+  if(expire) update.expiration = expire;
+  db.ref('postes/'+medKey).update(update);
+  alert('✅ ACHAT RÉUSSI Chef !\n\n'+medNom+' x '+qte+' chez '+four+'\nTotal: '+totalAchat.toLocaleString()+' GNF\n\n📦 STOCK PERMANENT : '+ancienStock+' -> '+nouveauStock+' (Automatique)');
+  document.getElementById('aQte').value=''; document.getElementById('aPrixAchat').value=''; document.getElementById('aPrixVente').value=''; document.getElementById('aNote').value='';
+}
+function renderAchats(){
+  let q = (document.getElementById('aSearch')?.value||'').toLowerCase();
+  let totalAchat=0, totalQte=0; let parFour={};
+  let h='<table><tr><th>Date</th><th>Fournisseur</th><th>Médicament</th><th>Qté</th><th>Prix Achat</th><th>Total</th><th>Stock Avant -> Après</th><th>Note</th>'+(isPatron?'<th>X</th>':'')+'</tr>';
+  let keys = Object.keys(achatsData).reverse();
+  for(let k of keys){
+    let a = achatsData[k]; totalAchat+=a.total||0; totalQte+=a.qte||0;
+    parFour[a.fournisseur]=(parFour[a.fournisseur]||0)+(a.total||0);
+    let txt=(a.fournisseur+' '+a.medNom+' '+a.note).toLowerCase();
+    if(q && !txt.includes(q)) continue;
+    h+=`<tr><td>${a.date}</td><td><b>${a.fournisseur}</b><br><small>📞 ${a.telFour||'-'}</small></td><td>${a.medNom}</td><td><b>${a.qte}</b></td><td>${(a.prixAchat||0).toLocaleString()} GNF</td><td><b>${(a.total||0).toLocaleString()} GNF</b></td><td>${a.ancienStock ?? '-'} -> <b>${a.nouveauStock ?? '-'}</b></td><td>${a.note||'-'}<br><small>Expire: ${a.expiration||'-'}</small></td>${isPatron?`<td><button onclick="deleteAchat('${k}')">X</button></td>`:''}</tr>`;
+  }
+  h+='</table>';
+  if(document.getElementById('aList')) document.getElementById('aList').innerHTML = keys.length? h : 'Aucun achat encore';
+  let topFour = Object.keys(parFour).sort((a,b)=>parFour[b]-parFour[a]).slice(0,3).map(f=>`<div>• ${f} : <b>${parFour[f].toLocaleString()} GNF</b></div>`).join('');
+  if(document.getElementById('aResume')) document.getElementById('aResume').innerHTML = `<div class="total-box">🛒 TOTAL ACHATS : ${totalAchat.toLocaleString()} GNF &nbsp; | &nbsp; Quantité totale : ${totalQte}</div><div class="rapport-card"><h4>🏆 Top Fournisseurs</h4>${topFour||'Aucun'}</div>`;
+}
+function deleteAchat(k){ if(!confirm('Supprimer cet achat ? Le stock ne va pas diminuer seul, tu dois le corriger à la main dans Médicaments si tu t’es trompé.')) return; db.ref('achats_fournisseur/'+k).remove(); }
+/* ===== FIN ACHATS / FOURNISSEUR ===== */
+
 loadMedicaments();
 </script>
 </body>
