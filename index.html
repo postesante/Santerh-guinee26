@@ -467,7 +467,7 @@ function loadAchats(){
   <p style="font-size:13px;margin:4px 0">Il regarde RUPTURE + ALERTE dans ton Stock Permanent. Tu coches, tu mets le fournisseur, tu mets le prix d'achat de CHAQUE produit, tu envoies.</p>
   <input id="cmdFournisseur" placeholder="Fournisseur pour cette commande - ex: Pharmacie Siguiri">
   <input id="cmdTelFour" placeholder="📞 Téléphone Fournisseur">
-  <div id="cmdAutoList">Chargement...</div>
+  <div id="cmdAutoList">Chargement du stock...</div>
   <button class="btn btn-orange" onclick="envoyerCommandes()">📤 ENVOYER COMMANDE -> ACHAT / FOURNISSEUR</button>
   <div id="cmdEnAttente"></div>
   </div>
@@ -487,10 +487,13 @@ function loadAchats(){
   </div>
   <div id="aResume"></div>
   <div class="section"><b>📋 HISTORIQUE DES ACHATS</b><input id="aSearch" placeholder="Rechercher fournisseur, médicament..." oninput="renderAchats()"><div id="aList">Chargement...</div></div>`;
-  fillAchatSelect();
+  db.ref('postes').on('value', snap=>{
+    postesData = snap.val()||{};
+    fillAchatSelect();
+    renderCommandesAuto();
+  });
   db.ref('achats_fournisseur').on('value', s=>{ achatsData = s.val()||{}; renderAchats(); });
   db.ref('commandes_fournisseur').on('value', s=>{ commandesData = s.val()||{}; renderCommandesAuto(); renderCommandesEnAttente(); });
-  db.ref('postes').once('value', ()=>{ renderCommandesAuto(); });
 }
 function renderCommandesAuto(){
   let el = document.getElementById('cmdAutoList'); if(!el) return;
