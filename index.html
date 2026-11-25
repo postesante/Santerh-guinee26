@@ -399,7 +399,8 @@ function loadPresence(){
   <h3>✅ Présence 600k</h3>
   <div class="pres-info">📍 08h00 = 0 &nbsp; | &nbsp; 08h01 = - 5 000 &nbsp; | &nbsp; Absent = - 20 000 &nbsp; | &nbsp; Départ 17h20 &nbsp; | &nbsp; Enveloppe 600 000 GNF</div>
   <div class="pres-menu"><button class="active" onclick="showPresPage('pres-pointer',this)">📍 POINTER</button><button onclick="showPresPage('pres-liste',this)">📋 LISTE DU JOUR</button><button onclick="showPresPage('pres-retards',this)">🟠 RETARDS</button><button onclick="showPresPage('pres-absences',this)">🔴 ABSENCES</button><button onclick="showPresPage('pres-enveloppes',this)">💰 ENVELOPPES</button></div>
-  <div id="pres-pointer" class="pres-page active"><p style="font-size:13px;color:#2e7d32;font-weight:bold;margin:0">✅ Tu écris SEULEMENT le nom. Date + heure viennent seules.</p><input id="prNom" placeholder="Nom et Prénom *"><label style="font-size:13px">Date - automatique</label><input id="prDate" readonly value="${dateFr}"><label style="font-size:13px">Heure d'arrivée - automatique (tu peux changer pour aider)</label><input id="prHeure" type="time" value="${heureNow}"><select id="prSt"><option value="auto">Laisser l'application décider (Présent / Retard)</option><option value="Absent">Marquer ABSENT</option></select><button class="btn btn-blue" onclick="savePres()">📍 POINTER ARRIVÉE MAINTENANT</button></div>
+  <div id="pres-pointer" class="pres-page active"><p style="font-size:13px;color:#2e7d32;font-weight:bold;margin:0">✅ Tu écris SEULEMENT le nom. Date + heure viennent seules.</p><input id="prNom" placeholder="Nom et Prénom *"><label style="font-size:13px">Date - automatique</label><input id="prDate" readonly value="${dateFr}"><label style="font-size:13px">Heure d'arrivée - automatique (tu peux changer pour aider)</label><input id="prHeure" type="time" value="${heureNow}"><select id="prSt"><option value="auto">Laisser l'application décider (Présent / Retard)</option><option value="Absent">Marquer ABSENT</option></select><button class="btn btn-blue" onclick="savePres()">📍 POINTER ARRIVÉE MAINTENANT</button>
+  <div style="margin-top:14px;border-top:2px solid #1877f2;padding-top:10px"><p style="font-size:13px;color:#c62828;font-weight:bold;margin:0">🚪 DÉPART - 17h20 normal. Si tu ne pointes pas le départ = Absent -20 000</p><input id="prNomDepart" placeholder="Nom et Prénom pour DÉPART *"><label style="font-size:13px">Heure de départ - automatique</label><input id="prHeureDepart" type="time" value="${heureNow}"><select id="prAutorise"><option value="oui">Départ autorisé par Chef</option><option value="non">Départ NON autorisé / Parti seul</option></select><button class="btn btn-orange" onclick="saveDepart()">🚪 POINTER DÉPART MAINTENANT</button></div></div>
   <div id="pres-liste" class="pres-page"><div id="presListeBox">Chargement...</div></div><div id="pres-retards" class="pres-page"><div id="presRetardsBox">Chargement...</div></div><div id="pres-absences" class="pres-page"><div id="presAbsencesBox">Chargement...</div></div><div id="pres-enveloppes" class="pres-page"><div id="presEnveloppesBox">Chargement...</div></div>`;
   db.ref('presence_600k').on('value', s=>{ presenceData = s.val() || {}; renderPresence(); });
 }
@@ -407,7 +408,7 @@ function showPresPage(id, btn){ document.querySelectorAll('.pres-page').forEach(
 function renderPresence(){
   let keys = Object.keys(presenceData).reverse(); let auj = new Date().toLocaleDateString('fr-FR'); let liste = keys.filter(k=>{ let d = presenceData[k].date || ''; return d.includes(auj) || !presenceData[k].dateFr; }); if(liste.length===0) liste = keys.slice(0,20);
   let hListe = '<table><tr><th>Nom</th><th>Heure d\'arrivée</th><th>Heure de départ</th><th>Statut</th><th>Retenue</th>'+(isPatron?'<th>X</th>':'')+'</tr>'; let hRet = '<table><tr><th>Nom</th><th>Date</th><th>Heure</th><th>Retenue</th></tr>'; let hAbs = '<table><tr><th>Nom</th><th>Date</th><th>Retenue</th></tr>'; let parPersonne = {}; let nbRet=0, nbAbs=0;
-  for(let k of keys){ let p = presenceData[k]; let statut = p.statut || 'Présent'; let retenue = p.retenue || 0; if(statut==='Absent' && !p.retenue) retenue = 20000; if(statut==='Retard' || statut==='RETARD') retenue = 5000; if(statut==='Présent' || statut==="À L'HEURE") retenue = 0; let badge = '<span class="badge-pres badge-green">À L\'HEURE</span>'; if(statut==='Absent' || statut==='ABSENCE') badge = '<span class="badge-pres badge-red">ABSENCE</span>'; else if(statut==='Retard' || statut==='RETARD') badge = '<span class="badge-pres badge-orange">RETARD</span>'; if(liste.includes(k)){ hListe += `<tr><td><b>${p.nom||''}</b></td><td>${p.heureArrivee||p.heure||'—'}</td><td>17h20</td><td>${badge}</td><td>${retenue===0?'0 GNF':'- '+retenue.toLocaleString()+' GNF'}</td>${isPatron?`<td><button onclick="deletePres('${k}')">X</button></td>`:''}</tr>`; } if(statut==='Retard' || statut==='RETARD'){ nbRet++; hRet += `<tr><td>${p.nom||''}</td><td>${p.dateFr||p.date||''}</td><td>${p.heureArrivee||''}</td><td>- 5 000 GNF</td></tr>`; } if(statut==='Absent' || statut==='ABSENCE'){ nbAbs++; hAbs += `<tr><td>${p.nom||''}</td><td>${p.dateFr||p.date||''}</td><td>- 20 000 GNF</td></tr>`; } let nom = p.nom || 'Inconnu'; if(!parPersonne[nom]) parPersonne[nom]={retards:0,absences:0,totalRetenue:0}; if(statut==='Retard' || statut==='RETARD'){ parPersonne[nom].retards++; parPersonne[nom].totalRetenue+=5000; } if(statut==='Absent' || statut==='ABSENCE'){ parPersonne[nom].absences++; parPersonne[nom].totalRetenue+=20000; } }
+  for(let k of keys){ let p = presenceData[k]; let statut = p.statut || 'Présent'; let retenue = p.retenue || 0; if(statut==='Absent' && !p.retenue) retenue = 20000; if(statut==='Retard' || statut==='RETARD') retenue = 5000; if(statut==='Présent' || statut==="À L'HEURE") retenue = 0; let badge = '<span class="badge-pres badge-green">À L\'HEURE</span>'; if(statut==='Absent' || statut==='ABSENCE') badge = '<span class="badge-pres badge-red">ABSENCE</span>'; else if(statut==='Retard' || statut==='RETARD') badge = '<span class="badge-pres badge-orange">RETARD</span>'; if(liste.includes(k)){ let heureDepAff = p.heureDepart || '— Pas encore pointé'; let styleDep = p.heureDepart ? '' : 'background:#ffebee;color:#c62828;font-weight:bold'; hListe += `<tr><td><b>${p.nom||''}</b></td><td>${p.heureArrivee||p.heure||'—'}</td><td style="${styleDep}">${heureDepAff}${p.motifDepart?'<br><small>'+p.motifDepart+'</small>':''}</td><td>${badge}</td><td>${retenue===0?'0 GNF':'- '+retenue.toLocaleString()+' GNF'}</td>${isPatron?`<td><button onclick="deletePres('${k}')">X</button></td>`:''}</tr>`; } if(statut==='Retard' || statut==='RETARD'){ nbRet++; hRet += `<tr><td>${p.nom||''}</td><td>${p.dateFr||p.date||''}</td><td>${p.heureArrivee||''}</td><td>- 5 000 GNF</td></tr>`; } if(statut==='Absent' || statut==='ABSENCE'){ nbAbs++; hAbs += `<tr><td>${p.nom||''}</td><td>${p.dateFr||p.date||''}</td><td>- 20 000 GNF</td></tr>`; } let nom = p.nom || 'Inconnu'; if(!parPersonne[nom]) parPersonne[nom]={retards:0,absences:0,totalRetenue:0}; if(statut==='Retard' || statut==='RETARD'){ parPersonne[nom].retards++; parPersonne[nom].totalRetenue+=5000; } if(statut==='Absent' || statut==='ABSENCE'){ parPersonne[nom].absences++; parPersonne[nom].totalRetenue+=20000; } }
   hListe += '</table>'; hRet += '</table>'; hAbs += '</table>';
   if(document.getElementById('presListeBox')) document.getElementById('presListeBox').innerHTML = liste.length ? hListe : 'Aucun pointage aujourd\'hui';
   if(document.getElementById('presRetardsBox')) document.getElementById('presRetardsBox').innerHTML = '<div class="pres-info">🟠 Total retards : '+nbRet+' | 08h01 = - 5 000 GNF</div>' + (nbRet? hRet : 'Aucun retard');
@@ -420,6 +421,40 @@ function savePres(){
   let n = document.getElementById('prNom').value.trim(); if(!n) return alert('Écris le Nom et Prénom'); let heure = document.getElementById('prHeure').value || '08:00'; let dateFr = document.getElementById('prDate').value || new Date().toLocaleDateString('fr-FR'); let choix = document.getElementById('prSt').value; let statut, retenue; let parts = heure.split(':'); let hh = parseInt(parts[0]||0), mm = parseInt(parts[1]||0);
   if(choix==='Absent'){ statut='Absent'; retenue=20000; heure='Absent'; } else if(hh>8 || (hh===8 && mm>=1)){ statut='Retard'; retenue=5000; } else { statut='Présent'; retenue=0; }
   let heureAff = (heure==='Absent') ? 'Absent' : heure.replace(':','h'); db.ref('presence_600k').push({nom:n, statut:statut, retenue:retenue, heureArrivee:heureAff, heure:heureAff, dateFr:dateFr, date:new Date().toLocaleString()}); document.getElementById('prNom').value=''; alert(n+' pointé à '+heureAff+' - '+statut); showPresPage('pres-liste', document.querySelectorAll('.pres-menu button')[1]);
+}
+function saveDepart(){
+  let n = document.getElementById('prNomDepart').value.trim();
+  if(!n) return alert('Écris le Nom pour DÉPART');
+  let heureDep = document.getElementById('prHeureDepart').value || '17:20';
+  let autorise = document.getElementById('prAutorise').value;
+  let dateFr = new Date().toLocaleDateString('fr-FR');
+  let heureDepAff = heureDep.replace(':','h');
+  let foundKey = null;
+  for(let k in presenceData){
+    let p = presenceData[k];
+    if(p.nom && p.nom.toLowerCase() === n.toLowerCase() && (p.dateFr === dateFr || (p.date && p.date.includes(dateFr)))){
+      foundKey = k; break;
+    }
+  }
+  if(!foundKey) return alert('Pas de pointage ARRIVÉE trouvé aujourd\'hui pour '+n+'. Il doit d\'abord pointer l\'arrivée.');
+  let parts = heureDep.split(':');
+  let hh = parseInt(parts[0]||0), mm = parseInt(parts[1]||0);
+  let departTot = hh*60+mm;
+  let normalTot = 17*60+20;
+  let updates = { heureDepart: heureDepAff };
+  if(departTot < normalTot && autorise === 'non'){
+    updates.statut = 'Absent';
+    updates.retenue = 20000;
+    updates.motifDepart = 'Parti avant 17h20 sans autorisation';
+    db.ref('presence_600k/'+foundKey).update(updates);
+    alert('⚠️ '+n+' départ à '+heureDepAff+' sans autorisation. Mis ABSENT -20 000 GNF');
+  } else {
+    updates.motifDepart = autorise==='oui' ? 'Départ autorisé' : 'Départ à l\'heure';
+    db.ref('presence_600k/'+foundKey).update(updates);
+    alert('✅ '+n+' départ pointé à '+heureDepAff);
+  }
+  document.getElementById('prNomDepart').value='';
+  showPresPage('pres-liste', document.querySelectorAll('.pres-menu button')[1]);
 }
 function deletePres(k){ if(confirm('Supprimer ce pointage ?')) db.ref('presence_600k/'+k).remove(); }
 let achatsData = {}; let commandesData = {};
@@ -569,41 +604,39 @@ function saveAchat(){
   let prixVente = parseInt(document.getElementById('aPrixVente').value)||0;
   let expire = document.getElementById('aDateExpire').value||'';
   let note = document.getElementById('aNote').value||'';
-  if(!four) return alert('Mets le nom du fournisseur');
+  if(!four) return alert('Mets le Fournisseur');
   if(!medKey || medKey==='__new__') return alert('Choisis le médicament');
   if(!qte) return alert('Mets la quantité');
   if(!prixAchat) return alert('Mets le prix d’achat');
   let medNom = postesData[medKey]?.nom||medKey;
-  let totalAchat = qte * prixAchat;
+  let total = qte * prixAchat;
   let ancienStock = postesData[medKey]?.quantite||0;
   let nouveauStock = ancienStock + qte;
-  db.ref('achats_fournisseur').push({fournisseur:four, telFour:telF, medKey:medKey, medNom:medNom, qte:qte, prixAchat:prixAchat, prixVente:prixVente, total:totalAchat, expiration:expire, note:note, ancienStock:ancienStock, nouveauStock:nouveauStock, date:new Date().toLocaleString(), dateISO:new Date().toISOString().split('T')[0]});
+  db.ref('achats_fournisseur').push({fournisseur:four, telFour:telF, medKey:medKey, medNom:medNom, qte:qte, prixAchat:prixAchat, prixVente:prixVente, total:total, expiration:expire, note:note, ancienStock:ancienStock, nouveauStock:nouveauStock, date:new Date().toLocaleString(), dateISO:new Date().toISOString().split('T')[0]});
   let update = {quantite:nouveauStock, prixAchat:prixAchat};
   if(prixVente>0) update.prix = prixVente;
   if(expire) update.expiration = expire;
   db.ref('postes/'+medKey).update(update);
-  alert('✅ ACHAT RÉUSSI Chef !\n\n'+medNom+' x '+qte+' chez '+four+'\nPrix Achat : '+prixAchat.toLocaleString()+' GNF\nTotal: '+totalAchat.toLocaleString()+' GNF\n\n📦 STOCK PERMANENT : '+ancienStock+' -> '+nouveauStock+' (Automatique)');
-  document.getElementById('aQte').value=''; document.getElementById('aPrixAchat').value=''; document.getElementById('aPrixVente').value=''; document.getElementById('aNote').value='';
+  alert('✅ ACHAT ENREGISTRÉ Chef !\n\n'+medNom+' x '+qte+'\nTotal: '+total.toLocaleString()+' GNF\nStock: '+ancienStock+' -> '+nouveauStock);
 }
 function renderAchats(){
+  let el = document.getElementById('aList'); if(!el) return;
   let q = (document.getElementById('aSearch')?.value||'').toLowerCase();
-  let totalAchat=0, totalQte=0; let parFour={};
-  let h='<table><tr><th>Date</th><th>Fournisseur</th><th>Médicament</th><th>Qté</th><th>Prix Achat</th><th>Total</th><th>Stock Avant -> Après</th><th>Note</th>'+(isPatron?'<th>X</th>':'')+'</tr>';
   let keys = Object.keys(achatsData).reverse();
+  let totalAll = 0;
+  let h = '<table><tr><th>Date</th><th>Fournisseur</th><th>Médicament</th><th>Qté</th><th>Prix Achat</th><th>Total</th></tr>';
+  let nb=0;
   for(let k of keys){
-    let a = achatsData[k]; totalAchat+=a.total||0; totalQte+=a.qte||0;
-    parFour[a.fournisseur]=(parFour[a.fournisseur]||0)+(a.total||0);
-    let txt=(a.fournisseur+' '+a.medNom+' '+a.note).toLowerCase();
+    let a = achatsData[k];
+    let txt = ((a.fournisseur||'')+' '+(a.medNom||'')).toLowerCase();
     if(q && !txt.includes(q)) continue;
-    h+=`<tr><td>${a.date}</td><td><b>${a.fournisseur}</b><br><small>📞 ${a.telFour||'-'}</small></td><td>${a.medNom}</td><td><b>${a.qte}</b></td><td>${(a.prixAchat||0).toLocaleString()} GNF</td><td><b>${(a.total||0).toLocaleString()} GNF</b></td><td>${a.ancienStock ?? '-'} -> <b>${a.nouveauStock ?? '-'}</b></td><td>${a.note||'-'}<br><small>Expire: ${a.expiration||'-'}</small></td>${isPatron?`<td><button onclick="deleteAchat('${k}')">X</button></td>`:''}</tr>`;
+    nb++; totalAll += parseInt(a.total)||0;
+    h += `<tr><td>${a.date||''}</td><td><b>${a.fournisseur||''}</b><br><small>${a.telFour||''}</small></td><td>${a.medNom||''}</td><td><b>${a.qte||0}</b></td><td>${(a.prixAchat||0).toLocaleString()} GNF</td><td><b>${(a.total||0).toLocaleString()} GNF</b></td></tr>`;
   }
-  h+='</table>';
-  if(document.getElementById('aList')) document.getElementById('aList').innerHTML = keys.length? h : 'Aucun achat encore';
-  let topFour = Object.keys(parFour).sort((a,b)=>parFour[b]-parFour[a]).slice(0,3).map(f=>`<div>• ${f} : <b>${parFour[f].toLocaleString()} GNF</b></div>`).join('');
-  if(document.getElementById('aResume')) document.getElementById('aResume').innerHTML = `<div class="total-box">🛒 TOTAL ACHATS : ${totalAchat.toLocaleString()} GNF &nbsp; | &nbsp; Quantité totale : ${totalQte}</div><div class="rapport-card"><h4>🏆 Top Fournisseurs</h4>${topFour||'Aucun'}</div>`;
+  h += '</table>';
+  el.innerHTML = nb ? h : 'Aucun achat encore';
+  let r = document.getElementById('aResume'); if(r) r.innerHTML = `<div class="total-box">🛒 TOTAL ACHATS : ${totalAll.toLocaleString()} GNF - ${nb} achats</div>`;
 }
-function deleteAchat(k){ if(!confirm('Supprimer cet achat ? Le stock ne va pas diminuer seul, tu dois le corriger à la main dans Médicaments si tu t’es trompé.')) return; db.ref('achats_fournisseur/'+k).remove(); }
-loadMedicaments();
 </script>
 </body>
 </html>
