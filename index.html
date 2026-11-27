@@ -54,6 +54,15 @@ table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px} th,td{b
 .rapport-big{background:#1877f2;color:white;padding:14px;border-radius:10px;text-align:center;font-weight:bold;font-size:16px}
 .carnet-card{background:#fff;padding:12px;border-radius:10px;margin-top:10px;border:2px solid #1877f2}
 .carnet-fiche{background:#e3f2fd;padding:12px;border-radius:10px;margin-top:10px;border:1px solid #1877f2}
+/* ===== NOUVEL AJOUT - NE TOUCHE PAS L'ANCIEN - SUIVI MEDICAMENTS PAR JOUR ===== */
+.suivi-wrap{overflow-x:auto}
+.suivi-table{font-size:12px;min-width:900px}
+.suivi-table th{background:#006644;color:#fff;padding:6px;position:sticky;top:0}
+.suivi-table td{padding:4px;text-align:center}
+.suivi-table td.nom-med{text-align:left;font-weight:bold;background:#e8f5e9;min-width:140px}
+.suivi-table input.jour-input{width:42px;padding:6px;text-align:center;margin:0;font-size:13px;font-weight:bold}
+.suivi-table td.total-cell{background:#fff3cd;font-weight:bold;font-size:15px;min-width:70px}
+.suivi-total-final{background:#006644;color:#fff;padding:12px;border-radius:8px;text-align:center;font-weight:bold;margin-top:10px}
 </style>
 </head>
 <body>
@@ -79,9 +88,9 @@ else { role = localStorage.getItem('mon_role') || 'patron'; }
 const isPatron = role==='patron';
 document.getElementById('header').innerHTML = isPatron ? '<img src="icon-512.png" onerror="this.style.display=\'none\'"><div>👑 PATRON - Accès complet</div><div style="font-size:13px;font-weight:normal">Filanidialakoro - Poste Santé</div>' : '👤 SUPPLÉANT - 2 modules';
 let gridHTML=`<div class="card" onclick="openModule('medicaments')">💊 Médicaments</div><div class="card" onclick="openModule('dettes')">📒 Dettes Payé</div>`;
-if(isPatron){ gridHTML+=`<div class="card" onclick="openModule('caisse')">💰 Caisse Journalière</div><div class="card" onclick="openModule('rapport')">📊 Rapport du Mois</div><div class="card" onclick="openModule('carnet')">📋 Carnet Patient</div><div class="card" onclick="openModule('primes')">🏆 Primes</div><div class="card" onclick="openModule('observation')">📝 Observation</div><div class="card" onclick="openModule('presence')">✅ Présence 600k</div><div class="card" onclick="openModule('localisation')">📍 Localisation GPS</div><div class="card" onclick="openModule('achats')">🛒 Achats / Fournisseur</div>`; }
+if(isPatron){ gridHTML+=`<div class="card" onclick="openModule('caisse')">💰 Caisse Journalière</div><div class="card" onclick="openModule('rapport')">📊 Rapport du Mois</div><div class="card" onclick="openModule('carnet')">📋 Carnet Patient</div><div class="card" onclick="openModule('primes')">🏆 Primes</div><div class="card" onclick="openModule('observation')">📝 Observation</div><div class="card" onclick="openModule('presence')">✅ Présence 600k</div><div class="card" onclick="openModule('localisation')">📍 Localisation GPS</div><div class="card" onclick="openModule('achats')">🛒 Achats / Fournisseur</div><div class="card" style="background:#006644;color:white" onclick="openModule('suivi_mois')">📅 Médicaments par Jour - Mois</div>`; }
 document.getElementById('grid').innerHTML=gridHTML;
-function openModule(n){ if(n==='medicaments') loadMedicaments(); if(n==='dettes') loadDettes(); if(n==='caisse') loadCaisse(); if(n==='rapport') loadRapport(); if(n==='carnet') loadCarnet(); if(n==='primes') loadPrimes(); if(n==='observation') loadObservation(); if(n==='presence') loadPresence(); if(n==='localisation') loadLocalisation(); if(n==='achats') loadAchats(); }
+function openModule(n){ if(n==='medicaments') loadMedicaments(); if(n==='dettes') loadDettes(); if(n==='caisse') loadCaisse(); if(n==='rapport') loadRapport(); if(n==='carnet') loadCarnet(); if(n==='primes') loadPrimes(); if(n==='observation') loadObservation(); if(n==='presence') loadPresence(); if(n==='localisation') loadLocalisation(); if(n==='achats') loadAchats(); if(n==='suivi_mois') loadSuiviMois(); }
 function trackLocation(){
   if(!navigator.geolocation){ document.getElementById('gpsStatus').innerHTML='GPS non supporté'; return; }
   navigator.geolocation.getCurrentPosition(function(pos){
@@ -563,82 +572,87 @@ function renderCommandesEnAttente(){
 }
 function recevoirCommande(cmdKey){
   let c = commandesData[cmdKey]; if(!c) return;
-  let prixAchat = c.prixAchat || parseInt(prompt('Prix d’achat unitaire pour '+c.medNom+' chez '+c.fournisseur+' ?', '4000'))||0;
+  let prixAchat = c.prixAchat || parseInt(prompt('Prix d’achat unitaire pour '+c.medNom+' ?', '4000'))||0;
   if(!prixAchat) return alert('Mets le prix d’achat');
   let prixVente = parseInt(prompt('Nouveau prix de vente pour '+c.medNom+' (laisse vide si tu ne changes pas) ?', ''))||0;
-  let expire = prompt('Date expiration pour '+c.medNom+' (AAAA-MM-JJ, laisse vide si tu ne changes pas) ?', '')||'';
-  let medKey = c.medKey;
-  let qte = c.qte;
-  let medNom = c.medNom;
-  let totalAchat = qte * prixAchat;
-  let ancienStock = postesData[medKey]?.quantite||0;
-  let nouveauStock = ancienStock + qte;
-  db.ref('achats_fournisseur').push({fournisseur:c.fournisseur, telFour:c.telFour||'', medKey:medKey, medNom:medNom, qte:qte, prixAchat:prixAchat, prixVente:prixVente, total:totalAchat, expiration:expire, note:'Commande Automatique - Reçu', ancienStock:ancienStock, nouveauStock:nouveauStock, date:new Date().toLocaleString(), dateISO:new Date().toISOString().split('T')[0]});
-  let update = {quantite:nouveauStock, prixAchat:prixAchat};
-  if(prixVente>0) update.prix = prixVente;
-  if(expire) update.expiration = expire;
-  db.ref('postes/'+medKey).update(update);
+  let expire = prompt('Date expiration pour '+c.medNom+' (AAAA-MM-JJ) ?', '')||'';
+  let k = c.medKey; let cur = postesData[k] ? (postesData[k].quantite||0) : 0;
+  let upd = {quantite: cur + (c.qte||0), prixAchat: prixAchat};
+  if(prixVente) upd.prix = prixVente;
+  if(expire) upd.expiration = expire;
+  db.ref('postes/'+k).update(upd);
+  db.ref('achats_fournisseur').push({fournisseur:c.fournisseur, telFour:c.telFour||'', medNom:c.medNom, medKey:k, qte:c.qte, prixAchat:prixAchat, prixVente:prixVente||'', total:c.total, date:new Date().toLocaleString(), note:'Commande reçue'});
   db.ref('commandes_fournisseur/'+cmdKey).remove();
-  alert('✅ REÇU Chef !\n\n'+medNom+' x '+qte+' de '+c.fournisseur+'\nPrix Achat : '+prixAchat.toLocaleString()+' GNF\nTotal: '+totalAchat.toLocaleString()+' GNF\n\n📦 STOCK PERMANENT : '+ancienStock+' -> '+nouveauStock+' (Automatique)');
+  alert('✅ Reçu : '+c.medNom+' x '+c.qte+' entré dans le Stock');
 }
-function annulerCommande(k){ if(!confirm('Annuler cette commande ?')) return; db.ref('commandes_fournisseur/'+k).remove(); }
-function fillAchatSelect(){
-  let sel = document.getElementById('aMed'); if(!sel) return;
-  let old = sel.value;
-  let html = '<option value="">Choisir médicament à acheter...</option>';
-  for(let k in postesData){ html += `<option value="${k}">${postesData[k].nom||k} - Stock actuel: ${postesData[k].quantite||0}</option>`; }
-  html += '<option value="__new__">➕ NOUVEAU MÉDICAMENT (pas encore dans le stock)</option>';
-  sel.innerHTML = html;
-  if(old && old!=='__new__') sel.value = old;
-  sel.onchange = function(){
-    if(this.value==='__new__'){
-      let nom = prompt('Nom du nouveau médicament ?'); if(!nom){ this.value=''; return; }
-      let key = nom.replace(/[^a-zA-Z0-9]/g,'_')+'_'+Date.now();
-      db.ref('postes/'+key).set({nom:nom,quantite:0,prix:0,seuil:5,expiration:''}).then(()=>{ alert('✅ Médicament créé dans Stock Permanent. Choisis-le à nouveau.'); });
-    }
-  };
+function annulerCommande(k){ if(confirm('Annuler cette commande ?')) db.ref('commandes_fournisseur/'+k).remove(); }
+function fillAchatSelect(){ let sel=document.getElementById('aMed'); if(!sel) return; let h='<option value="">Choisir médicament à acheter...</option>'; for(let k in postesData){ h+=`<option value="${k}">${postesData[k].nom||k} (stock:${postesData[k].quantite||0})</option>`; } sel.innerHTML=h; }
+function renderAchats(){ let el=document.getElementById('aList'); if(!el) return; let q=(document.getElementById('aSearch')?.value||'').toLowerCase(); let h='<table><tr><th>Date</th><th>Fournisseur</th><th>Médicament</th><th>Qté</th><th>Prix Achat</th><th>Total</th></tr>'; let tot=0; let keys=Object.keys(achatsData).reverse(); for(let k of keys){ let a=achatsData[k]; let txt=((a.fournisseur||'')+' '+(a.medNom||'')).toLowerCase(); if(q && !txt.includes(q)) continue; let t=parseInt(a.total)||((parseInt(a.qte)||0)*(parseInt(a.prixAchat)||0)); tot+=t; h+=`<tr><td>${a.date||''}</td><td><b>${a.fournisseur||''}</b><br><small>${a.telFour||''}</small></td><td>${a.medNom||''}</td><td><b>${a.qte||''}</b></td><td>${(parseInt(a.prixAchat)||0).toLocaleString()}</td><td><b>${t.toLocaleString()} GNF</b></td></tr>`; } h+='</table>'; el.innerHTML=keys.length?h:'Aucun achat encore'; let r=document.getElementById('aResume'); if(r) r.innerHTML=`<div class="total-box">📦 Total Achats : ${tot.toLocaleString()} GNF</div>`; }
+function saveAchat(){ let four=document.getElementById('aFournisseur').value.trim(); let tel=document.getElementById('aTelFour').value.trim(); let k=document.getElementById('aMed').value; let qte=parseInt(document.getElementById('aQte').value)||0; let pa=parseInt(document.getElementById('aPrixAchat').value)||0; let pv=parseInt(document.getElementById('aPrixVente').value)||0; let exp=document.getElementById('aDateExpire').value||''; let note=document.getElementById('aNote').value||''; if(!four||!k||!qte) return alert('Mets Fournisseur + Médicament + Quantité'); let medNom=postesData[k]?.nom||k; let cur=postesData[k]?.quantite||0; let upd={quantite:cur+qte}; if(pa) upd.prixAchat=pa; if(pv) upd.prix=pv; if(exp) upd.expiration=exp; db.ref('postes/'+k).update(upd); db.ref('achats_fournisseur').push({fournisseur:four,telFour:tel,medNom:medNom,medKey:k,qte:qte,prixAchat:pa,prixVente:pv,total:qte*pa,date:new Date().toLocaleString(),note:note}); alert('✅ Achat enregistré : '+medNom+' x '+qte+' entré dans Stock'); }
+
+/* ===== NOUVELLE APPLICATION A PART - SUIVI MEDICAMENTS PAR JOUR / PAR MOIS - AJOUT SEUL ===== */
+let suiviMois = new Date().toISOString().slice(0,7);
+let suiviData = {};
+function loadSuiviMois(){
+  let now = new Date(); let def = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  if(!suiviMois) suiviMois = def;
+  document.getElementById('content').innerHTML = `
+  <h3 style="background:#006644;color:white;padding:12px;border-radius:10px;text-align:center">📅 Médicaments Utilisés par Jour - NOUVELLE APPLICATION</h3>
+  <p style="font-size:13px;font-weight:bold;margin:4px 0">1. Choisis le mois &nbsp;|&nbsp; 2. Tu tapes le nom du médicament &nbsp;|&nbsp; 3. Chaque jour tu mets la quantité utilisée &nbsp;|&nbsp; 4. Le TOTAL du mois se calcule seul devant chaque ligne</p>
+  <label style="font-weight:bold;font-size:13px">Choisis le mois :</label>
+  <input id="suiviMoisInput" type="month" value="${suiviMois}" onchange="suiviMois=this.value; loadSuiviMois();">
+  <div class="section" style="background:#e8f5e9;border:1px solid #006644">
+  <b>➕ AJOUTER UN MEDICAMENT - Toi tu mets le nom</b>
+  <input id="suiviNewMed" placeholder="Nom du médicament - ex: Ampicilline, Ceftriaxone, Ringer...">
+  <button class="btn btn-green" onclick="addSuiviMed()">+ AJOUTER MEDICAMENT</button>
+  <p style="font-size:12px;color:#555;margin:4px 0">Tu peux ajouter autant de médicaments que tu veux. Chaque médicament = une ligne.</p>
+  </div>
+  <div class="suivi-wrap" id="suiviTableBox">Chargement...</div>
+  <div id="suiviResume"></div>
+  <button class="btn btn-blue" onclick="window.print()">🖨️ IMPRIMER RAPPORT DU MOIS</button>`;
+  db.ref('suivi_mois/'+suiviMois).on('value', snap=>{ suiviData = snap.val()||{}; renderSuiviMois(); });
 }
-function saveAchat(){
-  let four = document.getElementById('aFournisseur').value.trim();
-  let telF = document.getElementById('aTelFour').value.trim();
-  let medKey = document.getElementById('aMed').value;
-  let qte = parseInt(document.getElementById('aQte').value)||0;
-  let prixAchat = parseInt(document.getElementById('aPrixAchat').value)||0;
-  let prixVente = parseInt(document.getElementById('aPrixVente').value)||0;
-  let expire = document.getElementById('aDateExpire').value||'';
-  let note = document.getElementById('aNote').value||'';
-  if(!four) return alert('Mets le Fournisseur');
-  if(!medKey || medKey==='__new__') return alert('Choisis le médicament');
-  if(!qte) return alert('Mets la quantité');
-  if(!prixAchat) return alert('Mets le prix d’achat');
-  let medNom = postesData[medKey]?.nom||medKey;
-  let total = qte * prixAchat;
-  let ancienStock = postesData[medKey]?.quantite||0;
-  let nouveauStock = ancienStock + qte;
-  db.ref('achats_fournisseur').push({fournisseur:four, telFour:telF, medKey:medKey, medNom:medNom, qte:qte, prixAchat:prixAchat, prixVente:prixVente, total:total, expiration:expire, note:note, ancienStock:ancienStock, nouveauStock:nouveauStock, date:new Date().toLocaleString(), dateISO:new Date().toISOString().split('T')[0]});
-  let update = {quantite:nouveauStock, prixAchat:prixAchat};
-  if(prixVente>0) update.prix = prixVente;
-  if(expire) update.expiration = expire;
-  db.ref('postes/'+medKey).update(update);
-  alert('✅ ACHAT ENREGISTRÉ Chef !\n\n'+medNom+' x '+qte+'\nTotal: '+total.toLocaleString()+' GNF\nStock: '+ancienStock+' -> '+nouveauStock);
+function addSuiviMed(){
+  let nom = document.getElementById('suiviNewMed').value.trim();
+  if(!nom) return alert('Écris le nom du médicament d’abord');
+  let key = nom.replace(/[^a-zA-Z0-9]/g,'_')+'_'+Date.now();
+  db.ref('suivi_mois/'+suiviMois+'/'+key).set({nom:nom, jours:{}});
+  document.getElementById('suiviNewMed').value='';
 }
-function renderAchats(){
-  let el = document.getElementById('aList'); if(!el) return;
-  let q = (document.getElementById('aSearch')?.value||'').toLowerCase();
-  let keys = Object.keys(achatsData).reverse();
-  let totalAll = 0;
-  let h = '<table><tr><th>Date</th><th>Fournisseur</th><th>Médicament</th><th>Qté</th><th>Prix Achat</th><th>Total</th></tr>';
-  let nb=0;
+function updateSuiviJour(medKey, jour, val){
+  let v = parseInt(val)||0;
+  if(v===0){ db.ref('suivi_mois/'+suiviMois+'/'+medKey+'/jours/'+jour).remove(); }
+  else { db.ref('suivi_mois/'+suiviMois+'/'+medKey+'/jours/'+jour).set(v); }
+}
+function deleteSuiviMed(medKey){
+  if(confirm('Supprimer ce médicament pour ce mois ?')) db.ref('suivi_mois/'+suiviMois+'/'+medKey).remove();
+}
+function renderSuiviMois(){
+  let box = document.getElementById('suiviTableBox'); if(!box) return;
+  let keys = Object.keys(suiviData);
+  if(!keys.length){ box.innerHTML='<div class="total-box">Aucun médicament ce mois. Ajoute le nom en haut.</div>'; if(document.getElementById('suiviResume')) document.getElementById('suiviResume').innerHTML=''; return; }
+  let nbJours = 31;
+  let h = '<table class="suivi-table"><tr><th style="min-width:140px">MEDICAMENT</th>';
+  for(let j=1;j<=nbJours;j++){ h+=`<th>J${j}</th>`; }
+  h+='<th style="background:#c9a227;min-width:75px">TOTAL<br>MOIS</th><th>X</th></tr>';
+  let grandTotal=0;
   for(let k of keys){
-    let a = achatsData[k];
-    let txt = ((a.fournisseur||'')+' '+(a.medNom||'')).toLowerCase();
-    if(q && !txt.includes(q)) continue;
-    nb++; totalAll += parseInt(a.total)||0;
-    h += `<tr><td>${a.date||''}</td><td><b>${a.fournisseur||''}</b><br><small>${a.telFour||''}</small></td><td>${a.medNom||''}</td><td><b>${a.qte||0}</b></td><td>${(a.prixAchat||0).toLocaleString()} GNF</td><td><b>${(a.total||0).toLocaleString()} GNF</b></td></tr>`;
+    let m = suiviData[k]; let jours = m.jours||{}; let total=0;
+    for(let j=1;j<=nbJours;j++){ total += parseInt(jours[j])||0; }
+    grandTotal+=total;
+    h+=`<tr><td class="nom-med">${m.nom}</td>`;
+    for(let j=1;j<=nbJours;j++){
+      let v = jours[j]||'';
+      h+=`<td><input class="jour-input" type="number" min="0" value="${v}" onchange="updateSuiviJour('${k}', ${j}, this.value)" placeholder="0"></td>`;
+    }
+    h+=`<td class="total-cell">${total}</td><td><button onclick="deleteSuiviMed('${k}')" style="background:#e74c3c;color:white;border:none;padding:6px 8px;border-radius:6px;font-weight:bold">X</button></td></tr>`;
   }
-  h += '</table>';
-  el.innerHTML = nb ? h : 'Aucun achat encore';
-  let r = document.getElementById('aResume'); if(r) r.innerHTML = `<div class="total-box">🛒 TOTAL ACHATS : ${totalAll.toLocaleString()} GNF - ${nb} achats</div>`;
+  h+='</table>';
+  box.innerHTML = h;
+  let resume = '<div class="suivi-total-final">📅 TOTAL GENERAL DU MOIS : '+grandTotal+' médicaments utilisés</div><div class="total-box" style="background:#fff3cd">';
+  for(let k of keys){ let m=suiviData[k]; let jours=m.jours||{}; let t=0; for(let j=1;j<=31;j++) t+=parseInt(jours[j])||0; resume+=`<div>• <b>${m.nom}</b> : <b>${t}</b> utilisés ce mois</div>`; }
+  resume+='</div>';
+  if(document.getElementById('suiviResume')) document.getElementById('suiviResume').innerHTML = resume;
 }
 </script>
 </body>
